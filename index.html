@@ -176,35 +176,35 @@
       <p>Busca al estudiante por número de documento, registra el desempeño mensual, recoge las firmas de empresa, estudiante y supervisor, y descarga el PDF consolidado.</p>
     </div>
     <div class="role-grid">
-      <div class="role-card empresa" onclick="goRole('empresa')">
+      <div class="role-card empresa" onclick="goRoleLogin('empresa')">
         <div class="icon">E</div>
         <h3>Empresa · Jefe inmediato</h3>
-        <p>Ingresa el número de documento del practicante, califica las 4 competencias del mes y firma.</p>
+        <p>Inicia sesión con el usuario que te dio el administrador para calificar el mes y firmar.</p>
       </div>
       <div class="role-card estudiante" onclick="goRole('estudiante')">
         <div class="icon">A</div>
         <h3>Estudiante</h3>
         <p>Revisa lo diligenciado por tu jefe inmediato, responde las observaciones y firma cada mes.</p>
       </div>
-      <div class="role-card supervisor" onclick="goRole('supervisor')">
+      <div class="role-card supervisor" onclick="goRoleLogin('supervisor')">
         <div class="icon">S</div>
         <h3>Supervisor institucional</h3>
-        <p>Registra la visita de seguimiento, la revisión de funciones y las observaciones de supervisión.</p>
+        <p>Inicia sesión con el usuario que te dio el administrador para registrar la visita de seguimiento.</p>
       </div>
       <div class="role-card administrador" onclick="goAdminEntry()">
         <div class="icon">Ad</div>
         <h3>Administrador</h3>
-        <p>Inicia sesión para registrar y actualizar los datos del estudiante, y consultar el estado de cada planilla.</p>
+        <p>Inicia sesión para registrar estudiantes, crear usuarios de empresa/supervisor y ver el estado de cada planilla.</p>
       </div>
     </div>
-    <div class="note-box">El administrador (con inicio de sesión) registra primero los datos del estudiante. Desde ahí, empresa, estudiante y supervisor buscan por número de documento y ven la misma información — todo queda guardado en un almacenamiento compartido.</div>
+    <div class="note-box">El administrador inicia sesión con correo y contraseña, y desde ahí crea los usuarios de Empresa y Supervisor. El estudiante sigue entrando solo con su número de documento.</div>
   </div>
 
   <!-- ADMIN LOGIN -->
   <div class="screen" id="screen-admin-login">
     <button class="linkbtn" onclick="goHome()">← Volver</button>
     <h2 style="margin:12px 0 4px;">Acceso de administrador</h2>
-    <p class="helptext">Solo el administrador tiene una cuenta. Empresa, estudiante y supervisor no necesitan iniciar sesión ni pueden entrar aquí.</p>
+    <p class="helptext">Solo el administrador tiene una cuenta de correo. Empresa y supervisor inician sesión con el usuario que tú les crees.</p>
     <div class="card" style="max-width:420px;">
       <div class="field-row" style="grid-template-columns:1fr;">
         <div class="field"><label>Correo</label><input type="email" id="adminEmail" autocomplete="username"></div>
@@ -214,6 +214,23 @@
         <button class="primary" onclick="doAdminLogin()">Iniciar sesión</button>
       </div>
       <div id="adminLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+    </div>
+  </div>
+
+  <!-- EMPRESA / SUPERVISOR LOGIN -->
+  <div class="screen" id="screen-role-login">
+    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <h2 id="roleLoginTitle" style="margin:12px 0 4px;"></h2>
+    <p class="helptext" id="roleLoginHelp"></p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Usuario</label><input type="text" id="roleUsername" autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="rolePassword" autocomplete="current-password"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doRoleLogin()">Iniciar sesión</button>
+      </div>
+      <div id="roleLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
     </div>
   </div>
 
@@ -235,6 +252,25 @@
     <div class="card" id="lookupAdminListCard" style="display:none;">
       <div class="section-bar deep">Estudiantes registrados</div>
       <div id="lookupAdminList"></div>
+    </div>
+    <div class="card" id="lookupAdminUsersCard" style="display:none;">
+      <div class="section-bar deep">Usuarios de empresa y supervisor</div>
+      <p class="helptext" style="margin-top:-2px;">Crea o cambia la contraseña de un usuario. Si el nombre de usuario ya existe, se actualiza su contraseña y su rol.</p>
+      <div class="field-row">
+        <div class="field"><label>Usuario</label><input type="text" id="ruUsername" autocomplete="off"></div>
+        <div class="field"><label>Rol</label>
+          <select id="ruRole">
+            <option value="empresa">Empresa</option>
+            <option value="supervisor">Supervisor</option>
+          </select>
+        </div>
+        <div class="field"><label>Contraseña</label><input type="password" id="ruPassword" autocomplete="new-password"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="saveRoleAccount()">Guardar usuario</button>
+      </div>
+      <div id="roleAccountsMsg" style="margin-top:8px;font-size:13px;"></div>
+      <div id="roleAccountsList" style="margin-top:14px;"></div>
     </div>
   </div>
 
@@ -431,7 +467,7 @@ const COMPETENCIAS = [
 const PROGRAMA = 'Técnico Laboral por Competencias en Auxiliar Administrativo en Salud';
 const CODIGO = 'PPS-GAA-F-006';
 
-let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0 };
+let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null };
 const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 
 function emptyRecord(documento){
@@ -570,6 +606,34 @@ async function adminLogout(){
   goHome();
 }
 
+function goRoleLogin(role){
+  state.pendingRole = role;
+  document.getElementById('roleLoginTitle').textContent = role==='empresa' ? 'Acceso Empresa' : 'Acceso Supervisor';
+  document.getElementById('roleLoginHelp').textContent = 'Ingresa el usuario y la contraseña que te dio el administrador.';
+  document.getElementById('roleUsername').value = '';
+  document.getElementById('rolePassword').value = '';
+  document.getElementById('roleLoginMsg').innerHTML = '';
+  showScreen('screen-role-login');
+  setTimeout(()=>document.getElementById('roleUsername').focus(), 50);
+}
+async function doRoleLogin(){
+  if(!requireSupabase()) return;
+  const username = document.getElementById('roleUsername').value.trim();
+  const password = document.getElementById('rolePassword').value;
+  const msg = document.getElementById('roleLoginMsg');
+  if(!username || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe usuario y contraseña.</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Verificando…</span>';
+  try{
+    const { data, error } = await sb.rpc('verify_role_login', { p_username: username, p_password: password });
+    if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">Error verificando credenciales.</span>'; return; }
+    if(!data || data !== state.pendingRole){
+      msg.innerHTML = '<span style="color:var(--danger)">Usuario o contraseña incorrectos.</span>';
+      return;
+    }
+    goRole(state.pendingRole);
+  }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">No se pudo conectar (revisa la consola).</span>'; }
+}
+
 function goRole(role){
   state.role = role;
   const titles = {
@@ -584,11 +648,15 @@ function goRole(role){
   document.getElementById('lookupMsg').innerHTML = '';
   showScreen('screen-lookup');
   const listCard = document.getElementById('lookupAdminListCard');
+  const usersCard = document.getElementById('lookupAdminUsersCard');
   if(role === 'administrador'){
     listCard.style.display = 'block';
+    usersCard.style.display = 'block';
     renderAdminList();
+    renderRoleAccounts();
   } else {
     listCard.style.display = 'none';
+    usersCard.style.display = 'none';
   }
   setTimeout(()=>document.getElementById('lookupDoc').focus(), 50);
 }
@@ -639,6 +707,51 @@ async function renderAdminList(){
 function jumpToAdmin(doc){
   document.getElementById('lookupDoc').value = doc;
   doLookup();
+}
+
+/* ============================= USUARIOS EMPRESA/SUPERVISOR (gestión del admin) ============================= */
+async function renderRoleAccounts(){
+  const el = document.getElementById('roleAccountsList');
+  if(!sb){ el.innerHTML = ''; return; }
+  el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
+  try{
+    const { data, error } = await sb.rpc('list_role_accounts');
+    if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+error.message+'</p>'; return; }
+    if(!data || data.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay usuarios creados.</p>'; return; }
+    const rows = data.map(u=>`<tr>
+      <td>${u.username}</td><td>${u.role==='empresa'?'Empresa':'Supervisor'}</td>
+      <td>${u.updated_at ? new Date(u.updated_at).toLocaleDateString() : '—'}</td>
+      <td><button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.username.replace(/'/g,"\\'")}')">Eliminar</button></td>
+    </tr>`).join('');
+    el.innerHTML = `<table class="students-list"><thead><tr><th>Usuario</th><th>Rol</th><th>Actualizado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar (revisa la consola).</p>'; }
+}
+async function saveRoleAccount(){
+  if(!requireSupabase()) return;
+  const username = document.getElementById('ruUsername').value.trim();
+  const role = document.getElementById('ruRole').value;
+  const password = document.getElementById('ruPassword').value;
+  const msg = document.getElementById('roleAccountsMsg');
+  if(!username || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe usuario y contraseña.</span>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener mínimo 6 caracteres.</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Guardando…</span>';
+  try{
+    const { error } = await sb.rpc('admin_set_role_password', { p_username: username, p_role: role, p_password: password });
+    if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">Error: '+error.message+'</span>'; return; }
+    document.getElementById('ruUsername').value = '';
+    document.getElementById('ruPassword').value = '';
+    msg.innerHTML = '<span style="color:var(--teal-dark)">Usuario guardado.</span>';
+    renderRoleAccounts();
+  }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">No se pudo conectar (revisa la consola).</span>'; }
+}
+async function deleteRoleAccount(username){
+  if(!requireSupabase()) return;
+  try{
+    const { error } = await sb.rpc('admin_delete_role_account', { p_username: username });
+    if(error){ toast('No se pudo eliminar: '+error.message, true); return; }
+    toast('Usuario eliminado');
+    renderRoleAccounts();
+  }catch(e){ console.error(e); toast('No se pudo eliminar (revisa la consola)', true); }
 }
 
 /* ============================= SIGNATURE PAD ============================= */
