@@ -439,7 +439,7 @@ function emptyRecord(documento){
 const SUPABASE_URL = "https://avlyhjecouqrdkirdqrh.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_m2agwKHDXBUxKw0tWYLHIw_FX2R1nFo";
 
-const supabase = (function(){
+const sb = (function(){
   try{
     if(!window.supabase || !window.supabase.createClient){
       console.error('La librería de Supabase no cargó (revisa el script CDN o el bloqueador de anuncios).');
@@ -452,7 +452,7 @@ const supabase = (function(){
   }
 })();
 function requireSupabase(){
-  if(!supabase){
+  if(!sb){
     toast('No hay conexión con la base de datos. Abre la consola (F12) y revisa el error.', true);
     return false;
   }
@@ -490,7 +490,7 @@ function recordToRow(rec){
 async function getRecord(doc){
   if(!requireSupabase()) return null;
   try{
-    const { data, error } = await supabase.from('students').select('*').eq('documento', doc).maybeSingle();
+    const { data, error } = await sb.from('students').select('*').eq('documento', doc).maybeSingle();
     if(error){ console.error(error); toast('Error consultando Supabase: '+error.message, true); return null; }
     return data ? rowToRecord(data) : null;
   }catch(e){
@@ -502,7 +502,7 @@ async function saveRecord(rec){
   try{
     rec.lastUpdated = new Date().toISOString();
     const row = recordToRow(rec);
-    const { error } = await supabase.from('students').upsert(row, { onConflict: 'documento' });
+    const { error } = await sb.from('students').upsert(row, { onConflict: 'documento' });
     if(error){ console.error(error); toast('Error guardando en Supabase: '+error.message, true); }
   }catch(e){
     console.error(e); toast('No se pudo conectar con Supabase (revisa la consola)', true);
@@ -572,10 +572,10 @@ async function doLookup(){
 
 async function renderAdminList(){
   const el = document.getElementById('lookupAdminList');
-  if(!supabase){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No hay conexión con la base de datos. Revisa la consola (F12).</p>'; return; }
+  if(!sb){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No hay conexión con la base de datos. Revisa la consola (F12).</p>'; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const { data, error } = await supabase.from('students').select('documento,nombre,sede,semestre,updated_at').order('nombre', {ascending:true});
+    const { data, error } = await sb.from('students').select('documento,nombre,sede,semestre,updated_at').order('nombre', {ascending:true});
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado: '+error.message+'</p>'; return; }
     if(!data || data.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay estudiantes registrados.</p>'; return; }
     let rows = data.map(s=>`<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
