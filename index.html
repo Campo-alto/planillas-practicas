@@ -732,16 +732,21 @@ function jumpToAdmin(doc){
 /* ============================= USUARIOS EMPRESA/SUPERVISOR (gestión del admin, vía Edge Function) ============================= */
 async function adminUsersCall(payload){
   const { data: sessionData } = await sb.auth.getSession();
-  const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
-  if(!token) throw new Error('No hay sesión activa de administrador.');
-  const res = await fetch(ADMIN_USERS_FUNCTION_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify(payload)
-  });
-  const json = await res.json().catch(()=>({}));
-  if(!res.ok){ throw new Error(json.error || ('Error '+res.status)); }
-  return json;
+  if(!sessionData || !sessionData.session){ throw new Error('No hay sesión activa de administrador. Vuelve a iniciar sesión.'); }
+  const { data, error } = await sb.functions.invoke('admin-users', { body: payload });
+  if(error){
+    // Cuando la función responde con un código de error, supabase-js lo expone en
+    // error.context (la respuesta HTTP real) en vez de en error.message.
+    let detail = error.message || 'Error desconocido';
+    try{
+      if(error.context && typeof error.context.json === 'function'){
+        const body = await error.context.json();
+        if(body && body.error) detail = body.error;
+      }
+    }catch(e){ /* si no se puede leer el cuerpo, nos quedamos con error.message */ }
+    throw new Error(detail);
+  }
+  return data;
 }
 async function renderRoleAccounts(){
   const el = document.getElementById('roleAccountsList');
