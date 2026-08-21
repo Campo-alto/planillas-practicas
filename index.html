@@ -94,6 +94,16 @@
   .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--teal);outline-offset:0;border-color:var(--teal);background:#fff;}
   .field textarea{resize:vertical;min-height:56px;}
 
+  .pw-wrap{position:relative;}
+  .pw-wrap input{width:100%;padding-right:38px;}
+  .pw-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:6px;}
+  .pw-toggle:hover{color:var(--teal-dark);background:#F0EEE7;}
+  .pw-toggle svg{width:18px;height:18px;display:block;}
+
+  .roleusers-tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .roleusers-tab{padding:6px 12px;border-radius:7px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted);}
+  .roleusers-tab.active{background:var(--deep);border-color:var(--deep);color:#fff;}
+
   .lookup-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .lookup-form .field{flex:1;min-width:200px;}
 
@@ -208,7 +218,12 @@
     <div class="card" style="max-width:420px;">
       <div class="field-row" style="grid-template-columns:1fr;">
         <div class="field"><label>Correo</label><input type="email" id="adminEmail" autocomplete="username"></div>
-        <div class="field"><label>Contraseña</label><input type="password" id="adminPassword" autocomplete="current-password"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="adminPassword" autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-target="adminPassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
       </div>
       <div class="actions-row" style="justify-content:flex-start;">
         <button class="primary" onclick="doAdminLogin()">Iniciar sesión</button>
@@ -225,7 +240,12 @@
     <div class="card" style="max-width:420px;">
       <div class="field-row" style="grid-template-columns:1fr;">
         <div class="field"><label>Correo</label><input type="email" id="roleEmail" autocomplete="username"></div>
-        <div class="field"><label>Contraseña</label><input type="password" id="rolePassword" autocomplete="current-password"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="rolePassword" autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-target="rolePassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
       </div>
       <div class="actions-row" style="justify-content:flex-start;">
         <button class="primary" onclick="doRoleLogin()">Iniciar sesión</button>
@@ -265,7 +285,12 @@
             <option value="supervisor">Supervisor</option>
           </select>
         </div>
-        <div class="field"><label>Contraseña</label><input type="password" id="ruPassword" autocomplete="new-password"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="ruPassword" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="ruPassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
       </div>
       <div class="actions-row" style="justify-content:flex-start;">
         <button class="primary" onclick="saveRoleAccount()">Guardar usuario</button>
@@ -464,7 +489,26 @@ window.addEventListener('error', function(e){
 window.addEventListener('unhandledrejection', function(e){
   console.error('Promesa rechazada sin controlar:', e.reason);
 });
-const SCORE_LABELS = {5:'Excelente',4:'Bueno',3:'Aceptable',2:'Insuficiente',1:'Deficiente'};
+
+/* ============================= MOSTRAR/OCULTAR CONTRASEÑA ============================= */
+const EYE_OPEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a18.7 18.7 0 015.06-5.94M9.9 4.24A10.4 10.4 0 0112 4c7 0 11 7 11 7a18.6 18.6 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+function togglePw(id, btn){
+  const input = document.getElementById(id);
+  if(!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.innerHTML = show ? EYE_OFF_SVG : EYE_OPEN_SVG;
+  btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+}
+function initPwToggles(){
+  document.querySelectorAll('.pw-toggle').forEach(btn=>{
+    btn.innerHTML = EYE_OPEN_SVG;
+    btn.onclick = ()=> togglePw(btn.getAttribute('data-target'), btn);
+  });
+}
+
+/* ============================= STATE ============================= */
 const COMPETENCIAS = [
   {key:'ser', name:'1. Evaluación del ser', desc:'Puntualidad, presentación, habilidades sociales y trabajo en equipo'},
   {key:'desempeno', name:'2. Evaluación de desempeño', desc:'Ejecución técnica y operativa del programa'},
@@ -474,7 +518,7 @@ const COMPETENCIAS = [
 const PROGRAMA = 'Técnico Laboral por Competencias en Auxiliar Administrativo en Salud';
 const CODIGO = 'PPS-GAA-F-006';
 
-let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null };
+let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false };
 const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 
 function emptyRecord(documento){
@@ -566,7 +610,17 @@ async function saveRecord(rec){
   try{
     rec.lastUpdated = new Date().toISOString();
     const row = recordToRow(rec);
-    const { error } = await sb.from('students').upsert(row, { onConflict: 'documento' });
+    let error;
+    if(state.isNewRecord){
+      // Solo pasa por aquí el Administrador, creando un estudiante que no existía.
+      ({ error } = await sb.from('students').insert(row));
+      if(!error) state.isNewRecord = false;
+    } else {
+      // Empresa/Estudiante/Supervisor siempre actualizan un estudiante que el
+      // administrador ya creó — nunca insertan, así que usamos update en vez de
+      // upsert (upsert exige permiso de insertar aunque termine actualizando).
+      ({ error } = await sb.from('students').update(row).eq('documento', rec.documento));
+    }
     if(error){ console.error(error); toast('Error guardando en Supabase: '+error.message, true); }
   }catch(e){
     console.error(e); toast('No se pudo conectar con Supabase (revisa la consola)', true);
@@ -584,7 +638,7 @@ function showScreen(id){
 function roleLabel(role){
   return role==='empresa' ? 'Empresa' : role==='estudiante' ? 'Estudiante' : role==='supervisor' ? 'Supervisor' : role==='administrador' ? 'Administrador' : '';
 }
-function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0}; showScreen('screen-home'); }
+function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false}; showScreen('screen-home'); }
 
 async function goAdminEntry(){
   if(!requireSupabase()) return;
@@ -692,9 +746,11 @@ async function doLookup(){
   if(!requireSupabase()){ msg.innerHTML = '<span style="color:var(--danger)">No hay conexión con la base de datos. Revisa la consola (F12).</span>'; return; }
   msg.innerHTML = '<span style="color:var(--muted)">Buscando…</span>';
   let rec = await getRecord(doc);
+  state.isNewRecord = false;
   if(!rec){
     if(state.role === 'administrador'){
       rec = emptyRecord(doc);
+      state.isNewRecord = true;
       msg.innerHTML = '<span style="color:var(--teal-dark)">No existe todavía — se creará un registro nuevo para este documento.</span>';
     } else {
       msg.innerHTML = '<span style="color:var(--danger)">Este estudiante aún no está registrado. Pide al administrador que lo registre primero.</span>';
@@ -748,22 +804,42 @@ async function adminUsersCall(payload){
   }
   return data;
 }
+let roleAccountsCache = [];
+let roleAccountsFilter = 'todos';
 async function renderRoleAccounts(){
   const el = document.getElementById('roleAccountsList');
   if(!sb){ el.innerHTML = ''; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
     const json = await adminUsersCall({ action: 'list' });
-    const users = json.users || [];
-    if(users.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay usuarios creados.</p>'; return; }
-    const rows = users.map(u=>`<tr>
-      <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}</td>
-      <td>${u.role==='empresa'?'Empresa':'Supervisor'}</td>
-      <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
-      <td><button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button></td>
-    </tr>`).join('');
-    el.innerHTML = `<table class="students-list"><thead><tr><th>Cuenta</th><th>Rol</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    roleAccountsCache = json.users || [];
+    renderRoleAccountsTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+'</p>'; }
+}
+function setRoleAccountsFilter(f){
+  roleAccountsFilter = f;
+  renderRoleAccountsTable();
+}
+function renderRoleAccountsTable(){
+  const el = document.getElementById('roleAccountsList');
+  const total = roleAccountsCache.length;
+  const nEmpresa = roleAccountsCache.filter(u=>u.role==='empresa').length;
+  const nSupervisor = roleAccountsCache.filter(u=>u.role==='supervisor').length;
+  const tabs = `<div class="roleusers-tabs">
+    <button class="roleusers-tab ${roleAccountsFilter==='todos'?'active':''}" onclick="setRoleAccountsFilter('todos')">Todos (${total})</button>
+    <button class="roleusers-tab ${roleAccountsFilter==='empresa'?'active':''}" onclick="setRoleAccountsFilter('empresa')">Empresas (${nEmpresa})</button>
+    <button class="roleusers-tab ${roleAccountsFilter==='supervisor'?'active':''}" onclick="setRoleAccountsFilter('supervisor')">Supervisores (${nSupervisor})</button>
+  </div>`;
+  if(total === 0){ el.innerHTML = tabs + '<p style="color:var(--muted);font-size:13px;">Todavía no hay usuarios creados.</p>'; return; }
+  const filtered = roleAccountsFilter==='todos' ? roleAccountsCache : roleAccountsCache.filter(u=>u.role===roleAccountsFilter);
+  if(filtered.length === 0){ el.innerHTML = tabs + '<p style="color:var(--muted);font-size:13px;">No hay usuarios en esta categoría.</p>'; return; }
+  const rows = filtered.map(u=>`<tr>
+    <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}</td>
+    <td>${u.role==='empresa'?'Empresa':'Supervisor'}</td>
+    <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+    <td><button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button></td>
+  </tr>`).join('');
+  el.innerHTML = tabs + `<table class="students-list"><thead><tr><th>Cuenta</th><th>Rol</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 async function saveRoleAccount(){
   if(!requireSupabase()) return;
@@ -1305,6 +1381,8 @@ function downloadPdf(){
   doc.save('Planilla_'+CODIGO+'_'+(rec.documento||'estudiante')+'.pdf');
   toast('PDF generado');
 }
+
+initPwToggles();
 </script>
 </body>
 </html>
