@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campoalto · Planillas de Prácticas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --teal:#0E7C86;
+    --teal-dark:#0A5A62;
+    --orange:#E8792D;
+    --orange-dark:#C9611D;
+    --ink:#22282B;
+    --paper:#F7F4EE;
+    --card:#FFFFFF;
+    --line:#DFD9C9;
+    --muted:#767066;
+    --deep:#0B3D3D;
+    --danger:#B23A2E;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Zilla Slab',Georgia,serif;}
+  .app{max-width:920px;margin:0 auto;padding:20px 18px 80px;}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 22px;border-bottom:2px solid var(--line);margin-bottom:22px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .dot{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 200deg, var(--teal), var(--orange), var(--teal));flex:none;}
+  .brand-text{line-height:1.15;}
+  .brand-text .b1{font-family:'Zilla Slab',serif;font-weight:700;font-size:18px;color:var(--deep);}
+  .brand-text .b2{font-size:11.5px;color:var(--muted);letter-spacing:.02em;}
+  .topbar-actions{display:flex;gap:8px;align-items:center;}
+  .pill{font-size:12px;padding:5px 10px;border-radius:999px;background:#EEF6F5;color:var(--teal-dark);border:1px solid #CFE6E4;font-weight:600;}
+  .linkbtn{background:none;border:none;color:var(--teal-dark);font-weight:600;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px;}
+
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* home */
+  .hero{margin-bottom:26px;}
+  .hero h1{font-size:28px;margin:0 0 6px;color:var(--deep);}
+  .hero p{margin:0;color:var(--muted);font-size:14.5px;max-width:60ch;}
+
+  .role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:20px;}
+  .role-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;text-align:left;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;box-shadow:0 1px 2px rgba(20,20,20,.04);}
+  .role-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(11,61,61,.10);border-color:var(--teal);}
+  .role-card .icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:18px;color:#fff;}
+  .role-card.empresa .icon{background:var(--orange);}
+  .role-card.estudiante .icon{background:var(--teal);}
+  .role-card.supervisor .icon{background:var(--deep);}
+  .role-card h3{margin:0 0 4px;font-size:17px;}
+  .role-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.45;}
+
+  .note-box{margin-top:22px;background:#FBF3E7;border:1px solid #EFD9B5;border-radius:var(--radius);padding:12px 14px;font-size:12.5px;color:#7A5B21;line-height:1.5;}
+
+  /* card / section shared */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 20px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(20,20,20,.03);}
+  .section-bar{background:var(--orange);color:#fff;font-weight:700;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;padding:8px 12px;border-radius:6px;margin:-4px 0 16px;}
+  .section-bar.teal{background:var(--teal);}
+  .section-bar.deep{background:var(--deep);}
+
+  .field-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;}
+  .field input, .field select, .field textarea{
+    font-family:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:#FCFBF8;color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--teal);outline-offset:0;border-color:var(--teal);background:#fff;}
+  .field textarea{resize:vertical;min-height:56px;}
+
+  .lookup-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .lookup-form .field{flex:1;min-width:200px;}
+
+  button.primary, button.secondary, button.ghost, button.danger{
+    font-family:inherit;font-weight:600;font-size:13.5px;padding:10px 16px;border-radius:8px;cursor:pointer;border:1px solid transparent;
+  }
+  button.primary{background:var(--teal);color:#fff;}
+  button.primary:hover{background:var(--teal-dark);}
+  button.secondary{background:var(--orange);color:#fff;}
+  button.secondary:hover{background:var(--orange-dark);}
+  button.ghost{background:#fff;color:var(--ink);border-color:var(--line);}
+  button.ghost:hover{border-color:var(--teal);color:var(--teal-dark);}
+  button.danger{background:#fff;color:var(--danger);border-color:#E4C3BE;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+
+  .yesno{display:flex;gap:14px;align-items:center;font-size:13.5px;}
+  .yesno label{display:flex;align-items:center;gap:5px;font-weight:500;color:var(--ink);}
+
+  /* tabs (months) */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+  .tab{padding:7px 13px;border-radius:7px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);}
+  .tab.active{background:var(--deep);border-color:var(--deep);color:#fff;}
+  .tab.filled::after{content:" ●";color:var(--teal);}
+  .tab.active.filled::after{color:#8FE0D6;}
+
+  .comp-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:6px;}
+  .comp-row{display:grid;grid-template-columns:1fr 190px;gap:12px;align-items:center;padding:10px 12px;background:#FCFBF8;border:1px solid var(--line);border-radius:8px;}
+  .comp-row .comp-name{font-size:13.5px;font-weight:600;}
+  .comp-row .comp-desc{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .sig-wrap{margin-top:10px;}
+  .sig-wrap label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;display:block;margin-bottom:6px;}
+  .sig-box{border:1.5px dashed var(--line);border-radius:8px;background:#fff;position:relative;touch-action:none;}
+  canvas.sigpad{display:block;width:100%;height:130px;cursor:crosshair;border-radius:8px;}
+  .sig-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .sig-status{font-size:12px;color:var(--muted);}
+  .sig-status.ok{color:var(--teal-dark);font-weight:600;}
+
+  .status-strip{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding:12px 14px;background:#EEF6F5;border:1px solid #CFE6E4;border-radius:9px;}
+  .status-strip .who{font-size:13.5px;}
+  .status-strip .who b{color:var(--deep);}
+  .status-strip .actions{display:flex;gap:8px;}
+
+  .actions-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px;}
+
+  .empty{text-align:center;padding:34px 16px;color:var(--muted);}
+  .empty h3{margin:0 0 6px;color:var(--ink);font-size:16px;}
+  .empty p{font-size:13.5px;margin:0 0 16px;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--deep);color:#fff;padding:11px 18px;border-radius:8px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease;z-index:50;box-shadow:0 10px 24px rgba(0,0,0,.2);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .subhead{font-size:15px;font-weight:700;margin:18px 0 10px;color:var(--deep);}
+  .helptext{font-size:12.5px;color:var(--muted);margin:-6px 0 14px;}
+
+  @media (max-width:520px){
+    .comp-row{grid-template-columns:1fr;}
+    .status-strip{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div class="brand-text">
+        <div class="b1">Campoalto</div>
+        <div class="b2">Planillas de Prácticas · PPS-GAA-F-006</div>
+      </div>
+    </div>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <h1>Diligencia y firma la planilla de prácticas en un solo lugar</h1>
+      <p>Busca al estudiante por número de documento, registra el desempeño mensual, recoge las firmas de empresa, estudiante y supervisor, y descarga el PDF consolidado.</p>
+    </div>
+    <div class="role-grid">
+      <div class="role-card empresa" onclick="goRole('empresa')">
+        <div class="icon">E</div>
+        <h3>Empresa · Jefe inmediato</h3>
+        <p>Ingresa el número de documento del practicante, califica las 4 competencias del mes y firma.</p>
+      </div>
+      <div class="role-card estudiante" onclick="goRole('estudiante')">
+        <div class="icon">A</div>
+        <h3>Estudiante</h3>
+        <p>Revisa lo diligenciado por tu jefe inmediato, responde las observaciones y firma cada mes.</p>
+      </div>
+      <div class="role-card supervisor" onclick="goRole('supervisor')">
+        <div class="icon">S</div>
+        <h3>Supervisor institucional</h3>
+        <p>Registra la visita de seguimiento, la revisión de funciones y las observaciones de supervisión.</p>
+      </div>
+    </div>
+    <div class="note-box">Los datos se guardan en un almacenamiento compartido: lo que registre la empresa lo puede ver y firmar el estudiante, y lo que registre el supervisor queda visible para ambos.</div>
+  </div>
+
+  <!-- LOOKUP -->
+  <div class="screen" id="screen-lookup">
+    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <h2 id="lookupTitle" style="margin:12px 0 4px;"></h2>
+    <p class="helptext" id="lookupHelp"></p>
+    <div class="card">
+      <div class="lookup-form">
+        <div class="field">
+          <label>Número de documento del estudiante</label>
+          <input type="text" id="lookupDoc" inputmode="numeric" placeholder="Ej. 1128108664">
+        </div>
+        <button class="primary" onclick="doLookup()">Buscar</button>
+      </div>
+      <div id="lookupMsg" style="margin-top:12px;font-size:13.5px;"></div>
+    </div>
+  </div>
+
+  <!-- EMPRESA -->
+  <div class="screen" id="screen-empresa">
+    <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+    <div class="status-strip">
+      <div class="who">Editando como <b>Empresa / Jefe inmediato</b> · Documento <b id="empDocLabel"></b></div>
+      <div class="actions"><button class="ghost" onclick="switchStudent('empresa')">Cambiar estudiante</button></div>
+    </div>
+
+    <div class="card" id="empDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar">Competencias transversales del mes</div>
+      <div class="tabs" id="empMonthTabs"></div>
+      <div id="empCompForm"></div>
+      <div class="subhead">Control de cumplimiento del mes</div>
+      <div id="empControlForm"></div>
+      <div class="sig-wrap">
+        <label>Firma empresa (jefe inmediato)</label>
+        <div class="sig-box"><canvas class="sigpad" id="sig-empresa"></canvas></div>
+        <div class="sig-actions">
+          <span class="sig-status" id="sig-empresa-status">Sin firmar</span>
+          <button class="ghost" onclick="clearSig('sig-empresa')">Borrar firma</button>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
+        <button class="primary" onclick="saveEmpresaMonth()">Guardar y enviar mes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTUDIANTE -->
+  <div class="screen" id="screen-estudiante">
+    <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+    <div class="status-strip">
+      <div class="who">Viendo como <b>Estudiante</b> · Documento <b id="estDocLabel"></b></div>
+      <div class="actions"><button class="ghost" onclick="switchStudent('estudiante')">Cambiar estudiante</button></div>
+    </div>
+
+    <div class="card" id="estDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar teal">Control de cumplimiento · firma tu mes</div>
+      <div class="tabs" id="estMonthTabs"></div>
+      <div id="estControlView"></div>
+      <div class="sig-wrap">
+        <label>Firma estudiante (control de cumplimiento del mes)</label>
+        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-mes"></canvas></div>
+        <div class="sig-actions">
+          <span class="sig-status" id="sig-estudiante-mes-status">Sin firmar</span>
+          <button class="ghost" onclick="clearSig('sig-estudiante-mes')">Borrar firma</button>
+        </div>
+      </div>
+      <div class="actions-row"><button class="primary" onclick="saveEstudianteMes()">Guardar firma del mes</button></div>
+    </div>
+
+    <div class="card">
+      <div class="section-bar teal">Observaciones del estudiante</div>
+      <div class="field-row">
+        <div class="field">
+          <label>¿El lugar de prácticas es el indicado para tu programa?</label>
+          <div class="yesno">
+            <label><input type="radio" name="estP1" value="SI"> Sí</label>
+            <label><input type="radio" name="estP1" value="NO"> No</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>¿Has recibido apoyo de tu jefe inmediato en tu formación?</label>
+          <div class="yesno">
+            <label><input type="radio" name="estP2" value="SI"> Sí</label>
+            <label><input type="radio" name="estP2" value="NO"> No</label>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Comentarios</label><textarea id="estComentarios"></textarea></div>
+      <div class="sig-wrap">
+        <label>Firma del estudiante</label>
+        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-obs"></canvas></div>
+        <div class="sig-actions">
+          <span class="sig-status" id="sig-estudiante-obs-status">Sin firmar</span>
+          <button class="ghost" onclick="clearSig('sig-estudiante-obs')">Borrar firma</button>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
+        <button class="primary" onclick="saveEstudianteObs()">Guardar observaciones</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPERVISOR -->
+  <div class="screen" id="screen-supervisor">
+    <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+    <div class="status-strip">
+      <div class="who">Editando como <b>Supervisor institucional</b> · Documento <b id="supDocLabel"></b></div>
+      <div class="actions"><button class="ghost" onclick="switchStudent('supervisor')">Cambiar estudiante</button></div>
+    </div>
+
+    <div class="card" id="supDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar deep">Revisión de funciones y actividades — visita 1</div>
+      <div class="field-row">
+        <div class="field"><label>Fecha de la visita</label><input type="date" id="rf-fecha"></div>
+        <div class="field"><label>Sitio de prácticas</label><input type="text" id="rf-sitio"></div>
+        <div class="field"><label>Área de trabajo</label><input type="text" id="rf-area"></div>
+        <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="rf-jefe"></div>
+        <div class="field"><label>Nombre del supervisor</label><input type="text" id="rf-supervisor"></div>
+      </div>
+      <div class="field-row">
+        <div class="sig-wrap" style="grid-column:1/-1;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+        <div class="sig-wrap"><label>Firma jefe inmediato</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-jefe"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-jefe-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-jefe')">Borrar</button></div></div>
+        <div class="sig-wrap"><label>Firma estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-estudiante')">Borrar</button></div></div>
+        <div class="sig-wrap"><label>Firma supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-supervisor')">Borrar</button></div></div>
+      </div>
+      <div class="actions-row"><button class="primary" onclick="saveRevisionFunciones()">Guardar visita 1</button></div>
+    </div>
+
+    <div class="card">
+      <div class="section-bar deep">Datos de supervisión — visita 2</div>
+      <div class="field-row">
+        <div class="field"><label>Fecha de la visita</label><input type="date" id="ds-fecha"></div>
+        <div class="field"><label>Sitio de prácticas</label><input type="text" id="ds-sitio"></div>
+        <div class="field"><label>Área de trabajo</label><input type="text" id="ds-area"></div>
+        <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="ds-jefe"></div>
+        <div class="field"><label>Nombre del supervisor</label><input type="text" id="ds-supervisor"></div>
+      </div>
+
+      <div class="subhead">Observaciones del jefe inmediato</div>
+      <div class="field-row">
+        <div class="field"><label>¿Las funciones del estudiante cubren las necesidades del servicio?</label>
+          <div class="yesno"><label><input type="radio" name="jefeP1" value="SI"> Sí</label><label><input type="radio" name="jefeP1" value="NO"> No</label></div></div>
+        <div class="field"><label>¿Sus conocimientos cubren las necesidades del servicio?</label>
+          <div class="yesno"><label><input type="radio" name="jefeP2" value="SI"> Sí</label><label><input type="radio" name="jefeP2" value="NO"> No</label></div></div>
+      </div>
+      <div class="field"><label>Comentarios</label><textarea id="ds-jefeComentarios"></textarea></div>
+      <div class="sig-wrap"><label>Firma del jefe inmediato</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-jefe"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-jefe-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-jefe')">Borrar</button></div></div>
+
+      <div class="subhead">Observaciones del supervisor</div>
+      <div class="field"><label>Comentarios</label><textarea id="ds-supComentarios"></textarea></div>
+      <div class="sig-wrap"><label>Firma del supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-supervisor')">Borrar</button></div></div>
+
+      <div class="actions-row">
+        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
+        <button class="primary" onclick="saveDatosSupervision()">Guardar visita 2</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================= STATE ============================= */
+const SCORE_LABELS = {5:'Excelente',4:'Bueno',3:'Aceptable',2:'Insuficiente',1:'Deficiente'};
+const COMPETENCIAS = [
+  {key:'ser', name:'1. Evaluación del ser', desc:'Puntualidad, presentación, habilidades sociales y trabajo en equipo'},
+  {key:'desempeno', name:'2. Evaluación de desempeño', desc:'Ejecución técnica y operativa del programa'},
+  {key:'producto', name:'3. Evidencia de producto', desc:'Resultados tangibles, orden y entorno seguro'},
+  {key:'conocimiento', name:'4. Evaluación de conocimientos', desc:'Aplicación de normativa y confidencialidad'}
+];
+const PROGRAMA = 'Técnico Laboral por Competencias en Auxiliar Administrativo en Salud';
+const CODIGO = 'PPS-GAA-F-006';
+
+let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0 };
+const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
+
+function emptyRecord(documento){
+  return {
+    documento, nombre:'', correo:'', telefono:'', sede:'', semestre:'', modalidad:'', periodoAcademico:'',
+    funcionario:'', fechaEnvio:'', programa: PROGRAMA,
+    competencias:{ ser:Array(6).fill(null), desempeno:Array(6).fill(null), producto:Array(6).fill(null), conocimiento:Array(6).fill(null) },
+    meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null})),
+    revisionFunciones:{ fecha:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null },
+    datosSupervision:{
+      fecha:'', sitio:'', area:'', jefeInmediato:'', supervisor:'',
+      obsEstudiante:{p1:'', p2:'', comentarios:'', firma:null},
+      obsJefe:{p1:'', p2:'', comentarios:'', firma:null},
+      obsSupervisor:{comentarios:'', firma:null}
+    },
+    lastUpdated: null
+  };
+}
+
+/* ============================= STORAGE (Supabase) ============================= */
+// 1. Crea un proyecto en https://supabase.com (con tu cuenta nueva, separada de CODICE)
+// 2. Corre supabase-schema.sql en el SQL Editor del proyecto
+// 3. Copia la Project URL y la anon public key desde Project Settings > API
+// 4. Pégalas aquí abajo:
+const SUPABASE_URL = "https://avlyhjecouqrdkirdqrh.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_m2agwKHDXBUxKw0tWYLHIw_FX2R1nFo";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function rowToRecord(row){
+  return {
+    documento: row.documento,
+    nombre: row.nombre || '', correo: row.correo || '', telefono: row.telefono || '',
+    sede: row.sede || '', semestre: row.semestre || '', modalidad: row.modalidad || '',
+    periodoAcademico: row.periodo_academico || '', funcionario: row.funcionario || '',
+    programa: row.programa || PROGRAMA,
+    competencias: row.competencias,
+    meses: row.meses,
+    revisionFunciones: row.revision_funciones,
+    datosSupervision: row.datos_supervision,
+    lastUpdated: row.updated_at
+  };
+}
+function recordToRow(rec){
+  return {
+    documento: rec.documento,
+    nombre: rec.nombre, correo: rec.correo, telefono: rec.telefono,
+    sede: rec.sede, semestre: rec.semestre, modalidad: rec.modalidad,
+    periodo_academico: rec.periodoAcademico, funcionario: rec.funcionario,
+    programa: rec.programa,
+    competencias: rec.competencias,
+    meses: rec.meses,
+    revision_funciones: rec.revisionFunciones,
+    datos_supervision: rec.datosSupervision,
+    updated_at: new Date().toISOString()
+  };
+}
+async function getRecord(doc){
+  const { data, error } = await supabase.from('students').select('*').eq('documento', doc).maybeSingle();
+  if(error){ console.error(error); toast('Error consultando Supabase: revisa la consola', true); return null; }
+  return data ? rowToRecord(data) : null;
+}
+async function saveRecord(rec){
+  rec.lastUpdated = new Date().toISOString();
+  const row = recordToRow(rec);
+  const { error } = await supabase.from('students').upsert(row, { onConflict: 'documento' });
+  if(error){ console.error(error); toast('Error guardando en Supabase: revisa la consola', true); }
+}
+
+/* ============================= NAV ============================= */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('topbarActions').innerHTML = id==='screen-home' ? '' :
+    '<span class="pill">'+roleLabel(state.role)+'</span>';
+  window.scrollTo(0,0);
+}
+function roleLabel(role){
+  return role==='empresa' ? 'Empresa' : role==='estudiante' ? 'Estudiante' : role==='supervisor' ? 'Supervisor' : '';
+}
+function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0}; showScreen('screen-home'); }
+function goRole(role){
+  state.role = role;
+  const titles = {
+    empresa: ['Buscar practicante', 'Ingresa el documento del estudiante para diligenciar o continuar su planilla mensual.'],
+    estudiante: ['Consultar mi planilla', 'Ingresa tu número de documento para ver lo diligenciado y firmar.'],
+    supervisor: ['Buscar practicante', 'Ingresa el documento del estudiante para registrar la visita de seguimiento.']
+  };
+  document.getElementById('lookupTitle').textContent = titles[role][0];
+  document.getElementById('lookupHelp').textContent = titles[role][1];
+  document.getElementById('lookupDoc').value = '';
+  document.getElementById('lookupMsg').innerHTML = '';
+  showScreen('screen-lookup');
+  setTimeout(()=>document.getElementById('lookupDoc').focus(), 50);
+}
+function switchStudent(role){ goRole(role); }
+
+async function doLookup(){
+  const doc = document.getElementById('lookupDoc').value.trim();
+  const msg = document.getElementById('lookupMsg');
+  if(!doc){ msg.innerHTML = '<span style="color:var(--danger)">Escribe un número de documento.</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Buscando…</span>';
+  let rec = await getRecord(doc);
+  if(!rec){
+    if(state.role === 'empresa'){
+      rec = emptyRecord(doc);
+      msg.innerHTML = '<span style="color:var(--teal-dark)">No existe todavía — se creará un registro nuevo para este documento.</span>';
+    } else {
+      msg.innerHTML = '<span style="color:var(--danger)">No hay ninguna planilla con ese documento todavía. Pide a la empresa que la inicie primero.</span>';
+      return;
+    }
+  }
+  state.documento = doc;
+  state.record = rec;
+  state.empMonth = 0; state.estMonth = 0;
+  if(state.role==='empresa') renderEmpresa();
+  else if(state.role==='estudiante') renderEstudiante();
+  else if(state.role==='supervisor') renderSupervisor();
+}
+
+/* ============================= SIGNATURE PAD ============================= */
+function initSigPad(id, dataUrl){
+  const canvas = document.getElementById(id);
+  if(!canvas) return;
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = 130 * ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#0B3D3D';
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const state_ = {drawing:false, empty:true, lastX:0, lastY:0};
+  sigPads[id] = {canvas, ctx, s: state_};
+
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {x: t.clientX - r.left, y: t.clientY - r.top};
+  }
+  function start(e){ e.preventDefault(); const p = pos(e); state_.drawing = true; state_.lastX = p.x; state_.lastY = p.y; }
+  function move(e){
+    if(!state_.drawing) return;
+    e.preventDefault();
+    const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(state_.lastX, state_.lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
+    state_.lastX = p.x; state_.lastY = p.y; state_.empty = false;
+    updateSigStatus(id);
+  }
+  function end(){ state_.drawing = false; }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+
+  if(dataUrl){
+    const img = new Image();
+    img.onload = ()=>{ ctx.drawImage(img,0,0, rect.width, 130); state_.empty = false; updateSigStatus(id); };
+    img.src = dataUrl;
+  } else {
+    updateSigStatus(id);
+  }
+}
+function clearSig(id){
+  const p = sigPads[id]; if(!p) return;
+  p.ctx.clearRect(0,0,p.canvas.width,p.canvas.height);
+  p.s.empty = true;
+  updateSigStatus(id);
+}
+function updateSigStatus(id){
+  const el = document.getElementById(id+'-status');
+  if(!el) return;
+  const p = sigPads[id];
+  if(p && !p.s.empty){ el.textContent = 'Firmado'; el.classList.add('ok'); }
+  else { el.textContent = 'Sin firmar'; el.classList.remove('ok'); }
+}
+function sigDataUrl(id){
+  const p = sigPads[id];
+  if(!p || p.s.empty) return null;
+  return p.canvas.toDataURL('image/png');
+}
+
+/* ============================= DATOS GENERALES ============================= */
+function datosGeneralesHtml(rec, editable, formIdPrefix){
+  if(editable){
+    return `
+      <div class="section-bar">Datos generales del estudiante</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre completo</label><input id="${formIdPrefix}-nombre" value="${escapeAttr(rec.nombre)}"></div>
+        <div class="field"><label>Correo</label><input id="${formIdPrefix}-correo" value="${escapeAttr(rec.correo)}"></div>
+        <div class="field"><label>Teléfono</label><input id="${formIdPrefix}-telefono" value="${escapeAttr(rec.telefono)}"></div>
+        <div class="field"><label>Sede</label><input id="${formIdPrefix}-sede" value="${escapeAttr(rec.sede)}"></div>
+        <div class="field"><label>Semestre</label><input id="${formIdPrefix}-semestre" value="${escapeAttr(rec.semestre)}"></div>
+        <div class="field"><label>Modalidad</label><input id="${formIdPrefix}-modalidad" value="${escapeAttr(rec.modalidad)}"></div>
+        <div class="field"><label>Periodo académico</label><input id="${formIdPrefix}-periodo" value="${escapeAttr(rec.periodoAcademico)}"></div>
+        <div class="field"><label>Funcionario que procesa</label><input id="${formIdPrefix}-funcionario" value="${escapeAttr(rec.funcionario)}"></div>
+      </div>
+      <div class="actions-row"><button class="ghost" onclick="saveDatosGenerales()">Guardar datos generales</button></div>
+    `;
+  }
+  return `
+    <div class="section-bar teal">Datos generales del estudiante</div>
+    <div class="field-row">
+      <div class="field"><label>Nombre</label><div>${rec.nombre||'—'}</div></div>
+      <div class="field"><label>Documento</label><div>${rec.documento}</div></div>
+      <div class="field"><label>Sede</label><div>${rec.sede||'—'}</div></div>
+      <div class="field"><label>Semestre</label><div>${rec.semestre||'—'}</div></div>
+      <div class="field"><label>Modalidad</label><div>${rec.modalidad||'—'}</div></div>
+      <div class="field"><label>Programa</label><div>${rec.programa||'—'}</div></div>
+    </div>
+  `;
+}
+function escapeAttr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+async function saveDatosGenerales(){
+  const rec = state.record;
+  rec.nombre = val('emp-nombre'); rec.correo = val('emp-correo'); rec.telefono = val('emp-telefono');
+  rec.sede = val('emp-sede'); rec.semestre = val('emp-semestre'); rec.modalidad = val('emp-modalidad');
+  rec.periodoAcademico = val('emp-periodo'); rec.funcionario = val('emp-funcionario');
+  await saveRecord(rec);
+  toast('Datos generales guardados');
+  renderEmpresa();
+}
+function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+/* ============================= EMPRESA ============================= */
+function renderEmpresa(){
+  showScreen('screen-empresa');
+  document.getElementById('empDocLabel').textContent = state.documento;
+  document.getElementById('empDatosGenerales').innerHTML = datosGeneralesHtml(state.record, true, 'emp');
+
+  const tabs = document.getElementById('empMonthTabs');
+  tabs.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const filled = state.record.meses[i].sitio || COMPETENCIAS.some(c=>state.record.competencias[c.key][i]!=null);
+    const b = document.createElement('button');
+    b.className = 'tab'+(i===state.empMonth?' active':'')+(filled?' filled':'');
+    b.textContent = 'Mes '+(i+1);
+    b.onclick = ()=>{ state.empMonth = i; renderEmpresa(); };
+    tabs.appendChild(b);
+  }
+  renderEmpCompForm();
+  renderEmpControlForm();
+  setTimeout(()=>initSigPad('sig-empresa', state.record.meses[state.empMonth].firmaEmpresa), 30);
+}
+function renderEmpCompForm(){
+  const i = state.empMonth;
+  const rows = COMPETENCIAS.map(c=>{
+    const current = state.record.competencias[c.key][i];
+    let opts = '<option value="">Sin calificar</option>';
+    for(let s=5;s>=1;s--){ opts += `<option value="${s}" ${current===s?'selected':''}>${s} · ${SCORE_LABELS[s]}</option>`; }
+    return `<div class="comp-row">
+      <div><div class="comp-name">${c.name}</div><div class="comp-desc">${c.desc}</div></div>
+      <select data-comp="${c.key}" class="empCompSelect">${opts}</select>
+    </div>`;
+  }).join('');
+  document.getElementById('empCompForm').innerHTML = `<div class="comp-grid">${rows}</div>`;
+}
+function renderEmpControlForm(){
+  const m = state.record.meses[state.empMonth];
+  document.getElementById('empControlForm').innerHTML = `
+    <div class="field-row">
+      <div class="field"><label>Sitio de prácticas</label><input id="ctl-sitio" value="${escapeAttr(m.sitio)}"></div>
+      <div class="field"><label>Fecha inicio</label><input type="date" id="ctl-inicio" value="${m.fechaInicio||''}"></div>
+      <div class="field"><label>Fecha final</label><input type="date" id="ctl-fin" value="${m.fechaFin||''}"></div>
+    </div>
+    <div class="field"><label>Observaciones de la práctica</label><textarea id="ctl-obs">${m.observaciones||''}</textarea></div>
+  `;
+}
+async function saveEmpresaMonth(){
+  const rec = state.record; const i = state.empMonth;
+  document.querySelectorAll('.empCompSelect').forEach(sel=>{
+    const key = sel.getAttribute('data-comp');
+    rec.competencias[key][i] = sel.value ? parseInt(sel.value,10) : null;
+  });
+  rec.meses[i].sitio = val('ctl-sitio');
+  rec.meses[i].fechaInicio = document.getElementById('ctl-inicio').value;
+  rec.meses[i].fechaFin = document.getElementById('ctl-fin').value;
+  rec.meses[i].observaciones = document.getElementById('ctl-obs').value.trim();
+  const sig = sigDataUrl('sig-empresa');
+  if(sig) rec.meses[i].firmaEmpresa = sig;
+  if(!rec.nombre){ toast('Guarda primero los datos generales del estudiante', true); return; }
+  await saveRecord(rec);
+  toast('Mes '+(i+1)+' guardado y enviado');
+  renderEmpresa();
+}
+
+/* ============================= ESTUDIANTE ============================= */
+function renderEstudiante(){
+  showScreen('screen-estudiante');
+  document.getElementById('estDocLabel').textContent = state.documento;
+  document.getElementById('estDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'est');
+
+  const tabs = document.getElementById('estMonthTabs');
+  tabs.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const filled = !!state.record.meses[i].firmaEstudiante;
+    const b = document.createElement('button');
+    b.className = 'tab'+(i===state.estMonth?' active':'')+(filled?' filled':'');
+    b.textContent = 'Mes '+(i+1);
+    b.onclick = ()=>{ state.estMonth = i; renderEstudiante(); };
+    tabs.appendChild(b);
+  }
+  const m = state.record.meses[state.estMonth];
+  document.getElementById('estControlView').innerHTML = `
+    <div class="field-row">
+      <div class="field"><label>Sitio de prácticas</label><div>${m.sitio||'— aún no diligenciado por la empresa —'}</div></div>
+      <div class="field"><label>Fecha inicio</label><div>${m.fechaInicio||'—'}</div></div>
+      <div class="field"><label>Fecha final</label><div>${m.fechaFin||'—'}</div></div>
+    </div>
+    <div class="field"><label>Observaciones de la práctica</label><div>${m.observaciones||'—'}</div></div>
+  `;
+  setTimeout(()=>initSigPad('sig-estudiante-mes', m.firmaEstudiante), 30);
+
+  // observaciones section
+  document.querySelectorAll('input[name="estP1"]').forEach(r=>{ r.checked = r.value === state.record.datosSupervision.obsEstudiante.p1; });
+  document.querySelectorAll('input[name="estP2"]').forEach(r=>{ r.checked = r.value === state.record.datosSupervision.obsEstudiante.p2; });
+  document.getElementById('estComentarios').value = state.record.datosSupervision.obsEstudiante.comentarios || '';
+  setTimeout(()=>initSigPad('sig-estudiante-obs', state.record.datosSupervision.obsEstudiante.firma), 30);
+}
+async function saveEstudianteMes(){
+  const rec = state.record; const i = state.estMonth;
+  const sig = sigDataUrl('sig-estudiante-mes');
+  if(!sig){ toast('Firma primero en el recuadro', true); return; }
+  rec.meses[i].firmaEstudiante = sig;
+  await saveRecord(rec);
+  toast('Firma del mes '+(i+1)+' guardada');
+  renderEstudiante();
+}
+async function saveEstudianteObs(){
+  const rec = state.record;
+  const p1 = document.querySelector('input[name="estP1"]:checked');
+  const p2 = document.querySelector('input[name="estP2"]:checked');
+  rec.datosSupervision.obsEstudiante.p1 = p1 ? p1.value : '';
+  rec.datosSupervision.obsEstudiante.p2 = p2 ? p2.value : '';
+  rec.datosSupervision.obsEstudiante.comentarios = document.getElementById('estComentarios').value.trim();
+  const sig = sigDataUrl('sig-estudiante-obs');
+  if(sig) rec.datosSupervision.obsEstudiante.firma = sig;
+  await saveRecord(rec);
+  toast('Observaciones guardadas');
+  renderEstudiante();
+}
+
+/* ============================= SUPERVISOR ============================= */
+function renderSupervisor(){
+  showScreen('screen-supervisor');
+  document.getElementById('supDocLabel').textContent = state.documento;
+  document.getElementById('supDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'sup');
+
+  const rf = state.record.revisionFunciones;
+  document.getElementById('rf-fecha').value = rf.fecha || '';
+  document.getElementById('rf-sitio').value = rf.sitio || '';
+  document.getElementById('rf-area').value = rf.area || '';
+  document.getElementById('rf-jefe').value = rf.jefeInmediato || '';
+  document.getElementById('rf-supervisor').value = rf.supervisor || '';
+  setTimeout(()=>{
+    initSigPad('sig-rf-jefe', rf.firmaJefe);
+    initSigPad('sig-rf-estudiante', rf.firmaEstudiante);
+    initSigPad('sig-rf-supervisor', rf.firmaSupervisor);
+  }, 30);
+
+  const ds = state.record.datosSupervision;
+  document.getElementById('ds-fecha').value = ds.fecha || '';
+  document.getElementById('ds-sitio').value = ds.sitio || '';
+  document.getElementById('ds-area').value = ds.area || '';
+  document.getElementById('ds-jefe').value = ds.jefeInmediato || '';
+  document.getElementById('ds-supervisor').value = ds.supervisor || '';
+  document.querySelectorAll('input[name="jefeP1"]').forEach(r=>{ r.checked = r.value === ds.obsJefe.p1; });
+  document.querySelectorAll('input[name="jefeP2"]').forEach(r=>{ r.checked = r.value === ds.obsJefe.p2; });
+  document.getElementById('ds-jefeComentarios').value = ds.obsJefe.comentarios || '';
+  document.getElementById('ds-supComentarios').value = ds.obsSupervisor.comentarios || '';
+  setTimeout(()=>{
+    initSigPad('sig-ds-jefe', ds.obsJefe.firma);
+    initSigPad('sig-ds-supervisor', ds.obsSupervisor.firma);
+  }, 30);
+}
+async function saveRevisionFunciones(){
+  const rec = state.record; const rf = rec.revisionFunciones;
+  rf.fecha = document.getElementById('rf-fecha').value;
+  rf.sitio = val('rf-sitio'); rf.area = val('rf-area'); rf.jefeInmediato = val('rf-jefe'); rf.supervisor = val('rf-supervisor');
+  const sj = sigDataUrl('sig-rf-jefe'); if(sj) rf.firmaJefe = sj;
+  const se = sigDataUrl('sig-rf-estudiante'); if(se) rf.firmaEstudiante = se;
+  const ss = sigDataUrl('sig-rf-supervisor'); if(ss) rf.firmaSupervisor = ss;
+  await saveRecord(rec);
+  toast('Visita 1 guardada');
+}
+async function saveDatosSupervision(){
+  const rec = state.record; const ds = rec.datosSupervision;
+  ds.fecha = document.getElementById('ds-fecha').value;
+  ds.sitio = val('ds-sitio'); ds.area = val('ds-area'); ds.jefeInmediato = val('ds-jefe'); ds.supervisor = val('ds-supervisor');
+  const jp1 = document.querySelector('input[name="jefeP1"]:checked'); const jp2 = document.querySelector('input[name="jefeP2"]:checked');
+  ds.obsJefe.p1 = jp1 ? jp1.value : ''; ds.obsJefe.p2 = jp2 ? jp2.value : '';
+  ds.obsJefe.comentarios = document.getElementById('ds-jefeComentarios').value.trim();
+  ds.obsSupervisor.comentarios = document.getElementById('ds-supComentarios').value.trim();
+  const sj = sigDataUrl('sig-ds-jefe'); if(sj) ds.obsJefe.firma = sj;
+  const ss = sigDataUrl('sig-ds-supervisor'); if(ss) ds.obsSupervisor.firma = ss;
+  await saveRecord(rec);
+  toast('Visita 2 guardada');
+}
+
+/* ============================= TOAST ============================= */
+let toastTimer;
+function toast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#B23A2E' : '#0B3D3D';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ============================= PDF EXPORT ============================= */
+function fmtDate(d){
+  if(!d) return '—';
+  const parts = d.split('-');
+  if(parts.length===3) return parts[2]+'/'+parts[1]+'/'+parts[0];
+  return d;
+}
+function scoreCell(v){ return v ? (v+' · '+SCORE_LABELS[v]) : '—'; }
+
+function downloadPdf(){
+  const rec = state.record;
+  if(!rec){ toast('Busca un estudiante primero', true); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  const orange = [232,121,45];
+  const teal = [14,124,134];
+  const deep = [11,61,61];
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 36;
+
+  function header(pageTitle){
+    doc.setFillColor(...deep);
+    doc.rect(0,0,pageW,54,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Campoalto', margin, 24);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text('Recolección de evidencias de desempeño', margin, 38);
+    doc.setFontSize(8);
+    doc.text(CODIGO+'  ·  '+pageTitle, margin, 48);
+    doc.setTextColor(0,0,0);
+  }
+  function studentBlock(y){
+    doc.setDrawColor(...orange); doc.setLineWidth(1.2);
+    doc.line(margin, y, pageW-margin, y);
+    y += 16;
+    doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text(rec.nombre || '(sin nombre)', margin, y);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text('Documento: '+rec.documento, margin, y+14);
+    doc.text('Programa: '+ (rec.programa||PROGRAMA), margin, y+28);
+    doc.text('Sede: '+(rec.sede||'—')+'   Semestre: '+(rec.semestre||'—')+'   Modalidad: '+(rec.modalidad||'—'), margin, y+42);
+    doc.text('Periodo académico: '+(rec.periodoAcademico||'—')+'   Funcionario: '+(rec.funcionario||'—'), margin, y+56);
+    return y+72;
+  }
+  function sectionBar(title, y, color){
+    doc.setFillColor(...(color||orange));
+    doc.roundedRect(margin, y, pageW-margin*2, 20, 3, 3, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+    doc.text(title.toUpperCase(), margin+8, y+14);
+    doc.setTextColor(0,0,0);
+    return y+30;
+  }
+  function sigImg(dataUrl, x, y, w, h, label){
+    doc.setDrawColor(200,200,200); doc.setLineWidth(0.6);
+    doc.rect(x,y,w,h);
+    if(dataUrl){
+      try{ doc.addImage(dataUrl,'PNG', x+2, y+2, w-4, h-4); }catch(e){}
+    }
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,90,90);
+    doc.text(label, x, y+h+9);
+    doc.setTextColor(0,0,0);
+  }
+
+  // PAGE 1: datos + competencias
+  header('Página 1 de 3 — Competencias transversales');
+  let y = studentBlock(66);
+  y = sectionBar('Competencias transversales (calificación 1 a 5 por mes)', y);
+
+  const body = COMPETENCIAS.map(c=>{
+    const row = [c.name];
+    for(let i=0;i<6;i++){ row.push(String(rec.competencias[c.key][i] || '—')); }
+    return row;
+  });
+  doc.autoTable({
+    startY: y,
+    head: [['Criterio','Mes 1','Mes 2','Mes 3','Mes 4','Mes 5','Mes 6']],
+    body: body,
+    theme: 'grid',
+    styles:{fontSize:8, cellPadding:5, valign:'middle'},
+    headStyles:{fillColor:teal, textColor:255, fontStyle:'bold'},
+    columnStyles:{0:{cellWidth:200}},
+    margin:{left:margin, right:margin}
+  });
+  y = doc.lastAutoTable.finalY + 10;
+  doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(110,110,110);
+  doc.text('Escala: 5 Excelente · 4 Bueno · 3 Aceptable · 2 Insuficiente · 1 Deficiente', margin, y);
+  doc.setTextColor(0,0,0);
+
+  // PAGE 2: control de cumplimiento
+  doc.addPage();
+  header('Página 2 de 3 — Control de cumplimiento');
+  y = 70;
+  y = sectionBar('Control de cumplimiento', y);
+  const ctlBody = rec.meses.map((m,i)=>[
+    'Mes '+(i+1), m.sitio||'—', fmtDate(m.fechaInicio), fmtDate(m.fechaFin), m.observaciones||'—',
+    m.firmaEmpresa ? 'Sí' : 'No', m.firmaEstudiante ? 'Sí' : 'No'
+  ]);
+  doc.autoTable({
+    startY:y,
+    head:[['Mes','Sitio de prácticas','Inicio','Final','Observaciones','Firma empresa','Firma estudiante']],
+    body: ctlBody,
+    theme:'grid',
+    styles:{fontSize:7.5, cellPadding:4},
+    headStyles:{fillColor:orange, textColor:255, fontStyle:'bold'},
+    margin:{left:margin, right:margin}
+  });
+  y = doc.lastAutoTable.finalY + 20;
+  // show signature images for months that have them, 2 per row
+  let sx = margin, sy = y, sw = (pageW-margin*2-16)/2, sh = 60;
+  rec.meses.forEach((m,i)=>{
+    if(!m.firmaEmpresa && !m.firmaEstudiante) return;
+    if(sy > doc.internal.pageSize.getHeight()-100){ doc.addPage(); header('Página 2 de 3 — Control de cumplimiento (cont.)'); sy = 70; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.text('Mes '+(i+1), sx, sy);
+    sigImg(m.firmaEmpresa, sx, sy+6, sw, sh, 'Firma empresa');
+    sigImg(m.firmaEstudiante, sx+sw+16, sy+6, sw, sh, 'Firma estudiante');
+    sy += sh + 28;
+  });
+
+  // PAGE 3: revision funciones + datos supervision
+  doc.addPage();
+  header('Página 3 de 3 — Supervisión');
+  y = 70;
+  y = sectionBar('Revisión de funciones y actividades — visita 1', y, deep);
+  const rf = rec.revisionFunciones;
+  doc.setFontSize(9);
+  doc.text('Fecha: '+fmtDate(rf.fecha)+'   Sitio: '+(rf.sitio||'—'), margin, y+2);
+  doc.text('Área: '+(rf.area||'—')+'   Jefe inmediato: '+(rf.jefeInmediato||'—')+'   Supervisor: '+(rf.supervisor||'—'), margin, y+16);
+  y += 30;
+  sigImg(rf.firmaJefe, margin, y, 150, 55, 'Firma jefe inmediato');
+  sigImg(rf.firmaEstudiante, margin+166, y, 150, 55, 'Firma estudiante');
+  sigImg(rf.firmaSupervisor, margin+332, y, 150, 55, 'Firma supervisor');
+  y += 80;
+
+  y = sectionBar('Datos de supervisión — visita 2', y, deep);
+  const ds = rec.datosSupervision;
+  doc.setFontSize(9);
+  doc.text('Fecha: '+fmtDate(ds.fecha)+'   Sitio: '+(ds.sitio||'—')+'   Área: '+(ds.area||'—'), margin, y+2);
+  y += 18;
+  doc.setFont('helvetica','bold'); doc.text('Observaciones del estudiante', margin, y); doc.setFont('helvetica','normal');
+  y += 12;
+  doc.setFontSize(8.5);
+  doc.text('¿Lugar indicado? '+(ds.obsEstudiante.p1||'—')+'    ¿Recibió apoyo? '+(ds.obsEstudiante.p2||'—'), margin, y);
+  y += 12;
+  doc.text(doc.splitTextToSize('Comentarios: '+(ds.obsEstudiante.comentarios||'—'), pageW-margin*2), margin, y);
+  y += 24;
+  sigImg(ds.obsEstudiante.firma, margin, y, 150, 45, 'Firma estudiante');
+  y += 62;
+
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.text('Observaciones del jefe inmediato', margin, y); doc.setFont('helvetica','normal');
+  y += 12; doc.setFontSize(8.5);
+  doc.text('¿Funciones cubren necesidades? '+(ds.obsJefe.p1||'—')+'    ¿Conocimientos cubren necesidades? '+(ds.obsJefe.p2||'—'), margin, y);
+  y += 12;
+  doc.text(doc.splitTextToSize('Comentarios: '+(ds.obsJefe.comentarios||'—'), pageW-margin*2), margin, y);
+  y += 24;
+  sigImg(ds.obsJefe.firma, margin, y, 150, 45, 'Firma jefe inmediato');
+  y += 62;
+
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.text('Observaciones del supervisor', margin, y); doc.setFont('helvetica','normal');
+  y += 12; doc.setFontSize(8.5);
+  doc.text(doc.splitTextToSize('Comentarios: '+(ds.obsSupervisor.comentarios||'—'), pageW-margin*2), margin, y);
+  y += 24;
+  sigImg(ds.obsSupervisor.firma, margin, y, 150, 45, 'Firma supervisor');
+
+  doc.save('Planilla_'+CODIGO+'_'+(rec.documento||'estudiante')+'.pdf');
+  toast('PDF generado');
+}
+</script>
+</body>
+</html>
