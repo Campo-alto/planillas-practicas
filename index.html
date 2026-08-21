@@ -191,13 +191,30 @@
         <h3>Supervisor institucional</h3>
         <p>Registra la visita de seguimiento, la revisión de funciones y las observaciones de supervisión.</p>
       </div>
-      <div class="role-card administrador" onclick="goRole('administrador')">
+      <div class="role-card administrador" onclick="goAdminEntry()">
         <div class="icon">Ad</div>
         <h3>Administrador</h3>
-        <p>Registra y actualiza los datos del estudiante, y consulta el estado de cada planilla.</p>
+        <p>Inicia sesión para registrar y actualizar los datos del estudiante, y consultar el estado de cada planilla.</p>
       </div>
     </div>
-    <div class="note-box">El administrador registra primero los datos del estudiante. Desde ahí, empresa, estudiante y supervisor buscan por número de documento y ven la misma información — todo queda guardado en un almacenamiento compartido.</div>
+    <div class="note-box">El administrador (con inicio de sesión) registra primero los datos del estudiante. Desde ahí, empresa, estudiante y supervisor buscan por número de documento y ven la misma información — todo queda guardado en un almacenamiento compartido.</div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div class="screen" id="screen-admin-login">
+    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <h2 style="margin:12px 0 4px;">Acceso de administrador</h2>
+    <p class="helptext">Solo el administrador tiene una cuenta. Empresa, estudiante y supervisor no necesitan iniciar sesión ni pueden entrar aquí.</p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Correo</label><input type="email" id="adminEmail" autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="adminPassword" autocomplete="current-password"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doAdminLogin()">Iniciar sesión</button>
+      </div>
+      <div id="adminLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+    </div>
   </div>
 
   <!-- LOOKUP -->
@@ -377,7 +394,10 @@
     <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
     <div class="status-strip">
       <div class="who">Editando como <b>Administrador</b> · Documento <b id="admDocLabel"></b></div>
-      <div class="actions"><button class="ghost" onclick="switchStudent('administrador')">Buscar / crear otro estudiante</button></div>
+      <div class="actions">
+        <button class="ghost" onclick="switchStudent('administrador')">Buscar / crear otro estudiante</button>
+        <button class="danger" onclick="adminLogout()">Cerrar sesión</button>
+      </div>
     </div>
 
     <div class="card" id="admDatosGenerales"></div>
@@ -521,6 +541,35 @@ function roleLabel(role){
   return role==='empresa' ? 'Empresa' : role==='estudiante' ? 'Estudiante' : role==='supervisor' ? 'Supervisor' : role==='administrador' ? 'Administrador' : '';
 }
 function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0}; showScreen('screen-home'); }
+
+async function goAdminEntry(){
+  if(!requireSupabase()) return;
+  const { data } = await sb.auth.getSession();
+  if(data && data.session){ goRole('administrador'); }
+  else {
+    document.getElementById('adminEmail').value = '';
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('adminLoginMsg').innerHTML = '';
+    showScreen('screen-admin-login');
+    setTimeout(()=>document.getElementById('adminEmail').focus(), 50);
+  }
+}
+async function doAdminLogin(){
+  if(!requireSupabase()) return;
+  const email = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const msg = document.getElementById('adminLoginMsg');
+  if(!email || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe correo y contraseña.</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Verificando…</span>';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>'; return; }
+  goRole('administrador');
+}
+async function adminLogout(){
+  if(sb) await sb.auth.signOut();
+  goHome();
+}
+
 function goRole(role){
   state.role = role;
   const titles = {
@@ -543,7 +592,10 @@ function goRole(role){
   }
   setTimeout(()=>document.getElementById('lookupDoc').focus(), 50);
 }
-function switchStudent(role){ goRole(role); }
+function switchStudent(role){
+  if(role === 'administrador'){ goRole('administrador'); return; }
+  goRole(role);
+}
 
 async function doLookup(){
   const doc = document.getElementById('lookupDoc').value.trim();
