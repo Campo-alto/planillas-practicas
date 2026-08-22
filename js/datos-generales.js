@@ -12,6 +12,16 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
         <div class="field"><label>Modalidad</label><input id="${formIdPrefix}-modalidad" value="${escapeAttr(rec.modalidad)}"></div>
         <div class="field"><label>Periodo académico</label><input id="${formIdPrefix}-periodo" value="${escapeAttr(rec.periodoAcademico)}"></div>
         <div class="field"><label>Funcionario que procesa</label><input id="${formIdPrefix}-funcionario" value="${escapeAttr(rec.funcionario)}"></div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Programa / Técnico laboral</label>
+          <input id="${formIdPrefix}-programa" value="${escapeAttr(rec.programa)}" list="programas-sugeridos" placeholder="Ej. Técnico Laboral por Competencias en Auxiliar Administrativo en Salud">
+          <datalist id="programas-sugeridos">
+            <option value="Técnico Laboral por Competencias en Auxiliar Administrativo en Salud">
+            <option value="Técnico Laboral por Competencias en Auxiliar Contable y Financiero">
+            <option value="Técnico Laboral por Competencias en Auxiliar en Enfermería">
+            <option value="Técnico Laboral por Competencias en Auxiliar de Talento Humano">
+          </datalist>
+        </div>
       </div>
       <div class="actions-row"><button class="ghost" onclick="saveDatosGeneralesAdmin()">Guardar datos generales</button></div>
     `;
@@ -24,7 +34,7 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
       <div class="field"><label>Sede</label><div>${rec.sede||'—'}</div></div>
       <div class="field"><label>Semestre</label><div>${rec.semestre||'—'}</div></div>
       <div class="field"><label>Modalidad</label><div>${rec.modalidad||'—'}</div></div>
-      <div class="field"><label>Programa</label><div>${rec.programa||'—'}</div></div>
+      <div class="field" style="grid-column:1/-1;"><label>Programa</label><div>${rec.programa||'—'}</div></div>
     </div>
   `;
 }
