@@ -7,6 +7,7 @@ const COMPETENCIAS = [
   {key:'conocimiento', name:'4. Evaluación de conocimientos', desc:'Aplicación de normativa y confidencialidad'}
 ];
 const PROGRAMA = 'Técnico Laboral por Competencias en Auxiliar Administrativo en Salud';
+const AREAS_PROGRAMA = ['Salud','Administración y Negocios','Estética y Belleza','Mecánica','Sistemas','Educación','Cocina','Confección y Patronaje de Moda'];
 const CODIGO = 'PPS-GAA-F-006';
 const VERSION_FORMATO = '8';
 
