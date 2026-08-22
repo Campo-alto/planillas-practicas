@@ -147,6 +147,11 @@
         <h3>Administradores</h3>
         <p>Ver quién tiene acceso de administrador en este momento.</p>
       </div>
+      <div class="role-card supervisor" onclick="goAdminModule('programas')">
+        <div class="icon">📚</div>
+        <h3>Programas</h3>
+        <p>Crear, ver y eliminar los programas / técnicos laborales por área.</p>
+      </div>
     </div>
   </div>
 
@@ -184,6 +189,28 @@
     <p class="helptext">Estas cuentas se crean directamente desde el panel de Supabase (Authentication → Users), no desde aquí — así nadie puede darse a sí mismo permisos de administrador.</p>
     <div class="card">
       <div id="adminsList"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: PROGRAMAS -->
+  <div class="screen" id="screen-admin-programas">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Programas / Técnicos laborales</h2>
+    <p class="helptext">Estos son los que aparecen en el menú Área → Programa al registrar un estudiante.</p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Área</label><select id="progAreaSelect"></select></div>
+        <div class="field"><label>Nombre del programa</label><input type="text" id="progNombre" placeholder="Ej. Auxiliar de Enfermería"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" id="progSaveBtn" onclick="savePrograma()">Agregar programa</button>
+        <button class="ghost" id="progCancelBtn" onclick="cancelEditPrograma()" style="display:none;">Cancelar</button>
+      </div>
+      <div id="programasMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-bar deep">Programas por área</div>
+      <div id="programasList"></div>
     </div>
   </div>
 
@@ -374,6 +401,7 @@
 <script src="js/signature-pad.js"></script>
 <script src="js/nav.js"></script>
 <script src="js/admin-users.js"></script>
+<script src="js/programas.js"></script>
 <script src="js/datos-generales.js"></script>
 <script src="js/empresa.js"></script>
 <script src="js/estudiante.js"></script>
