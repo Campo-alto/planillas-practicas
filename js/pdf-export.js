@@ -49,7 +49,7 @@ function downloadPdf(){
     doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(20,20,20);
     doc.text('RECOLECCIÓN DE EVIDENCIAS DE DESEMPEÑO', margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 30, {align:'center'});
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-    doc.text((rec.programa || PROGRAMA).toUpperCase(), margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 42, {align:'center', maxWidth: pageW-margin*2-logoCellW-boxRight-10});
+    doc.text(TITULO_PROGRAMA_PREFIJO+' '+(rec.programa || PROGRAMA).toUpperCase(), margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 42, {align:'center', maxWidth: pageW-margin*2-logoCellW-boxRight-10});
 
     doc.setFontSize(7.5); doc.setFont('helvetica','normal');
     doc.text('VERSIÓN: '+VERSION_FORMATO, pageW-margin-boxRight+6, 27);
