@@ -202,29 +202,10 @@
     <div class="card" id="empDatosGenerales"></div>
 
     <div class="card">
-      <div class="section-bar teal">Planillas mensuales — resumen</div>
-      <p class="helptext" style="margin-top:-4px;">Estado de las 4 competencias y la firma en cada mes. Dale clic a un mes para calificarlo.</p>
+      <div class="section-bar teal">Planillas mensuales — pon la nota y firma</div>
+      <p class="helptext" style="margin-top:-4px;">Dale clic a un mes para abrirlo, calificar las 4 competencias, diligenciar el sitio de prácticas y firmar con el dedo o el mouse.</p>
       <div id="empOverview"></div>
-    </div>
-
-    <div class="card">
-      <div class="section-bar">Competencias transversales del mes</div>
-      <div class="tabs" id="empMonthTabs"></div>
-      <div id="empCompForm"></div>
-      <div class="subhead">Control de cumplimiento del mes</div>
-      <div id="empControlForm"></div>
-      <div class="sig-wrap">
-        <label>Firma empresa (jefe inmediato)</label>
-        <div class="sig-box"><canvas class="sigpad" id="sig-empresa"></canvas></div>
-        <div class="sig-actions">
-          <span class="sig-status" id="sig-empresa-status">Sin firmar</span>
-          <button class="ghost" onclick="clearSig('sig-empresa')">Borrar firma</button>
-        </div>
-      </div>
-      <div class="actions-row">
-        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
-        <button class="primary" id="empSaveBtn" onclick="saveEmpresaMonth()">Guardar y enviar mes</button>
-      </div>
+      <div class="actions-row"><button class="ghost" onclick="downloadPdf()">Descargar PDF</button></div>
     </div>
   </div>
 
