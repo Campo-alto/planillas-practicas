@@ -13,9 +13,9 @@ function downloadPdf(){
   const orange = [232,121,45];
   const teal = [14,124,134];
   const deep = [11,61,61];
-  const line = [150,150,150];
+  const line = [120,120,120];
 
-  // -------- helpers compartidos por todas las páginas --------
+  // -------- helpers compartidos por todas las páginas (todas horizontales) --------
   function pageHeader(doc, pageLabel){
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 28;
@@ -63,7 +63,7 @@ function downloadPdf(){
       doc.text(right, margin+(pageW-margin*2)*0.62+4, y+9.5);
       y += 14;
     });
-    return y+10;
+    return y+8;
   }
   function sectionBar(doc, title, y, color, note){
     const pageW = doc.internal.pageSize.getWidth();
@@ -76,31 +76,33 @@ function downloadPdf(){
     doc.setTextColor(0,0,0);
     return y+16;
   }
-  function sigImg(doc, dataUrl, x, y, w, h, label){
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    doc.rect(x,y,w,h);
+  function sigImg(doc, dataUrl, x, y, w, h){
     if(dataUrl){ try{ doc.addImage(dataUrl,'PNG', x+2, y+2, w-4, h-4); }catch(e){} }
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(90,90,90);
-    doc.text(label, x, y+h+8);
-    doc.setTextColor(0,0,0);
   }
   function footer(doc){
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 28;
-    const y = pageH - 22;
-    doc.setDrawColor(...line); doc.setLineWidth(0.5);
-    doc.line(margin, y, pageW-margin, y);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(90,90,90);
+    const y = pageH - 26;
+    doc.setDrawColor(...line); doc.setLineWidth(0.6);
     const third = (pageW-margin*2)/3;
-    doc.text('Elaboró: Analista Planeación y Desarrollo', margin, y+10);
-    doc.text('Revisó: Dirección Planeación y Desarrollo', margin+third, y+10);
-    doc.text('Aprobó: Vicerrectoría Académica', margin+third*2, y+10);
+    doc.rect(margin, y, pageW-margin*2, 20);
+    doc.line(margin+third, y, margin+third, y+20);
+    doc.line(margin+third*2, y, margin+third*2, y+20);
+    doc.line(margin, y+10, pageW-margin, y+10);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(20,20,20);
+    doc.text('Elaboró: Analista Planeación y Desarrollo', margin+3, y+7);
+    doc.text('Revisó: Dirección Planeación y Desarrollo', margin+third+3, y+7);
+    doc.text('Aprobó: Vicerrectoría Académica', margin+third*2+3, y+7);
+    doc.text('Fecha: 07 octubre de 2025', margin+3, y+17);
+    doc.text('Fecha: de 2025', margin+third+3, y+17);
+    doc.text('Fecha: de 2025', margin+third*2+3, y+17);
     doc.setTextColor(0,0,0);
   }
 
-  // ================= PÁGINA 1 — Competencias transversales (horizontal) =================
   const doc = new jsPDF({unit:'pt', format:'a4', orientation:'landscape'});
+
+  // ================= PÁGINA 1 — Competencias transversales =================
   let y = pageHeader(doc, '1 DE 4');
   y = studentStrip(doc, y);
   y = sectionBar(doc, 'Competencias transversales', y, orange, 'Califique de 1 a 5 según desempeño');
@@ -131,119 +133,199 @@ function downloadPdf(){
   });
   footer(doc);
 
-  // ================= PÁGINA 2 — Control de cumplimiento (vertical) =================
-  doc.addPage('a4','portrait');
+  // ================= PÁGINA 2 — Control de cumplimiento =================
+  doc.addPage('a4','landscape');
   y = pageHeader(doc, '2 DE 4');
   y = studentStrip(doc, y);
   y = sectionBar(doc, 'Control de cumplimiento', y, orange);
 
   const pageW2 = doc.internal.pageSize.getWidth();
   const margin = 28;
-  const ctlBody = rec.meses.map((m,i)=>[
-    'MES N°.'+(i+1),
-    m.sitio || '',
-    fmtDate(m.fechaInicio) || '',
-    fmtDate(m.fechaFin) || '',
-    m.observaciones || '',
-    '', ''
-  ]);
-  doc.autoTable({
-    startY: y,
-    head: [['MES','SITIO DE PRÁCTICAS','FECHA INICIO','FECHA FINAL','OBSERVACIONES DE LA PRÁCTICA','FIRMA EMPRESA','FIRMA ESTUDIANTE']],
-    body: ctlBody,
-    theme: 'grid',
-    styles:{fontSize:7, cellPadding:4, valign:'middle', lineColor:line, lineWidth:0.6, minCellHeight:60},
-    headStyles:{fillColor:orange, textColor:255, fontStyle:'bold', fontSize:7, halign:'center'},
-    columnStyles:{
-      0:{cellWidth:44, fontStyle:'bold', halign:'center'},
-      1:{cellWidth:120},
-      2:{cellWidth:55, halign:'center'},
-      3:{cellWidth:55, halign:'center'},
-      4:{cellWidth:'auto'},
-      5:{cellWidth:100},
-      6:{cellWidth:100}
-    },
-    margin:{left:margin, right:margin},
-    didDrawCell: function(data){
-      if(data.section !== 'body') return;
-      const m = rec.meses[data.row.index];
-      if(data.column.index === 5 && m.firmaEmpresa){
-        try{ doc.addImage(m.firmaEmpresa, 'PNG', data.cell.x+4, data.cell.y+4, data.cell.width-8, data.cell.height-8); }catch(e){}
-      }
-      if(data.column.index === 6 && m.firmaEstudiante){
-        try{ doc.addImage(m.firmaEstudiante, 'PNG', data.cell.x+4, data.cell.y+4, data.cell.width-8, data.cell.height-8); }catch(e){}
-      }
+  const tableW = pageW2 - margin*2;
+  // Columnas: MES | SITIO DE PRÁCTICAS (+valor) | FECHA INICIO | FECHA FINAL | FIRMA EMPRESA | FIRMA ESTUDIANTE
+  const colMes = 50, colFechaI = 78, colFechaF = 78, colFirma = (tableW - 50 - 78 - 78) / 2;
+  const colSitio = tableW - colMes - colFechaI - colFechaF - colFirma*2;
+  const xMes = margin, xSitio = xMes+colMes, xFI = xSitio+colSitio, xFF = xFI+colFechaI, xFE = xFF+colFechaF, xFEst = xFE+colFirma;
+  const rowLabelH = 13, rowValueH = 13, rowObsH = 34;
+  const blockH = rowLabelH + rowValueH + rowObsH;
+
+  rec.meses.forEach((m,i)=>{
+    doc.setDrawColor(...line); doc.setLineWidth(0.6);
+    // Contorno general del bloque
+    doc.rect(xMes, y, tableW, blockH);
+    // Divisiones verticales
+    [xSitio, xFI, xFF, xFE, xFEst].forEach(x=> doc.line(x, y, x, y+blockH));
+    // División horizontal bajo la fila de etiquetas (Sitio/Fecha inicio/Fecha final)
+    doc.line(xSitio, y+rowLabelH, xFE, y+rowLabelH);
+    // División horizontal bajo la fila de valores (antes de Observaciones)
+    doc.line(xSitio, y+rowLabelH+rowValueH, xFE, y+rowLabelH+rowValueH);
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(8);
+    doc.text('MES N°.'+(i+1), xMes+colMes/2, y+blockH/2+3, {align:'center'});
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
+    doc.text('SITIO DE PRÁCTICAS', xSitio+colSitio/2, y+9, {align:'center'});
+    doc.text('FECHA INICIO', xFI+colFechaI/2, y+9, {align:'center'});
+    doc.text('FECHA FINAL', xFF+colFechaF/2, y+9, {align:'center'});
+
+    doc.setFontSize(7.2);
+    doc.text(m.sitio || '', xSitio+colSitio/2, y+rowLabelH+9, {align:'center'});
+    doc.text(fmtDate(m.fechaInicio) || '', xFI+colFechaI/2, y+rowLabelH+9, {align:'center'});
+    doc.text(fmtDate(m.fechaFin) || '', xFF+colFechaF/2, y+rowLabelH+9, {align:'center'});
+
+    doc.setFontSize(6.6);
+    doc.text('OBSERVACIONES DE LA PRÁCTICA', xSitio+3, y+rowLabelH+rowValueH+9);
+    if(m.observaciones){
+      const obsLines = doc.splitTextToSize(m.observaciones, colSitio+colFechaI+colFechaF-10);
+      doc.setFontSize(6.5);
+      doc.text(obsLines.slice(0,2), xSitio+3, y+rowLabelH+rowValueH+19);
     }
+
+    sigImg(doc, m.firmaEmpresa, xFE, y, colFirma, blockH-11);
+    sigImg(doc, m.firmaEstudiante, xFEst, y, colFirma, blockH-11);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
+    doc.text('FIRMA EMPRESA', xFE+colFirma/2, y+blockH-3, {align:'center'});
+    doc.text('FIRMA ESTUDIANTE', xFEst+colFirma/2, y+blockH-3, {align:'center'});
+
+    // Divisor naranja entre meses
+    doc.setDrawColor(...orange); doc.setLineWidth(1.4);
+    doc.line(xMes, y+blockH, xMes+tableW, y+blockH);
+
+    y += blockH + 2;
   });
-  y = doc.lastAutoTable.finalY + 10;
   footer(doc);
 
   // ================= PÁGINA 3 — Revisión de funciones y actividades (visita 1) =================
-  doc.addPage('a4','portrait');
+  doc.addPage('a4','landscape');
   y = pageHeader(doc, '3 DE 4');
   y = studentStrip(doc, y);
   y = sectionBar(doc, 'Revisión de funciones y actividades', y, orange);
 
   const pageW3 = doc.internal.pageSize.getWidth();
+  const pageH3 = doc.internal.pageSize.getHeight();
   const rf = rec.revisionFunciones;
-  doc.setDrawColor(...line); doc.setLineWidth(0.6);
-  doc.rect(28, y, pageW3-56, 16);
-  doc.setFontSize(7.2); doc.setFont('helvetica','normal');
   const fechaRf = rf.fecha ? rf.fecha.split('-') : ['','',''];
-  doc.text('FECHA VISITA 1 — AÑO: '+(fechaRf[0]||'—')+'   MES: '+(fechaRf[1]||'—')+'   DÍA: '+(fechaRf[2]||'—'), 32, y+11);
-  y += 16;
-  doc.rect(28, y, pageW3-56, 16);
-  doc.text('SITIO DE PRÁCTICAS: '+(rf.sitio||'—')+'    ÁREA DE TRABAJO: '+(rf.area||'—'), 32, y+11);
-  y += 16;
-  doc.rect(28, y, pageW3-56, 16);
-  doc.text('JEFE INMEDIATO: '+(rf.jefeInmediato||'—')+'    SUPERVISOR: '+(rf.supervisor||'—'), 32, y+11);
-  y += 32;
 
-  const sigW3 = (pageW3-56-32)/3;
-  sigImg(doc, rf.firmaJefe, 28, y, sigW3, 90, 'FIRMA JEFE INMEDIATO');
-  sigImg(doc, rf.firmaEstudiante, 28+sigW3+16, y, sigW3, 90, 'FIRMA ESTUDIANTE');
-  sigImg(doc, rf.firmaSupervisor, 28+(sigW3+16)*2, y, sigW3, 90, 'FIRMA SUPERVISOR');
+  const fW3 = pageW3 - margin*2;
+  const fechaColW = 130, sitioColW = 150, areaColW = 200, jefeColW = 200;
+  const supColW = fW3 - fechaColW - sitioColW - areaColW - jefeColW;
+  const xFecha = margin, xSitio3 = xFecha+fechaColW, xArea3 = xSitio3+sitioColW, xJefe3 = xArea3+areaColW, xSup3 = xJefe3+jefeColW;
+
+  doc.setDrawColor(...line); doc.setLineWidth(0.6);
+  doc.rect(margin, y, fW3, 28);
+  [xSitio3, xArea3, xJefe3, xSup3].forEach(x=> doc.line(x, y, x, y+28));
+  doc.line(xFecha, y+14, xSitio3, y+14);
+  const subW = fechaColW/3;
+  doc.line(xFecha+subW, y+14, xFecha+subW, y+28);
+  doc.line(xFecha+subW*2, y+14, xFecha+subW*2, y+28);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
+  doc.text('FECHA DE LA VISITA 1', xFecha+fechaColW/2, y+9, {align:'center'});
+  doc.text('AÑO', xFecha+subW/2, y+21, {align:'center'});
+  doc.text('MES', xFecha+subW+subW/2, y+21, {align:'center'});
+  doc.text('DÍA', xFecha+subW*2+subW/2, y+21, {align:'center'});
+  doc.text('SITIO DE PRACTICAS', xSitio3+sitioColW/2, y+16, {align:'center'});
+  doc.text('AREA DE TRABAJO', xArea3+areaColW/2, y+16, {align:'center'});
+  doc.text('NOMBRE DEL JEFE INMEDIATO', xJefe3+jefeColW/2, y+16, {align:'center'});
+  doc.text('NOMBRE DEL SUPERVISOR', xSup3+supColW/2, y+16, {align:'center'});
+
+  doc.setFontSize(7);
+  doc.text(fechaRf[0]||'', xFecha+subW/2, y+26, {align:'center'});
+  doc.text(fechaRf[1]||'', xFecha+subW+subW/2, y+26, {align:'center'});
+  doc.text(fechaRf[2]||'', xFecha+subW*2+subW/2, y+26, {align:'center'});
+  doc.text(rf.sitio||'', xSitio3+4, y+24);
+  doc.text(rf.area||'', xArea3+4, y+24);
+  doc.text(rf.jefeInmediato||'', xJefe3+4, y+24);
+  doc.text(rf.supervisor||'', xSup3+4, y+24);
+  y += 28;
+
+  const bottomY3 = pageH3 - 54;
+  const bigBoxW = fW3 - supColW;
+  doc.rect(margin, y, bigBoxW, bottomY3-y);
+  doc.rect(margin+bigBoxW, y, supColW, bottomY3-y);
+  const sigRowH3 = (bottomY3-y)/3;
+  doc.line(margin+bigBoxW, y+sigRowH3, margin+bigBoxW+supColW, y+sigRowH3);
+  doc.line(margin+bigBoxW, y+sigRowH3*2, margin+bigBoxW+supColW, y+sigRowH3*2);
+  sigImg(doc, rf.firmaJefe, margin+bigBoxW+2, y+2, supColW-4, sigRowH3-13);
+  sigImg(doc, rf.firmaEstudiante, margin+bigBoxW+2, y+sigRowH3+2, supColW-4, sigRowH3-13);
+  sigImg(doc, rf.firmaSupervisor, margin+bigBoxW+2, y+sigRowH3*2+2, supColW-4, sigRowH3-13);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.text('FIRMA JEFE INMEDIATO', margin+bigBoxW+supColW/2, y+sigRowH3-4, {align:'center'});
+  doc.text('FIRMA ESTUDIANTE', margin+bigBoxW+supColW/2, y+sigRowH3*2-4, {align:'center'});
+  doc.text('FIRMA SUPERVISOR', margin+bigBoxW+supColW/2, y+sigRowH3*3-4, {align:'center'});
   footer(doc);
 
   // ================= PÁGINA 4 — Datos de supervisión (visita 2) =================
-  doc.addPage('a4','portrait');
+  doc.addPage('a4','landscape');
   y = pageHeader(doc, '4 DE 4');
   y = studentStrip(doc, y);
   y = sectionBar(doc, 'Datos de supervisión', y, orange);
 
   const pageW4 = doc.internal.pageSize.getWidth();
   const ds = rec.datosSupervision;
-  doc.setDrawColor(...line); doc.setLineWidth(0.6);
-  doc.rect(28, y, pageW4-56, 16);
-  doc.setFontSize(7.2); doc.setFont('helvetica','normal');
   const fechaDs = ds.fecha ? ds.fecha.split('-') : ['','',''];
-  doc.text('FECHA VISITA 2 — AÑO: '+(fechaDs[0]||'—')+'   MES: '+(fechaDs[1]||'—')+'   DÍA: '+(fechaDs[2]||'—'), 32, y+11);
-  y += 16;
-  doc.rect(28, y, pageW4-56, 16);
-  doc.text('SITIO: '+(ds.sitio||'—')+'   ÁREA: '+(ds.area||'—')+'   JEFE INMEDIATO: '+(ds.jefeInmediato||'—')+'   SUPERVISOR: '+(ds.supervisor||'—'), 32, y+11);
-  y += 24;
+  const fW4 = pageW4 - margin*2;
+  const xSitio4 = margin+fechaColW, xArea4 = xSitio4+sitioColW, xJefe4 = xArea4+areaColW, xSup4 = xJefe4+jefeColW;
 
-  y = sectionBar(doc, 'Observaciones del estudiante', y, teal);
-  doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-  doc.text('1. ¿Considera que el lugar de prácticas es el indicado?  SI/NO: '+(ds.obsEstudiante.p1||'—'), 32, y+11);
-  doc.text('2. ¿Ha recibido apoyo de su jefe inmediato?  SI/NO: '+(ds.obsEstudiante.p2||'—'), 32, y+23);
-  const c1 = doc.splitTextToSize('Comentarios: '+(ds.obsEstudiante.comentarios||'—'), pageW4-56-160);
-  doc.text(c1.slice(0,3), 32, y+35);
-  sigImg(doc, ds.obsEstudiante.firma, pageW4-28-140, y+2, 140, 55, 'FIRMA DEL ESTUDIANTE');
-  y += 66;
+  doc.setDrawColor(...line); doc.setLineWidth(0.6);
+  doc.rect(margin, y, fW4, 28);
+  [xSitio4, xArea4, xJefe4, xSup4].forEach(x=> doc.line(x, y, x, y+28));
+  doc.line(margin, y+14, xSitio4, y+14);
+  doc.line(margin+subW, y+14, margin+subW, y+28);
+  doc.line(margin+subW*2, y+14, margin+subW*2, y+28);
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
+  doc.text('FECHA DE LA VISITA 2', margin+fechaColW/2, y+9, {align:'center'});
+  doc.text('AÑO', margin+subW/2, y+21, {align:'center'});
+  doc.text('MES', margin+subW+subW/2, y+21, {align:'center'});
+  doc.text('DÍA', margin+subW*2+subW/2, y+21, {align:'center'});
+  doc.text('SITIO DE PRACTICAS', xSitio4+sitioColW/2, y+16, {align:'center'});
+  doc.text('AREA DE TRABAJO', xArea4+areaColW/2, y+16, {align:'center'});
+  doc.text('NOMBRE DEL JEFE INMEDIATO', xJefe4+jefeColW/2, y+16, {align:'center'});
+  doc.text('NOMBRE DEL SUPERVISOR', xSup4+supColW/2, y+16, {align:'center'});
+  doc.setFontSize(7);
+  doc.text(fechaDs[0]||'', margin+subW/2, y+26, {align:'center'});
+  doc.text(fechaDs[1]||'', margin+subW+subW/2, y+26, {align:'center'});
+  doc.text(fechaDs[2]||'', margin+subW*2+subW/2, y+26, {align:'center'});
+  doc.text(ds.sitio||'', xSitio4+4, y+24);
+  doc.text(ds.area||'', xArea4+4, y+24);
+  doc.text(ds.jefeInmediato||'', xJefe4+4, y+24);
+  doc.text(ds.supervisor||'', xSup4+4, y+24);
+  y += 30;
 
-  y = sectionBar(doc, 'Observaciones de jefe inmediato', y, teal);
-  doc.text('1. ¿Las funciones cubren las necesidades del servicio?  SI/NO: '+(ds.obsJefe.p1||'—'), 32, y+11);
-  doc.text('2. ¿Los conocimientos cubren las necesidades del servicio?  SI/NO: '+(ds.obsJefe.p2||'—'), 32, y+23);
-  const c2 = doc.splitTextToSize('Comentarios: '+(ds.obsJefe.comentarios||'—'), pageW4-56-160);
-  doc.text(c2.slice(0,3), 32, y+35);
-  sigImg(doc, ds.obsJefe.firma, pageW4-28-140, y+2, 140, 55, 'FIRMA DEL JEFE INMEDIATO');
-  y += 66;
+  const sigColW4 = 140;
+  const textColW4 = fW4 - sigColW4;
 
-  y = sectionBar(doc, 'Observaciones del supervisor', y, teal);
-  const c3 = doc.splitTextToSize('Comentarios: '+(ds.obsSupervisor.comentarios||'—'), pageW4-56-160);
-  doc.text(c3.slice(0,3), 32, y+11);
-  sigImg(doc, ds.obsSupervisor.firma, pageW4-28-140, y+2, 140, 55, 'FIRMA DEL SUPERVISOR');
+  function obsBlock(title, y0, h, preguntas, comentarios, firma, firmaLabel){
+    y0 = sectionBar(doc, title, y0, orange);
+    doc.setDrawColor(...line); doc.setLineWidth(0.6);
+    doc.rect(margin, y0, textColW4, h);
+    doc.rect(margin+textColW4, y0, sigColW4, h);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.2);
+    let ty = y0+11;
+    preguntas.forEach(p=>{ doc.text(p, margin+4, ty); ty += 12; });
+    doc.text('COMENTARIOS:', margin+4, ty); ty += 10;
+    if(comentarios){
+      const lines = doc.splitTextToSize(comentarios, textColW4-8);
+      doc.text(lines.slice(0, Math.floor((h-(ty-y0)-4)/9)), margin+4, ty);
+    }
+    sigImg(doc, firma, margin+textColW4+2, y0+2, sigColW4-4, h-13);
+    doc.text(firmaLabel, margin+textColW4+sigColW4/2, y0+h-4, {align:'center'});
+    return y0+h;
+  }
+
+  y = obsBlock('Observaciones del estudiante', y, 74,
+    ['1. ¿CONSIDERA QUE EL LUGAR DE PRÁCTICAS ES EL INDICADO?  SI/NO: '+(ds.obsEstudiante.p1||''),
+     '2. ¿HA RECIBIDO APOYO DE SU JEFE INMEDIATO?  SI/NO: '+(ds.obsEstudiante.p2||'')],
+    ds.obsEstudiante.comentarios, ds.obsEstudiante.firma, 'FIRMA DEL ESTUDIANTE');
+
+  y = obsBlock('Observaciones de jefe inmediato', y, 74,
+    ['1. ¿LAS FUNCIONES CUBREN LAS NECESIDADES DEL SERVICIO?  SI/NO: '+(ds.obsJefe.p1||''),
+     '2. ¿LOS CONOCIMIENTOS CUBREN LAS NECESIDADES DEL SERVICIO?  SI/NO: '+(ds.obsJefe.p2||'')],
+    ds.obsJefe.comentarios, ds.obsJefe.firma, 'FIRMA DEL JEFE INMEDIATO');
+
+  y = obsBlock('Observaciones del supervisor', y, 60, [],
+    ds.obsSupervisor.comentarios, ds.obsSupervisor.firma, 'FIRMA DEL SUPERVISOR');
+
   footer(doc);
 
   doc.save('Planilla_'+CODIGO+'_'+(rec.documento||'estudiante')+'.pdf');
