@@ -256,7 +256,7 @@
 
   <!-- LOOKUP -->
   <div class="screen" id="screen-lookup">
-    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <button class="linkbtn" onclick="goAdminBack()">← Volver</button>
     <h2 id="lookupTitle" style="margin:12px 0 4px;"></h2>
     <p class="helptext" id="lookupHelp"></p>
     <div class="card">
@@ -273,18 +273,46 @@
       <div class="section-bar deep">Estudiantes registrados</div>
       <div id="lookupAdminList"></div>
     </div>
-    <div class="card" id="lookupAdminUsersCard" style="display:none;">
-      <div class="section-bar deep">Usuarios de empresa y supervisor</div>
-      <p class="helptext" style="margin-top:-2px;">Crea la cuenta con su correo. Si el correo ya existe, se actualiza su contraseña y su rol.</p>
+  </div>
+
+  <!-- ADMIN HUB -->
+  <div class="screen" id="screen-admin-hub">
+    <button class="linkbtn" onclick="adminLogout()">← Cerrar sesión</button>
+    <h2 style="margin:12px 0 4px;">Panel de administrador</h2>
+    <p class="helptext">Elige qué quieres gestionar.</p>
+    <div class="role-grid">
+      <div class="role-card administrador" onclick="goRole('administrador')">
+        <div class="icon">🎓</div>
+        <h3>Estudiantes</h3>
+        <p>Buscar, registrar y ver el estado de cada planilla de práctica.</p>
+      </div>
+      <div class="role-card empresa" onclick="goAdminModule('empresa')">
+        <div class="icon">E</div>
+        <h3>Empresas</h3>
+        <p>Crear y administrar los usuarios de las empresas / jefes inmediatos.</p>
+      </div>
+      <div class="role-card supervisor" onclick="goAdminModule('supervisor')">
+        <div class="icon">S</div>
+        <h3>Supervisores</h3>
+        <p>Crear y administrar los usuarios de los supervisores institucionales.</p>
+      </div>
+      <div class="role-card administrador" onclick="goAdminModule('administradores')">
+        <div class="icon">Ad</div>
+        <h3>Administradores</h3>
+        <p>Ver quién tiene acceso de administrador en este momento.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: EMPRESAS / SUPERVISORES -->
+  <div class="screen" id="screen-admin-roleusers">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 id="roleModuleTitle" style="margin:12px 0 4px;"></h2>
+    <p class="helptext" id="roleModuleHelp"></p>
+    <div class="card">
       <div class="field-row">
         <div class="field"><label>Correo</label><input type="email" id="ruEmail" autocomplete="off"></div>
         <div class="field"><label>Nombre a mostrar</label><input type="text" id="ruNombre" autocomplete="off" placeholder="Ej. Fundación Cardioinfantil"></div>
-        <div class="field"><label>Rol</label>
-          <select id="ruRole">
-            <option value="empresa">Empresa</option>
-            <option value="supervisor">Supervisor</option>
-          </select>
-        </div>
         <div class="field"><label>Contraseña</label>
           <div class="pw-wrap">
             <input type="password" id="ruPassword" autocomplete="new-password">
@@ -296,13 +324,27 @@
         <button class="primary" onclick="saveRoleAccount()">Guardar usuario</button>
       </div>
       <div id="roleAccountsMsg" style="margin-top:8px;font-size:13px;"></div>
-      <div id="roleAccountsList" style="margin-top:14px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-bar deep" id="roleModuleListTitle">Usuarios</div>
+      <div id="roleAccountsList"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: ADMINISTRADORES -->
+  <div class="screen" id="screen-admin-admins">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Administradores</h2>
+    <p class="helptext">Estas cuentas se crean directamente desde el panel de Supabase (Authentication → Users), no desde aquí — así nadie puede darse a sí mismo permisos de administrador.</p>
+    <div class="card">
+      <div id="adminsList"></div>
     </div>
   </div>
 
   <!-- EMPRESA -->
   <div class="screen" id="screen-empresa">
     <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+
     <div class="status-strip">
       <div class="who">Editando como <b>Empresa / Jefe inmediato</b> · Documento <b id="empDocLabel"></b></div>
       <div class="actions">
@@ -459,7 +501,7 @@
 
   <!-- ADMINISTRADOR -->
   <div class="screen" id="screen-administrador">
-    <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <div class="status-strip">
       <div class="who">Editando como <b>Administrador</b> · Documento <b id="admDocLabel"></b></div>
       <div class="actions">
@@ -518,7 +560,7 @@ const COMPETENCIAS = [
 const PROGRAMA = 'Técnico Laboral por Competencias en Auxiliar Administrativo en Salud';
 const CODIGO = 'PPS-GAA-F-006';
 
-let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false };
+let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false, adminModuleRole: null };
 const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 
 function emptyRecord(documento){
@@ -642,7 +684,7 @@ function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, 
 async function goAdminEntry(){
   if(!requireSupabase()) return;
   const { data } = await sb.auth.getSession();
-  if(data && data.session){ goRole('administrador'); }
+  if(data && data.session){ showScreen('screen-admin-hub'); }
   else {
     document.getElementById('adminEmail').value = '';
     document.getElementById('adminPassword').value = '';
@@ -668,11 +710,33 @@ async function doAdminLogin(){
     msg.innerHTML = '<span style="color:var(--danger)">Esta cuenta no tiene permisos de administrador.</span>';
     return;
   }
-  goRole('administrador');
+  state.role = 'administrador';
+  showScreen('screen-admin-hub');
 }
 async function adminLogout(){
   if(sb) await sb.auth.signOut();
   goHome();
+}
+function goAdminModule(module){
+  if(module === 'empresa' || module === 'supervisor'){
+    state.adminModuleRole = module;
+    document.getElementById('roleModuleTitle').textContent = module==='empresa' ? 'Usuarios de Empresa' : 'Usuarios de Supervisor';
+    document.getElementById('roleModuleHelp').textContent = 'Crea la cuenta con su correo. Si el correo ya existe, se actualiza su contraseña.';
+    document.getElementById('roleModuleListTitle').textContent = module==='empresa' ? 'Empresas registradas' : 'Supervisores registrados';
+    document.getElementById('ruEmail').value = '';
+    document.getElementById('ruNombre').value = '';
+    document.getElementById('ruPassword').value = '';
+    document.getElementById('roleAccountsMsg').innerHTML = '';
+    showScreen('screen-admin-roleusers');
+    renderRoleAccounts();
+  } else if(module === 'administradores'){
+    showScreen('screen-admin-admins');
+    renderAdminsList();
+  }
+}
+function goAdminBack(){
+  if(state.role === 'administrador'){ showScreen('screen-admin-hub'); }
+  else { goHome(); }
 }
 
 function goRoleLogin(role){
@@ -720,15 +784,11 @@ function goRole(role){
   document.getElementById('lookupMsg').innerHTML = '';
   showScreen('screen-lookup');
   const listCard = document.getElementById('lookupAdminListCard');
-  const usersCard = document.getElementById('lookupAdminUsersCard');
   if(role === 'administrador'){
     listCard.style.display = 'block';
-    usersCard.style.display = 'block';
     renderAdminList();
-    renderRoleAccounts();
   } else {
     listCard.style.display = 'none';
-    usersCard.style.display = 'none';
   }
   setTimeout(()=>document.getElementById('lookupDoc').focus(), 50);
 }
@@ -785,7 +845,6 @@ function jumpToAdmin(doc){
 
 /* ============================= USUARIOS EMPRESA/SUPERVISOR (gestión del admin, vía Edge Function) ============================= */
 let roleAccountsCache = [];
-let roleAccountsFilter = 'todos';
 async function renderRoleAccounts(){
   const el = document.getElementById('roleAccountsList');
   if(!sb){ el.innerHTML = ''; return; }
@@ -793,40 +852,25 @@ async function renderRoleAccounts(){
   try{
     const { data, error } = await sb.rpc('admin_list_role_accounts');
     if(error){ throw new Error(error.message); }
-    roleAccountsCache = data || [];
+    roleAccountsCache = (data || []).filter(u=>u.role === state.adminModuleRole);
     renderRoleAccountsTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+'</p>'; }
 }
-function setRoleAccountsFilter(f){
-  roleAccountsFilter = f;
-  renderRoleAccountsTable();
-}
 function renderRoleAccountsTable(){
   const el = document.getElementById('roleAccountsList');
-  const total = roleAccountsCache.length;
-  const nEmpresa = roleAccountsCache.filter(u=>u.role==='empresa').length;
-  const nSupervisor = roleAccountsCache.filter(u=>u.role==='supervisor').length;
-  const tabs = `<div class="roleusers-tabs">
-    <button class="roleusers-tab ${roleAccountsFilter==='todos'?'active':''}" onclick="setRoleAccountsFilter('todos')">Todos (${total})</button>
-    <button class="roleusers-tab ${roleAccountsFilter==='empresa'?'active':''}" onclick="setRoleAccountsFilter('empresa')">Empresas (${nEmpresa})</button>
-    <button class="roleusers-tab ${roleAccountsFilter==='supervisor'?'active':''}" onclick="setRoleAccountsFilter('supervisor')">Supervisores (${nSupervisor})</button>
-  </div>`;
-  if(total === 0){ el.innerHTML = tabs + '<p style="color:var(--muted);font-size:13px;">Todavía no hay usuarios creados.</p>'; return; }
-  const filtered = roleAccountsFilter==='todos' ? roleAccountsCache : roleAccountsCache.filter(u=>u.role===roleAccountsFilter);
-  if(filtered.length === 0){ el.innerHTML = tabs + '<p style="color:var(--muted);font-size:13px;">No hay usuarios en esta categoría.</p>'; return; }
-  const rows = filtered.map(u=>`<tr>
+  if(roleAccountsCache.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay usuarios creados en este módulo.</p>'; return; }
+  const rows = roleAccountsCache.map(u=>`<tr>
     <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}</td>
-    <td>${u.role==='empresa'?'Empresa':'Supervisor'}</td>
     <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
     <td><button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button></td>
   </tr>`).join('');
-  el.innerHTML = tabs + `<table class="students-list"><thead><tr><th>Cuenta</th><th>Rol</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML = `<table class="students-list"><thead><tr><th>Cuenta</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 async function saveRoleAccount(){
   if(!requireSupabase()) return;
   const email = document.getElementById('ruEmail').value.trim();
   const nombre = document.getElementById('ruNombre').value.trim();
-  const role = document.getElementById('ruRole').value;
+  const role = state.adminModuleRole;
   const password = document.getElementById('ruPassword').value;
   const msg = document.getElementById('roleAccountsMsg');
   if(!email || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe correo y contraseña.</span>'; return; }
@@ -839,7 +883,7 @@ async function saveRoleAccount(){
     document.getElementById('ruNombre').value = '';
     document.getElementById('ruPassword').value = '';
     msg.innerHTML = (data && data.updated)
-      ? '<span style="color:var(--teal-dark)">Ya existía — se actualizó su contraseña y rol.</span>'
+      ? '<span style="color:var(--teal-dark)">Ya existía — se actualizó su contraseña.</span>'
       : '<span style="color:var(--teal-dark)">Usuario creado.</span>';
     renderRoleAccounts();
   }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">Error: '+e.message+'</span>'; }
@@ -852,6 +896,22 @@ async function deleteRoleAccount(userId){
     toast('Usuario eliminado');
     renderRoleAccounts();
   }catch(e){ console.error(e); toast('No se pudo eliminar: '+e.message, true); }
+}
+async function renderAdminsList(){
+  const el = document.getElementById('adminsList');
+  if(!sb){ el.innerHTML = ''; return; }
+  el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
+  try{
+    const { data, error } = await sb.rpc('admin_list_administradores');
+    if(error){ throw new Error(error.message); }
+    const admins = data || [];
+    if(admins.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No se encontraron administradores.</p>'; return; }
+    const rows = admins.map(a=>`<tr>
+      <td>${a.email}</td>
+      <td>${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</td>
+    </tr>`).join('');
+    el.innerHTML = `<table class="students-list"><thead><tr><th>Correo</th><th>Creado</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+'</p>'; }
 }
 
 /* ============================= SIGNATURE PAD ============================= */
