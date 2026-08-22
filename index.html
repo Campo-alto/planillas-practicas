@@ -545,7 +545,6 @@ function emptyRecord(documento){
 // 4. Pégalas aquí abajo:
 const SUPABASE_URL = "https://avlyhjecouqrdkirdqrh.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_m2agwKHDXBUxKw0tWYLHIw_FX2R1nFo";
-const ADMIN_USERS_FUNCTION_URL = SUPABASE_URL + "/functions/v1/admin-users";
 
 const sb = (function(){
   try{
@@ -693,18 +692,17 @@ async function doRoleLogin(){
   const msg = document.getElementById('roleLoginMsg');
   if(!email || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe correo y contraseña.</span>'; return; }
   msg.innerHTML = '<span style="color:var(--muted)">Verificando…</span>';
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){ msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>'; return; }
-  const role = data.user.user_metadata && data.user.user_metadata.role;
-  if(role !== state.pendingRole){
-    await sb.auth.signOut();
-    msg.innerHTML = '<span style="color:var(--danger)">Esta cuenta no tiene acceso a este rol.</span>';
-    return;
-  }
-  goRole(state.pendingRole);
+  try{
+    const { data, error } = await sb.rpc('login_role_account', { p_email: email, p_password: password });
+    if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">Error verificando credenciales.</span>'; return; }
+    if(!data || data !== state.pendingRole){
+      msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>';
+      return;
+    }
+    goRole(state.pendingRole);
+  }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">No se pudo conectar (revisa la consola).</span>'; }
 }
-async function roleLogout(){
-  if(sb) await sb.auth.signOut();
+function roleLogout(){
   goHome();
 }
 
@@ -786,24 +784,6 @@ function jumpToAdmin(doc){
 }
 
 /* ============================= USUARIOS EMPRESA/SUPERVISOR (gestión del admin, vía Edge Function) ============================= */
-async function adminUsersCall(payload){
-  const { data: sessionData } = await sb.auth.getSession();
-  if(!sessionData || !sessionData.session){ throw new Error('No hay sesión activa de administrador. Vuelve a iniciar sesión.'); }
-  const { data, error } = await sb.functions.invoke('admin-users', { body: payload });
-  if(error){
-    // Cuando la función responde con un código de error, supabase-js lo expone en
-    // error.context (la respuesta HTTP real) en vez de en error.message.
-    let detail = error.message || 'Error desconocido';
-    try{
-      if(error.context && typeof error.context.json === 'function'){
-        const body = await error.context.json();
-        if(body && body.error) detail = body.error;
-      }
-    }catch(e){ /* si no se puede leer el cuerpo, nos quedamos con error.message */ }
-    throw new Error(detail);
-  }
-  return data;
-}
 let roleAccountsCache = [];
 let roleAccountsFilter = 'todos';
 async function renderRoleAccounts(){
@@ -811,8 +791,9 @@ async function renderRoleAccounts(){
   if(!sb){ el.innerHTML = ''; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const json = await adminUsersCall({ action: 'list' });
-    roleAccountsCache = json.users || [];
+    const { data, error } = await sb.rpc('admin_list_role_accounts');
+    if(error){ throw new Error(error.message); }
+    roleAccountsCache = data || [];
     renderRoleAccountsTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+'</p>'; }
 }
@@ -852,11 +833,12 @@ async function saveRoleAccount(){
   if(password.length < 6){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener mínimo 6 caracteres.</span>'; return; }
   msg.innerHTML = '<span style="color:var(--muted)">Guardando…</span>';
   try{
-    const json = await adminUsersCall({ action: 'create', email, password, role, nombre });
+    const { data, error } = await sb.rpc('admin_save_role_account', { p_email: email, p_role: role, p_password: password, p_nombre: nombre });
+    if(error){ throw new Error(error.message); }
     document.getElementById('ruEmail').value = '';
     document.getElementById('ruNombre').value = '';
     document.getElementById('ruPassword').value = '';
-    msg.innerHTML = json.updated
+    msg.innerHTML = (data && data.updated)
       ? '<span style="color:var(--teal-dark)">Ya existía — se actualizó su contraseña y rol.</span>'
       : '<span style="color:var(--teal-dark)">Usuario creado.</span>';
     renderRoleAccounts();
@@ -865,7 +847,8 @@ async function saveRoleAccount(){
 async function deleteRoleAccount(userId){
   if(!requireSupabase()) return;
   try{
-    await adminUsersCall({ action: 'delete', user_id: userId });
+    const { error } = await sb.rpc('admin_delete_role_account', { p_id: userId });
+    if(error){ throw new Error(error.message); }
     toast('Usuario eliminado');
     renderRoleAccounts();
   }catch(e){ console.error(e); toast('No se pudo eliminar: '+e.message, true); }
