@@ -57,6 +57,11 @@
   .resumen-table th{background:#F3F0E8;font-weight:700;color:var(--deep);}
   .resumen-table td.ok{color:var(--teal-dark);font-weight:700;}
   .resumen-table td.no{color:var(--muted);}
+  .resumen-table tr.rowlink.active-month td{background:#EEF6F5;font-weight:600;}
+  .expand-cell{background:#FCFBF8;padding:16px !important;}
+  .expand-cell .comp-grid{margin-bottom:14px;}
+  .pencil-hint{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);}
+  .pencil-hint svg{width:14px;height:14px;flex:none;}
   .students-list{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px;}
   .students-list th, .students-list td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;}
   .students-list th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.02em;}
