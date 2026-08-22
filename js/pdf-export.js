@@ -9,11 +9,24 @@ function fmtDate(d){
 function downloadPdf(){
   const rec = state.record;
   if(!rec){ toast('Busca un estudiante primero', true); return; }
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga la página.', true);
+    console.error('window.jspdf no está disponible — el script de jsPDF (CDN) no cargó.');
+    return;
+  }
   const { jsPDF } = window.jspdf;
+  const probeDoc = new jsPDF();
+  if(typeof probeDoc.autoTable !== 'function'){
+    toast('No se pudo cargar el módulo de tablas del PDF. Revisa tu conexión y recarga la página.', true);
+    console.error('doc.autoTable no está disponible — el script de jspdf-autotable (CDN) no cargó.');
+    return;
+  }
   const orange = [232,121,45];
   const teal = [14,124,134];
   const deep = [11,61,61];
   const line = [120,120,120];
+
+  try{
 
   // -------- helpers compartidos por todas las páginas (todas horizontales) --------
   function pageHeader(doc, pageLabel){
@@ -387,4 +400,9 @@ function downloadPdf(){
 
   doc.save('Planilla_'+CODIGO+'_'+(rec.documento||'estudiante')+'.pdf');
   toast('PDF generado');
+
+  }catch(e){
+    console.error('Error generando el PDF:', e);
+    toast('No se pudo generar el PDF: '+e.message+' (revisa la consola)', true);
+  }
 }
