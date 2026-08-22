@@ -3,8 +3,8 @@
 // 2. Corre supabase-schema.sql en el SQL Editor del proyecto
 // 3. Copia la Project URL y la anon public key desde Project Settings > API
 // 4. Pégalas aquí abajo:
-const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-const SUPABASE_ANON_KEY = "TU-ANON-KEY";
+const SUPABASE_URL = "https://avlyhjecouqrdkirdqrh.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_m2agwKHDXBUxKw0tWYLHIw_FX2R1nFo";
 
 const sb = (function(){
   try{
