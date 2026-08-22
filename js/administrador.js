@@ -1,7 +1,8 @@
 /* ============================= ADMINISTRADOR ============================= */
-function renderAdministrador(){
+async function renderAdministrador(){
   showScreen('screen-administrador');
   document.getElementById('admDocLabel').textContent = state.documento;
+  await loadProgramas();
   document.getElementById('admDatosGenerales').innerHTML = datosGeneralesHtml(state.record, true, 'adm');
   document.getElementById('admResumen').innerHTML = resumenPlanillaHtml(state.record, true);
 }
@@ -14,14 +15,14 @@ async function saveDatosGeneralesAdmin(){
   if(!rec.nombre){ toast('Escribe al menos el nombre del estudiante', true); return; }
   await saveRecord(rec);
   toast('Datos del estudiante guardados');
-  renderAdministrador();
+  await renderAdministrador();
 }
 async function adminToggleLock(i, locked){
   const rec = state.record;
   rec.meses[i].bloqueado = locked;
   await saveRecord(rec);
   toast(locked ? ('Mes '+(i+1)+' bloqueado') : ('Mes '+(i+1)+' desbloqueado — la empresa ya puede editarlo'));
-  renderAdministrador();
+  await renderAdministrador();
 }
 function resumenPlanillaHtml(rec, editable){
   const compRows = COMPETENCIAS.map(c=>{
