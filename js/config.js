@@ -6,7 +6,8 @@ const COMPETENCIAS = [
   {key:'producto', name:'3. Evidencia de producto', desc:'Resultados tangibles, orden y entorno seguro'},
   {key:'conocimiento', name:'4. Evaluación de conocimientos', desc:'Aplicación de normativa y confidencialidad'}
 ];
-const PROGRAMA = 'Técnico Laboral por Competencias en Auxiliar Administrativo en Salud';
+const PROGRAMA = 'Auxiliar Administrativo en Salud';
+const TITULO_PROGRAMA_PREFIJO = 'TÉCNICO LABORAL POR COMPETENCIAS EN';
 const AREAS_PROGRAMA = ['Salud','Administración y Negocios','Estética y Belleza','Mecánica','Sistemas','Educación','Cocina','Confección y Patronaje de Moda'];
 const CODIGO = 'PPS-GAA-F-006';
 const VERSION_FORMATO = '8';
