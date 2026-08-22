@@ -45,24 +45,70 @@ function downloadPdf(){
     doc.setTextColor(0,0,0);
     return 66;
   }
+  function drawInfoRow(doc, x0, y, w, h, cells){
+    // cells: [{frac, label, value, valueAlign, twoLineLabel}]
+    let x = x0;
+    doc.setDrawColor(...line); doc.setLineWidth(0.6);
+    cells.forEach(c=>{
+      const cw = w * c.frac;
+      doc.rect(x, y, cw, h);
+      doc.setFont('helvetica','bold'); doc.setFontSize(6.6); doc.setTextColor(20,20,20);
+      if(c.twoLineLabel){
+        const parts = c.label.split('\n');
+        doc.text(parts[0], x+cw/2, y+h/2-3, {align:'center'});
+        doc.text(parts[1], x+cw/2, y+h/2+6, {align:'center'});
+      } else {
+        doc.text(c.label, x+4, y+h/2+2.5);
+      }
+      if(c.value !== undefined){
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.3);
+        const vAlign = c.valueAlign || 'left';
+        const vx = vAlign==='center' ? x+cw/2 : x+4;
+        doc.text(String(c.value||''), vx, y+h/2+2.5, {align: vAlign, maxWidth: cw-8});
+      }
+      x += cw;
+    });
+    doc.setTextColor(0,0,0);
+    return y+h;
+  }
   function studentStrip(doc, y){
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 28;
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    const rows = [
-      ['PERIODO ACADÉMICO: '+(rec.periodoAcademico||'—'), 'SEDE: '+(rec.sede||'—')],
-      ['NOMBRE DEL ESTUDIANTE: '+(rec.nombre||'—'), 'D. IDENTIDAD: '+rec.documento+'   TELÉFONOS: '+(rec.telefono||'—')],
-      ['CORREO ELECTRÓNICO: '+(rec.correo||'—'), 'MODALIDAD: '+(rec.modalidad||'—')+'   SEMESTRE: '+(rec.semestre||'—')],
-      ['NOMBRE DEL FUNCIONARIO: '+(rec.funcionario||'—'), 'FECHA ENVÍO PLANILLAS: '+(rec.fechaEnvio||'—')]
-    ];
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.8);
-    rows.forEach(([left,right])=>{
-      doc.rect(margin, y, pageW-margin*2, 14);
-      doc.line(margin+(pageW-margin*2)*0.62, y, margin+(pageW-margin*2)*0.62, y+14);
-      doc.text(left, margin+4, y+9.5);
-      doc.text(right, margin+(pageW-margin*2)*0.62+4, y+9.5);
-      y += 14;
-    });
+    const w = pageW - margin*2;
+    const h = 16;
+
+    // Fila 1: Periodo académico | valor | Sede | valor
+    y = drawInfoRow(doc, margin, y, w, h, [
+      {frac:0.155, label:'PERIODO ACADÉMICO:'},
+      {frac:0.505, value: rec.periodoAcademico||'', valueAlign:'center'},
+      {frac:0.08, label:'SEDE:'},
+      {frac:0.26, value: rec.sede||'', valueAlign:'left'}
+    ]);
+    // Fila 2: Nombre del estudiante | valor | D. Identidad | valor | Teléfonos | valor
+    y = drawInfoRow(doc, margin, y, w, h, [
+      {frac:0.175, label:'NOMBRE DEL ESTUDIANTE:'},
+      {frac:0.325, value: rec.nombre||'', valueAlign:'center'},
+      {frac:0.10, label:'D. IDENTIDAD:'},
+      {frac:0.14, value: rec.documento||'', valueAlign:'center'},
+      {frac:0.10, label:'TELÉFONOS:'},
+      {frac:0.16, value: rec.telefono||'', valueAlign:'left'}
+    ]);
+    // Fila 3: Correo electrónico | valor | Modalidad | valor | Semestre | valor
+    y = drawInfoRow(doc, margin, y, w, h, [
+      {frac:0.155, label:'CORREO ELECTRÓNICO:'},
+      {frac:0.335, value: rec.correo||'', valueAlign:'center'},
+      {frac:0.10, label:'MODALIDAD:'},
+      {frac:0.22, value: rec.modalidad||'', valueAlign:'center'},
+      {frac:0.09, label:'SEMESTRE:'},
+      {frac:0.10, value: rec.semestre||'', valueAlign:'left'}
+    ]);
+    // Fila 4: Nombre del funcionario | valor | Fecha de envío de las planillas | valor
+    y = drawInfoRow(doc, margin, y, w, h+4, [
+      {frac:0.30, label:'NOMBRE DEL FUNCIONARIO QUE REALIZA EL PROCESO'},
+      {frac:0.40, value: rec.funcionario||'', valueAlign:'center'},
+      {frac:0.14, label:'FECHA DE ENVIO DE LAS\nPLANILLAS', twoLineLabel:true},
+      {frac:0.16, value: rec.fechaEnvio||'', valueAlign:'center'}
+    ]);
     return y+8;
   }
   function sectionBar(doc, title, y, color, note){
@@ -71,7 +117,7 @@ function downloadPdf(){
     doc.setFillColor(...(color||orange));
     doc.rect(margin, y, pageW-margin*2, 16, 'F');
     doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
-    doc.text(title.toUpperCase(), margin+6, y+11);
+    doc.text(title.toUpperCase(), pageW/2, y+11, {align:'center'});
     if(note){ doc.setFontSize(6.8); doc.text(note, pageW-margin-6, y+11, {align:'right'}); }
     doc.setTextColor(0,0,0);
     return y+16;
@@ -114,22 +160,32 @@ function downloadPdf(){
   });
   doc.autoTable({
     startY: y,
-    head: [['CRITERIO','Excelente (5)','Bueno (4)','Aceptable (3)','Insuficiente (2)','Deficiente (1)','N1','N2','N3','N4','N5','N6']],
+    head: [['CRITERIO','Excelente (5)','Bueno (4)','Aceptable (3)','Insuficiente (2)','Deficiente (1)','NOTA 1','NOTA 2','NOTA 3','NOTA 4','NOTA 5','NOTA 6']],
     body: critRows,
     theme: 'grid',
-    styles:{fontSize:6.3, cellPadding:3, valign:'middle', lineColor:line, lineWidth:0.5},
-    headStyles:{fillColor:orange, textColor:255, fontStyle:'bold', fontSize:6.8, halign:'center'},
+    styles:{fontSize:6.3, cellPadding:3, valign:'middle', halign:'left', lineColor:line, lineWidth:0.5},
+    headStyles:{fillColor:orange, textColor:255, fontStyle:'bold', fontSize:6.5, halign:'center'},
     columnStyles:{
       0:{cellWidth:95, fontStyle:'bold', fontSize:6.5},
       1:{cellWidth:115}, 2:{cellWidth:115}, 3:{cellWidth:115}, 4:{cellWidth:115}, 5:{cellWidth:115},
-      6:{cellWidth:16, halign:'center', fontStyle:'bold', fillColor:[210,235,232]},
-      7:{cellWidth:16, halign:'center', fontStyle:'bold', fillColor:[210,235,232]},
-      8:{cellWidth:16, halign:'center', fontStyle:'bold', fillColor:[210,235,232]},
-      9:{cellWidth:16, halign:'center', fontStyle:'bold', fillColor:[210,235,232]},
-      10:{cellWidth:16, halign:'center', fontStyle:'bold', fillColor:[210,235,232]},
-      11:{cellWidth:16, halign:'center', fontStyle:'bold', fillColor:[210,235,232]}
+      6:{cellWidth:16, halign:'center', fontStyle:'bold'},
+      7:{cellWidth:16, halign:'center', fontStyle:'bold'},
+      8:{cellWidth:16, halign:'center', fontStyle:'bold'},
+      9:{cellWidth:16, halign:'center', fontStyle:'bold'},
+      10:{cellWidth:16, halign:'center', fontStyle:'bold'},
+      11:{cellWidth:16, halign:'center', fontStyle:'bold'}
     },
-    margin:{left:28, right:28}
+    margin:{left:28, right:28},
+    didParseCell: function(data){
+      // Las columnas de nota (6 a 11) van en verde oscuro cuando el mes está sin
+      // calificar todavía (igual que el formato original en blanco), y en blanco
+      // con el número una vez la empresa puso la nota.
+      if(data.section === 'body' && data.column.index >= 6){
+        const hasValue = data.cell.raw !== '' && data.cell.raw != null;
+        data.cell.styles.fillColor = hasValue ? [255,255,255] : deep;
+        data.cell.styles.textColor = hasValue ? [20,20,20] : [255,255,255];
+      }
+    }
   });
   footer(doc);
 
@@ -143,10 +199,11 @@ function downloadPdf(){
   const margin = 28;
   const tableW = pageW2 - margin*2;
   // Columnas: MES | SITIO DE PRÁCTICAS (+valor) | FECHA INICIO | FECHA FINAL | FIRMA EMPRESA | FIRMA ESTUDIANTE
-  const colMes = 50, colFechaI = 78, colFechaF = 78, colFirma = (tableW - 50 - 78 - 78) / 2;
+  const colMes = 55, colFechaI = 85, colFechaF = 85;
+  const colFirma = (tableW - colMes - colFechaI - colFechaF) / 2 - 130; // se resta 130 para dejarle ese espacio extra a Sitio
   const colSitio = tableW - colMes - colFechaI - colFechaF - colFirma*2;
   const xMes = margin, xSitio = xMes+colMes, xFI = xSitio+colSitio, xFF = xFI+colFechaI, xFE = xFF+colFechaF, xFEst = xFE+colFirma;
-  const rowLabelH = 13, rowValueH = 13, rowObsH = 34;
+  const rowLabelH = 14, rowValueH = 14, rowObsH = 38;
   const blockH = rowLabelH + rowValueH + rowObsH;
 
   rec.meses.forEach((m,i)=>{
@@ -160,32 +217,32 @@ function downloadPdf(){
     // División horizontal bajo la fila de valores (antes de Observaciones)
     doc.line(xSitio, y+rowLabelH+rowValueH, xFE, y+rowLabelH+rowValueH);
 
-    doc.setFont('helvetica','bold'); doc.setFontSize(8);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
     doc.text('MES N°.'+(i+1), xMes+colMes/2, y+blockH/2+3, {align:'center'});
 
     doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
-    doc.text('SITIO DE PRÁCTICAS', xSitio+colSitio/2, y+9, {align:'center'});
-    doc.text('FECHA INICIO', xFI+colFechaI/2, y+9, {align:'center'});
-    doc.text('FECHA FINAL', xFF+colFechaF/2, y+9, {align:'center'});
+    doc.text('SITIO DE PRÁCTICAS', xSitio+colSitio/2, y+9.5, {align:'center'});
+    doc.text('FECHA INICIO', xFI+colFechaI/2, y+9.5, {align:'center'});
+    doc.text('FECHA FINAL', xFF+colFechaF/2, y+9.5, {align:'center'});
 
-    doc.setFontSize(7.2);
-    doc.text(m.sitio || '', xSitio+colSitio/2, y+rowLabelH+9, {align:'center'});
-    doc.text(fmtDate(m.fechaInicio) || '', xFI+colFechaI/2, y+rowLabelH+9, {align:'center'});
-    doc.text(fmtDate(m.fechaFin) || '', xFF+colFechaF/2, y+rowLabelH+9, {align:'center'});
+    doc.setFontSize(7.3);
+    doc.text(m.sitio || '', xSitio+colSitio/2, y+rowLabelH+9.5, {align:'center'});
+    doc.text(fmtDate(m.fechaInicio) || '', xFI+colFechaI/2, y+rowLabelH+9.5, {align:'center'});
+    doc.text(fmtDate(m.fechaFin) || '', xFF+colFechaF/2, y+rowLabelH+9.5, {align:'center'});
 
     doc.setFontSize(6.6);
-    doc.text('OBSERVACIONES DE LA PRÁCTICA', xSitio+3, y+rowLabelH+rowValueH+9);
+    doc.text('OBSERVACIONES DE LA PRÁCTICA', xSitio+4, y+rowLabelH+rowValueH+10);
     if(m.observaciones){
-      const obsLines = doc.splitTextToSize(m.observaciones, colSitio+colFechaI+colFechaF-10);
+      const obsLines = doc.splitTextToSize(m.observaciones, colSitio+colFechaI+colFechaF-12);
       doc.setFontSize(6.5);
-      doc.text(obsLines.slice(0,2), xSitio+3, y+rowLabelH+rowValueH+19);
+      doc.text(obsLines.slice(0,3), xSitio+4, y+rowLabelH+rowValueH+21);
     }
 
-    sigImg(doc, m.firmaEmpresa, xFE, y, colFirma, blockH-11);
-    sigImg(doc, m.firmaEstudiante, xFEst, y, colFirma, blockH-11);
+    sigImg(doc, m.firmaEmpresa, xFE, y, colFirma, blockH-12);
+    sigImg(doc, m.firmaEstudiante, xFEst, y, colFirma, blockH-12);
     doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
-    doc.text('FIRMA EMPRESA', xFE+colFirma/2, y+blockH-3, {align:'center'});
-    doc.text('FIRMA ESTUDIANTE', xFEst+colFirma/2, y+blockH-3, {align:'center'});
+    doc.text('FIRMA EMPRESA', xFE+colFirma/2, y+blockH-4, {align:'center'});
+    doc.text('FIRMA ESTUDIANTE', xFEst+colFirma/2, y+blockH-4, {align:'center'});
 
     // Divisor naranja entre meses
     doc.setDrawColor(...orange); doc.setLineWidth(1.4);
