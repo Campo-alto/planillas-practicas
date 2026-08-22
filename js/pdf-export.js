@@ -20,19 +20,23 @@ function downloadPdf(){
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 28;
     const boxRight = 130;
+    const logoCellW = 95;
     doc.setDrawColor(...line); doc.setLineWidth(0.8);
     doc.rect(margin, 18, pageW-margin*2, 40);
+    doc.line(margin+logoCellW, 18, margin+logoCellW, 58);
     doc.line(pageW-margin-boxRight, 18, pageW-margin-boxRight, 58);
     doc.line(pageW-margin-boxRight, 31, pageW-margin, 31);
     doc.line(pageW-margin-boxRight, 44, pageW-margin, 44);
 
-    doc.setFillColor(...teal); doc.circle(margin+14, 38, 9, 'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(20,20,20);
-    doc.text('Campoalto', margin+28, 34);
-    doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
-    doc.text('RECOLECCIÓN DE EVIDENCIAS DE DESEMPEÑO', pageW/2, 30, {align:'center'});
+    try{
+      const logoW = 70, logoH = 28;
+      doc.addImage(CAMPOALTO_LOGO_PNG, 'PNG', margin+(logoCellW-logoW)/2, 24, logoW, logoH);
+    }catch(e){ /* si el logo no carga, se deja el espacio en blanco */ }
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(20,20,20);
+    doc.text('RECOLECCIÓN DE EVIDENCIAS DE DESEMPEÑO', margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 30, {align:'center'});
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-    doc.text('TÉCNICO LABORAL POR COMPETENCIAS EN AUXILIAR ADMINISTRATIVO EN SALUD', pageW/2, 42, {align:'center'});
+    doc.text('TÉCNICO LABORAL POR COMPETENCIAS EN AUXILIAR ADMINISTRATIVO EN SALUD', margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 42, {align:'center'});
 
     doc.setFontSize(7.5); doc.setFont('helvetica','normal');
     doc.text('VERSIÓN: '+VERSION_FORMATO, pageW-margin-boxRight+6, 27);
@@ -134,32 +138,44 @@ function downloadPdf(){
   y = sectionBar(doc, 'Control de cumplimiento', y, orange);
 
   const pageW2 = doc.internal.pageSize.getWidth();
-  const pageH2 = doc.internal.pageSize.getHeight();
   const margin = 28;
-  rec.meses.forEach((m,i)=>{
-    const blockH = 78;
-    if(y + blockH > pageH2 - 34){ footer(doc); doc.addPage('a4','portrait'); y = pageHeader(doc, '2 DE 4 (cont.)'); }
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    doc.rect(margin, y, pageW2-margin*2, blockH);
-    doc.setFillColor(...orange); doc.rect(margin, y, 46, blockH, 'F');
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8);
-    doc.text('MES', margin+23, y+blockH/2-4, {align:'center'});
-    doc.text('N°.'+(i+1), margin+23, y+blockH/2+8, {align:'center'});
-    doc.setTextColor(0,0,0); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-
-    const infoX = margin+52;
-    doc.text('SITIO DE PRÁCTICAS: '+(m.sitio||'—'), infoX, y+12);
-    doc.text('FECHA INICIO: '+(fmtDate(m.fechaInicio)||'—')+'    FECHA FINAL: '+(fmtDate(m.fechaFin)||'—'), infoX, y+24);
-    doc.setFont('helvetica','bold'); doc.text('OBSERVACIONES DE LA PRÁCTICA:', infoX, y+36); doc.setFont('helvetica','normal');
-    const obsLines = doc.splitTextToSize(m.observaciones||'—', pageW2-margin*2-52-260);
-    doc.text(obsLines.slice(0,2), infoX, y+46);
-
-    const sigW = 120, sigH = blockH-10;
-    sigImg(doc, m.firmaEmpresa, pageW2-margin-sigW*2-10, y+5, sigW, sigH-10, 'FIRMA EMPRESA');
-    sigImg(doc, m.firmaEstudiante, pageW2-margin-sigW, y+5, sigW, sigH-10, 'FIRMA ESTUDIANTE');
-
-    y += blockH + 6;
+  const ctlBody = rec.meses.map((m,i)=>[
+    'MES N°.'+(i+1),
+    m.sitio || '',
+    fmtDate(m.fechaInicio) || '',
+    fmtDate(m.fechaFin) || '',
+    m.observaciones || '',
+    '', ''
+  ]);
+  doc.autoTable({
+    startY: y,
+    head: [['MES','SITIO DE PRÁCTICAS','FECHA INICIO','FECHA FINAL','OBSERVACIONES DE LA PRÁCTICA','FIRMA EMPRESA','FIRMA ESTUDIANTE']],
+    body: ctlBody,
+    theme: 'grid',
+    styles:{fontSize:7, cellPadding:4, valign:'middle', lineColor:line, lineWidth:0.6, minCellHeight:60},
+    headStyles:{fillColor:orange, textColor:255, fontStyle:'bold', fontSize:7, halign:'center'},
+    columnStyles:{
+      0:{cellWidth:44, fontStyle:'bold', halign:'center'},
+      1:{cellWidth:120},
+      2:{cellWidth:55, halign:'center'},
+      3:{cellWidth:55, halign:'center'},
+      4:{cellWidth:'auto'},
+      5:{cellWidth:100},
+      6:{cellWidth:100}
+    },
+    margin:{left:margin, right:margin},
+    didDrawCell: function(data){
+      if(data.section !== 'body') return;
+      const m = rec.meses[data.row.index];
+      if(data.column.index === 5 && m.firmaEmpresa){
+        try{ doc.addImage(m.firmaEmpresa, 'PNG', data.cell.x+4, data.cell.y+4, data.cell.width-8, data.cell.height-8); }catch(e){}
+      }
+      if(data.column.index === 6 && m.firmaEstudiante){
+        try{ doc.addImage(m.firmaEstudiante, 'PNG', data.cell.x+4, data.cell.y+4, data.cell.width-8, data.cell.height-8); }catch(e){}
+      }
+    }
   });
+  y = doc.lastAutoTable.finalY + 10;
   footer(doc);
 
   // ================= PÁGINA 3 — Revisión de funciones y actividades (visita 1) =================
