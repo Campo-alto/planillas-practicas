@@ -90,8 +90,7 @@ async function saveEmpresaMonth(){
   const sig = sigDataUrl('sig-empresa');
   if(sig) rec.meses[i].firmaEmpresa = sig;
   if(!rec.nombre){ toast('Guarda primero los datos generales del estudiante', true); return; }
-  rec.meses[i].bloqueado = true;
   await saveRecord(rec);
-  toast('Mes '+(i+1)+' guardado y bloqueado');
+  toast('Mes '+(i+1)+' guardado. El administrador lo bloqueará cuando lo revise.');
   renderEmpresa();
 }
