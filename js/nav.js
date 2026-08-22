@@ -62,6 +62,11 @@ function goAdminModule(module){
   } else if(module === 'administradores'){
     showScreen('screen-admin-admins');
     renderAdminsList();
+  } else if(module === 'programas'){
+    document.getElementById('progNombre').value = '';
+    document.getElementById('programasMsg').innerHTML = '';
+    showScreen('screen-admin-programas');
+    renderProgramasModule();
   }
 }
 function goAdminBack(){
@@ -151,7 +156,7 @@ async function doLookup(){
   if(state.role==='empresa') renderEmpresa();
   else if(state.role==='estudiante') renderEstudiante();
   else if(state.role==='supervisor') renderSupervisor();
-  else if(state.role==='administrador') renderAdministrador();
+  else if(state.role==='administrador') await renderAdministrador();
 }
 
 async function renderAdminList(){
