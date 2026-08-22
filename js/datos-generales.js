@@ -30,4 +30,4 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
   `;
 }
 function escapeAttr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
-function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; } 
