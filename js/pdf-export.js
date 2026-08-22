@@ -65,19 +65,21 @@ function downloadPdf(){
     cells.forEach(c=>{
       const cw = w * c.frac;
       doc.rect(x, y, cw, h);
-      doc.setFont('helvetica','bold'); doc.setFontSize(6.6); doc.setTextColor(20,20,20);
-      if(c.twoLineLabel){
-        const parts = c.label.split('\n');
-        doc.text(parts[0], x+cw/2, y+h/2-3, {align:'center'});
-        doc.text(parts[1], x+cw/2, y+h/2+6, {align:'center'});
-      } else {
-        doc.text(c.label, x+4, y+h/2+2.5);
+      if(c.label){
+        doc.setFont('helvetica','bold'); doc.setFontSize(6.6); doc.setTextColor(20,20,20);
+        if(c.twoLineLabel){
+          const parts = c.label.split('\n');
+          doc.text(parts[0], x+cw/2, y+h/2-3, {align:'center'});
+          doc.text(parts[1], x+cw/2, y+h/2+6, {align:'center'});
+        } else {
+          doc.text(c.label, x+4, y+h/2+2.5);
+        }
       }
-      if(c.value !== undefined){
+      if(c.value){
         doc.setFont('helvetica','normal'); doc.setFontSize(7.3);
         const vAlign = c.valueAlign || 'left';
         const vx = vAlign==='center' ? x+cw/2 : x+4;
-        doc.text(String(c.value||''), vx, y+h/2+2.5, {align: vAlign, maxWidth: cw-8});
+        doc.text(String(c.value), vx, y+h/2+2.5, {align: vAlign, maxWidth: Math.max(cw-8, 1)});
       }
       x += cw;
     });
