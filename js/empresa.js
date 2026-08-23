@@ -1,6 +1,4 @@
 /* ============================= EMPRESA ============================= */
-const PENCIL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>';
-
 function renderEmpresa(){
   showScreen('screen-empresa');
   document.getElementById('empDocLabel').textContent = state.documento;
@@ -8,7 +6,6 @@ function renderEmpresa(){
   const mesesActivos = mesesPorModalidad(state.record.modalidad);
   if(state.empMonth >= mesesActivos) state.empMonth = 0;
   renderEmpOverview();
-  setTimeout(()=>initSigPad('sig-empresa', state.record.meses[state.empMonth].firmaEmpresa, !!state.record.meses[state.empMonth].bloqueado), 30);
 }
 
 function mesLabel(rec, i){
@@ -23,23 +20,20 @@ function renderEmpOverview(){
     const nCalificadas = scores.filter(s=>s!=null).length;
     const notasTxt = nCalificadas===0 ? 'Sin calificar' : (nCalificadas+'/4 competencias');
     const notasCls = nCalificadas===4 ? 'ok' : (nCalificadas>0 ? '' : 'no');
-    const firmaTxt = m.firmaEmpresa ? 'Firmado' : 'Pendiente';
-    const firmaCls = m.firmaEmpresa ? 'ok' : 'no';
     const estado = m.bloqueado ? '🔒 Bloqueado' : 'Editable';
     const isOpen = i === state.empMonth;
     const mainRow = `<tr class="rowlink${isOpen?' active-month':''}" onclick="empGoToMonth(${i})">
       <td>${mesLabel(rec,i)}${isOpen ? ' ▾' : ''}</td>
       <td>${m.sitio || '—'}</td>
       <td class="${notasCls}">${notasTxt}</td>
-      <td class="${firmaCls}">${firmaTxt}</td>
       <td>${estado}</td>
     </tr>`;
-    const expandRow = isOpen ? `<tr><td class="expand-cell" colspan="5">${empMonthEditorHtml(i)}</td></tr>` : '';
+    const expandRow = isOpen ? `<tr><td class="expand-cell" colspan="4">${empMonthEditorHtml(i)}</td></tr>` : '';
     return mainRow + expandRow;
   }).join('');
   const modalidadNote = rec.modalidad ? `<p class="helptext" style="margin-top:-4px;">Modalidad: <b>${rec.modalidad}</b> — ${mesesActivos===1?'1 nota':mesesActivos+' meses'}.</p>` : '<p class="helptext" style="margin-top:-4px;color:var(--danger);">El administrador todavía no asignó una modalidad a este estudiante — se muestran 6 meses por defecto.</p>';
   document.getElementById('empOverview').innerHTML = modalidadNote +
-    `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Notas</th><th>Firma</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Notas</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function empMonthEditorHtml(i){
@@ -69,15 +63,6 @@ function empMonthEditorHtml(i){
       <div class="field"><label>Fecha final</label><input type="date" id="ctl-fin" value="${m.fechaFin||''}" ${dis}></div>
     </div>
     <div class="field"><label>Observaciones de la práctica</label><textarea id="ctl-obs" ${dis}>${m.observaciones||''}</textarea></div>
-    <div class="sig-wrap">
-      <label>Firma empresa (jefe inmediato)</label>
-      <div class="pencil-hint" style="margin-bottom:6px;">${PENCIL_SVG} Dibuja tu firma con el dedo o el mouse, como si usaras un lápiz</div>
-      <div class="sig-box"><canvas class="sigpad" id="sig-empresa"></canvas></div>
-      <div class="sig-actions">
-        <span class="sig-status" id="sig-empresa-status">Sin firmar</span>
-        <button class="ghost" onclick="clearSig('sig-empresa')" ${dis}>Borrar firma</button>
-      </div>
-    </div>
     <div class="actions-row">
       <button class="primary" id="empSaveBtn" onclick="saveEmpresaMonth()" ${dis}>Guardar ${mesLabel(rec,i).toLowerCase()}</button>
     </div>
@@ -100,8 +85,6 @@ async function saveEmpresaMonth(){
   rec.meses[i].fechaInicio = document.getElementById('ctl-inicio').value;
   rec.meses[i].fechaFin = document.getElementById('ctl-fin').value;
   rec.meses[i].observaciones = document.getElementById('ctl-obs').value.trim();
-  const sig = sigDataUrl('sig-empresa');
-  if(sig) rec.meses[i].firmaEmpresa = sig;
   if(!rec.nombre){ toast('Guarda primero los datos generales del estudiante', true); return; }
   await saveRecord(rec);
   toast(mesLabel(rec,i)+' guardado. El administrador lo bloqueará cuando lo revise.');
