@@ -1,4 +1,10 @@
 /* ============================= SUPERVISOR ============================= */
+function setCardLocked(cardId, locked){
+  const card = document.getElementById(cardId);
+  if(!card) return;
+  card.querySelectorAll('input, select, textarea, button').forEach(el=>{ el.disabled = locked; });
+}
+
 function renderSupervisor(){
   showScreen('screen-supervisor');
   document.getElementById('supDocLabel').textContent = state.documento;
@@ -6,6 +12,8 @@ function renderSupervisor(){
   document.getElementById('supPlanillaView').innerHTML = resumenPlanillaHtml(state.record, false);
 
   const rf = state.record.revisionFunciones;
+  document.getElementById('rf-lock-banner').innerHTML = rf.bloqueado
+    ? '<div class="note-box">🔒 Esta visita ya fue guardada y quedó bloqueada. Si necesitas corregir algo, pide al administrador que la desbloquee.</div>' : '';
   document.getElementById('rf-fecha').value = rf.fecha || '';
   document.getElementById('rf-modalidad-visita').value = rf.modalidadVisita || '';
   document.getElementById('rf-sitio').value = rf.sitio || '';
@@ -18,12 +26,15 @@ function renderSupervisor(){
   document.getElementById('rf-observaciones-mejora').value = rf.observacionesMejora || '';
   document.getElementById('rf-compromisos').value = rf.compromisos || '';
   setTimeout(()=>{
-    initSigPad('sig-rf-jefe', rf.firmaJefe);
-    initSigPad('sig-rf-estudiante', rf.firmaEstudiante);
-    initSigPad('sig-rf-supervisor', rf.firmaSupervisor);
+    initSigPad('sig-rf-jefe', rf.firmaJefe, rf.bloqueado);
+    initSigPad('sig-rf-estudiante', rf.firmaEstudiante, rf.bloqueado);
+    initSigPad('sig-rf-supervisor', rf.firmaSupervisor, rf.bloqueado);
   }, 30);
+  setCardLocked('rf-card', rf.bloqueado);
 
   const ds = state.record.datosSupervision;
+  document.getElementById('ds-lock-banner').innerHTML = ds.bloqueado
+    ? '<div class="note-box">🔒 Esta visita ya fue guardada y quedó bloqueada. Si necesitas corregir algo, pide al administrador que la desbloquee.</div>' : '';
   document.getElementById('ds-fecha').value = ds.fecha || '';
   document.getElementById('ds-modalidad-visita').value = ds.modalidadVisita || '';
   document.getElementById('ds-sitio').value = ds.sitio || '';
@@ -38,13 +49,15 @@ function renderSupervisor(){
   document.getElementById('ds-jefeComentarios').value = ds.obsJefe.comentarios || '';
   document.getElementById('ds-supComentarios').value = ds.obsSupervisor.comentarios || '';
   setTimeout(()=>{
-    initSigPad('sig-ds-estudiante', ds.obsEstudiante.firma);
-    initSigPad('sig-ds-jefe', ds.obsJefe.firma);
-    initSigPad('sig-ds-supervisor', ds.obsSupervisor.firma);
+    initSigPad('sig-ds-estudiante', ds.obsEstudiante.firma, ds.bloqueado);
+    initSigPad('sig-ds-jefe', ds.obsJefe.firma, ds.bloqueado);
+    initSigPad('sig-ds-supervisor', ds.obsSupervisor.firma, ds.bloqueado);
   }, 30);
+  setCardLocked('ds-card', ds.bloqueado);
 }
 async function saveRevisionFunciones(){
   const rec = state.record; const rf = rec.revisionFunciones;
+  if(rf.bloqueado){ toast('Esta visita está bloqueada. Pide al administrador que la desbloquee.', true); return; }
   rf.fecha = document.getElementById('rf-fecha').value;
   rf.modalidadVisita = document.getElementById('rf-modalidad-visita').value;
   rf.sitio = val('rf-sitio'); rf.area = val('rf-area'); rf.jefeInmediato = val('rf-jefe'); rf.supervisor = val('rf-supervisor');
@@ -57,11 +70,14 @@ async function saveRevisionFunciones(){
   const sj = sigDataUrl('sig-rf-jefe'); if(sj) rf.firmaJefe = sj;
   const se = sigDataUrl('sig-rf-estudiante'); if(se) rf.firmaEstudiante = se;
   const ss = sigDataUrl('sig-rf-supervisor'); if(ss) rf.firmaSupervisor = ss;
+  rf.bloqueado = true;
   await saveRecord(rec);
-  toast('Visita 1 guardada');
+  toast('Visita 1 guardada y bloqueada. El administrador puede desbloquearla si hace falta corregir algo.');
+  renderSupervisor();
 }
 async function saveDatosSupervision(){
   const rec = state.record; const ds = rec.datosSupervision;
+  if(ds.bloqueado){ toast('Esta visita está bloqueada. Pide al administrador que la desbloquee.', true); return; }
   ds.fecha = document.getElementById('ds-fecha').value;
   ds.modalidadVisita = document.getElementById('ds-modalidad-visita').value;
   ds.sitio = val('ds-sitio'); ds.area = val('ds-area'); ds.jefeInmediato = val('ds-jefe'); ds.supervisor = val('ds-supervisor');
@@ -75,6 +91,8 @@ async function saveDatosSupervision(){
   const se = sigDataUrl('sig-ds-estudiante'); if(se) ds.obsEstudiante.firma = se;
   const sj = sigDataUrl('sig-ds-jefe'); if(sj) ds.obsJefe.firma = sj;
   const ss = sigDataUrl('sig-ds-supervisor'); if(ss) ds.obsSupervisor.firma = ss;
+  ds.bloqueado = true;
   await saveRecord(rec);
-  toast('Visita 2 guardada');
+  toast('Visita 2 guardada y bloqueada. El administrador puede desbloquearla si hace falta corregir algo.');
+  renderSupervisor();
 }
