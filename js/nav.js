@@ -92,6 +92,9 @@ function goAdminModule(module){
     document.getElementById('programasMsg').innerHTML = '';
     showScreen('screen-admin-programas');
     renderProgramasModule();
+  } else if(module === 'reporte'){
+    showScreen('screen-admin-reporte');
+    renderReporteVisitas();
   }
 }
 function goAdminBack(){
