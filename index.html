@@ -229,10 +229,9 @@
     <div class="card" id="empDatosGenerales"></div>
 
     <div class="card">
-      <div class="section-bar teal">Planillas mensuales — pon la nota y firma</div>
-      <p class="helptext" style="margin-top:-4px;">Dale clic a un mes para abrirlo, calificar las 4 competencias, diligenciar el sitio de prácticas y firmar con el dedo o el mouse.</p>
+      <div class="section-bar teal">Planillas mensuales — pon la nota</div>
+      <p class="helptext" style="margin-top:-4px;">Dale clic a un mes para abrirlo, calificar las 4 competencias y diligenciar el sitio de prácticas. Las firmas se recogen cuando el supervisor institucional haga sus visitas.</p>
       <div id="empOverview"></div>
-      <div class="actions-row"><button class="ghost" onclick="downloadPdf()">Descargar PDF</button></div>
     </div>
   </div>
 
@@ -253,51 +252,10 @@
     </div>
 
     <div class="card">
-      <div class="section-bar teal">Control de cumplimiento · firma tu mes</div>
+      <div class="section-bar teal">Mi control de cumplimiento</div>
+      <p class="helptext" style="margin-top:-4px;">Esta información la diligencia la empresa. Las firmas se recogen cuando el supervisor institucional haga sus visitas.</p>
       <div class="tabs" id="estMonthTabs"></div>
       <div id="estControlView"></div>
-      <div class="sig-wrap">
-        <label>Firma estudiante (control de cumplimiento del mes)</label>
-        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-mes"></canvas></div>
-        <div class="sig-actions">
-          <span class="sig-status" id="sig-estudiante-mes-status">Sin firmar</span>
-          <button class="ghost" onclick="clearSig('sig-estudiante-mes')">Borrar firma</button>
-        </div>
-      </div>
-      <div class="actions-row"><button class="primary" onclick="saveEstudianteMes()">Guardar firma del mes</button></div>
-    </div>
-
-    <div class="card">
-      <div class="section-bar teal">Observaciones del estudiante</div>
-      <div class="field-row">
-        <div class="field">
-          <label>¿El lugar de prácticas es el indicado para tu programa?</label>
-          <div class="yesno">
-            <label><input type="radio" name="estP1" value="SI"> Sí</label>
-            <label><input type="radio" name="estP1" value="NO"> No</label>
-          </div>
-        </div>
-        <div class="field">
-          <label>¿Has recibido apoyo de tu jefe inmediato en tu formación?</label>
-          <div class="yesno">
-            <label><input type="radio" name="estP2" value="SI"> Sí</label>
-            <label><input type="radio" name="estP2" value="NO"> No</label>
-          </div>
-        </div>
-      </div>
-      <div class="field"><label>Comentarios</label><textarea id="estComentarios"></textarea></div>
-      <div class="sig-wrap">
-        <label>Firma del estudiante</label>
-        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-obs"></canvas></div>
-        <div class="sig-actions">
-          <span class="sig-status" id="sig-estudiante-obs-status">Sin firmar</span>
-          <button class="ghost" onclick="clearSig('sig-estudiante-obs')">Borrar firma</button>
-        </div>
-      </div>
-      <div class="actions-row">
-        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
-        <button class="primary" onclick="saveEstudianteObs()">Guardar observaciones</button>
-      </div>
     </div>
   </div>
 
@@ -324,6 +282,13 @@
       <div class="section-bar deep">Revisión de funciones y actividades — visita 1</div>
       <div class="field-row">
         <div class="field"><label>Fecha de la visita</label><input type="date" id="rf-fecha"></div>
+        <div class="field"><label>Modalidad de la visita</label>
+          <select id="rf-modalidad-visita">
+            <option value="">Selecciona…</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Virtual">Virtual</option>
+          </select>
+        </div>
         <div class="field"><label>Sitio de prácticas</label><input type="text" id="rf-sitio"></div>
         <div class="field"><label>Área de trabajo</label><input type="text" id="rf-area"></div>
         <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="rf-jefe"></div>
@@ -360,11 +325,29 @@
       <div class="section-bar deep">Datos de supervisión — visita 2</div>
       <div class="field-row">
         <div class="field"><label>Fecha de la visita</label><input type="date" id="ds-fecha"></div>
+        <div class="field"><label>Modalidad de la visita</label>
+          <select id="ds-modalidad-visita">
+            <option value="">Selecciona…</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Virtual">Virtual</option>
+          </select>
+        </div>
         <div class="field"><label>Sitio de prácticas</label><input type="text" id="ds-sitio"></div>
         <div class="field"><label>Área de trabajo</label><input type="text" id="ds-area"></div>
         <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="ds-jefe"></div>
         <div class="field"><label>Nombre del supervisor</label><input type="text" id="ds-supervisor"></div>
       </div>
+
+      <div class="subhead">Observaciones del estudiante</div>
+      <p class="helptext" style="margin-top:-4px;">El estudiante responde y firma en el momento de la visita.</p>
+      <div class="field-row">
+        <div class="field"><label>¿El lugar de prácticas es el indicado para su programa?</label>
+          <div class="yesno"><label><input type="radio" name="estP1" value="SI"> Sí</label><label><input type="radio" name="estP1" value="NO"> No</label></div></div>
+        <div class="field"><label>¿Ha recibido apoyo de su jefe inmediato en su formación?</label>
+          <div class="yesno"><label><input type="radio" name="estP2" value="SI"> Sí</label><label><input type="radio" name="estP2" value="NO"> No</label></div></div>
+      </div>
+      <div class="field"><label>Comentarios</label><textarea id="ds-estComentarios"></textarea></div>
+      <div class="sig-wrap"><label>Firma del estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-estudiante')">Borrar</button></div></div>
 
       <div class="subhead">Observaciones del jefe inmediato</div>
       <div class="field-row">
