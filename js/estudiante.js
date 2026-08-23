@@ -5,13 +5,15 @@ function renderEstudiante(){
   document.getElementById('estDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'est');
   renderEstNotasView();
 
+  const mesesActivos = mesesPorModalidad(state.record.modalidad);
+  if(state.estMonth >= mesesActivos) state.estMonth = 0;
   const tabs = document.getElementById('estMonthTabs');
   tabs.innerHTML = '';
-  for(let i=0;i<6;i++){
+  for(let i=0;i<mesesActivos;i++){
     const filled = !!state.record.meses[i].firmaEstudiante;
     const b = document.createElement('button');
     b.className = 'tab'+(i===state.estMonth?' active':'')+(filled?' filled':'');
-    b.textContent = 'Mes '+(i+1);
+    b.textContent = mesLabel(state.record, i);
     b.onclick = ()=>{ state.estMonth = i; renderEstudiante(); };
     tabs.appendChild(b);
   }
@@ -34,12 +36,14 @@ function renderEstudiante(){
 }
 function renderEstNotasView(){
   const rec = state.record;
+  const mesesActivos = mesesPorModalidad(rec.modalidad);
+  const heads = Array.from({length:mesesActivos}, (_,i)=>`<th>${mesLabel(rec,i)}</th>`).join('');
   const rows = COMPETENCIAS.map(c=>{
-    const cells = rec.competencias[c.key].map(v=> v ? (v+' · '+SCORE_LABELS[v]) : '—').map(v=>`<td>${v}</td>`).join('');
+    const cells = rec.competencias[c.key].slice(0, mesesActivos).map(v=> v ? (v+' · '+SCORE_LABELS[v]) : '—').map(v=>`<td>${v}</td>`).join('');
     return `<tr><td>${c.name}</td>${cells}</tr>`;
   }).join('');
   document.getElementById('estNotasView').innerHTML =
-    `<table class="resumen-table"><thead><tr><th>Competencia</th><th>Mes 1</th><th>Mes 2</th><th>Mes 3</th><th>Mes 4</th><th>Mes 5</th><th>Mes 6</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 async function saveEstudianteMes(){
   const rec = state.record; const i = state.estMonth;
@@ -47,7 +51,7 @@ async function saveEstudianteMes(){
   if(!sig){ toast('Firma primero en el recuadro', true); return; }
   rec.meses[i].firmaEstudiante = sig;
   await saveRecord(rec);
-  toast('Firma del mes '+(i+1)+' guardada');
+  toast('Firma de '+mesLabel(rec,i).toLowerCase()+' guardada');
   renderEstudiante();
 }
 async function saveEstudianteObs(){
