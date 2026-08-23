@@ -305,7 +305,7 @@ function downloadPdf(){
   doc.text(fechaRf[0]||'', xFecha+subW/2, y+26, {align:'center'});
   doc.text(fechaRf[1]||'', xFecha+subW+subW/2, y+26, {align:'center'});
   doc.text(fechaRf[2]||'', xFecha+subW*2+subW/2, y+26, {align:'center'});
-  doc.text(rf.sitio||'', xSitio3+4, y+24);
+  doc.text((rf.sitio||'')+(rf.modalidadVisita?'  ['+rf.modalidadVisita+']':''), xSitio3+4, y+24);
   doc.text(rf.area||'', xArea3+4, y+24);
   doc.text(rf.jefeInmediato||'', xJefe3+4, y+24);
   doc.text(rf.supervisor||'', xSup3+4, y+24);
@@ -377,7 +377,7 @@ function downloadPdf(){
   doc.text(fechaDs[0]||'', margin+subW/2, y+26, {align:'center'});
   doc.text(fechaDs[1]||'', margin+subW+subW/2, y+26, {align:'center'});
   doc.text(fechaDs[2]||'', margin+subW*2+subW/2, y+26, {align:'center'});
-  doc.text(ds.sitio||'', xSitio4+4, y+24);
+  doc.text((ds.sitio||'')+(ds.modalidadVisita?'  ['+ds.modalidadVisita+']':''), xSitio4+4, y+24);
   doc.text(ds.area||'', xArea4+4, y+24);
   doc.text(ds.jefeInmediato||'', xJefe4+4, y+24);
   doc.text(ds.supervisor||'', xSup4+4, y+24);
