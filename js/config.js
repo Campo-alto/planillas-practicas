@@ -9,6 +9,21 @@ const COMPETENCIAS = [
 const PROGRAMA = 'Auxiliar Administrativo en Salud';
 const TITULO_PROGRAMA_PREFIJO = 'TÉCNICO LABORAL POR COMPETENCIAS EN';
 const AREAS_PROGRAMA = ['Salud','Administración y Negocios','Estética y Belleza','Mecánica','Sistemas','Educación','Cocina','Confección y Patronaje de Moda'];
+
+// Modalidades de práctica y cuántos meses (o notas, en el caso de Homologación)
+// le corresponden a cada una. Se usa para mostrar solo los meses que aplican.
+const MODALIDADES = [
+  { nombre: 'Contrato de Aprendizaje', meses: 6 },
+  { nombre: 'Contrato de Aprendizaje Enfermería', meses: 4 },
+  { nombre: 'Prácticas No Remuneradas', meses: 4 },
+  { nombre: 'Práctica No Remunerada Enfermería', meses: 2 },
+  { nombre: 'Validación', meses: 4 },
+  { nombre: 'Homologación', meses: 1 }
+];
+function mesesPorModalidad(modalidad){
+  const m = MODALIDADES.find(x=>x.nombre===modalidad);
+  return m ? m.meses : 6; // si la modalidad no está en la lista (registros viejos), se muestran los 6
+}
 const CODIGO = 'PPS-GAA-F-006';
 const VERSION_FORMATO = '8';
 
