@@ -325,6 +325,25 @@ function downloadPdf(){
   doc.text('FIRMA JEFE INMEDIATO', margin+bigBoxW+supColW/2, y+sigRowH3-4, {align:'center'});
   doc.text('FIRMA ESTUDIANTE', margin+bigBoxW+supColW/2, y+sigRowH3*2-4, {align:'center'});
   doc.text('FIRMA SUPERVISOR', margin+bigBoxW+supColW/2, y+sigRowH3*3-4, {align:'center'});
+
+  // Aspectos de la visita, dentro del recuadro grande que antes quedaba en blanco
+  let ty3 = y+12;
+  const bx3 = margin+6, bw3 = bigBoxW-12;
+  function aspectoBlock(label, texto, maxLineas){
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.3);
+    doc.text(label, bx3, ty3);
+    ty3 += 10;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.3);
+    const lines = doc.splitTextToSize(texto || '—', bw3);
+    const shown = lines.slice(0, maxLineas);
+    doc.text(shown, bx3, ty3);
+    ty3 += Math.max(shown.length,1)*9 + 8;
+  }
+  aspectoBlock('NOMBRE DEL TUTOR DE LA PRÁCTICA:', rf.tutor, 1);
+  aspectoBlock('FUNCIONES ASIGNADAS AL ESTUDIANTE:', rf.funcionesAsignadas, 3);
+  aspectoBlock('¿EL ESTUDIANTE ACEPTA LAS FUNCIONES Y SE RELACIONAN CON SU PROGRAMA DE FORMACIÓN?  SI/NO:', rf.aceptacionFunciones, 1);
+  aspectoBlock('OBSERVACIONES DE MEJORA DE LA EMPRESA AL ESTUDIANTE:', rf.observacionesMejora, 3);
+  aspectoBlock('COMPROMISOS QUE SE DAN EN LA REUNIÓN:', rf.compromisos, 3);
   footer(doc);
 
   // ================= PÁGINA 4 — Datos de supervisión (visita 2) =================
