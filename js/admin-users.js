@@ -17,9 +17,19 @@ function renderRoleAccountsTable(){
   const rows = roleAccountsCache.map(u=>`<tr>
     <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}</td>
     <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
-    <td><button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button></td>
+    <td style="white-space:nowrap;">
+      <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="resetRoleAccountPassword('${escapeAttr(u.email)}', '${escapeAttr(u.nombre||'')}')">Restablecer contraseña</button>
+      <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button>
+    </td>
   </tr>`).join('');
   el.innerHTML = `<table class="students-list"><thead><tr><th>Cuenta</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function resetRoleAccountPassword(email, nombre){
+  document.getElementById('ruEmail').value = email;
+  document.getElementById('ruNombre').value = nombre;
+  document.getElementById('ruPassword').value = '';
+  document.getElementById('roleAccountsMsg').innerHTML = '<span style="color:var(--muted)">Escribe la contraseña nueva para '+email+' y dale Guardar usuario.</span>';
+  document.getElementById('ruPassword').focus();
 }
 async function saveRoleAccount(){
   if(!requireSupabase()) return;
