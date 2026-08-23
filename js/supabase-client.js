@@ -40,7 +40,8 @@ function requireSupabase(){
 function rowToRecord(row){
   return {
     documento: row.documento,
-    nombre: row.nombre || '', correo: row.correo || '', telefono: row.telefono || '',
+    nombre: row.nombre || '', apellidos: row.apellidos || '', nombres: row.nombres || '',
+    correo: row.correo || '', telefono: row.telefono || '',
     sede: row.sede || '', semestre: row.semestre || '', modalidad: row.modalidad || '',
     periodoAcademico: row.periodo_academico || '', funcionario: row.funcionario || '',
     programa: row.programa || PROGRAMA,
@@ -54,7 +55,8 @@ function rowToRecord(row){
 function recordToRow(rec){
   return {
     documento: rec.documento,
-    nombre: rec.nombre, correo: rec.correo, telefono: rec.telefono,
+    nombre: rec.nombre, apellidos: rec.apellidos, nombres: rec.nombres,
+    correo: rec.correo, telefono: rec.telefono,
     sede: rec.sede, semestre: rec.semestre, modalidad: rec.modalidad,
     periodo_academico: rec.periodoAcademico, funcionario: rec.funcionario,
     programa: rec.programa,
