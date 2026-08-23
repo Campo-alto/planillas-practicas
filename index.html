@@ -183,6 +183,11 @@
         <h3>Programas</h3>
         <p>Crear, ver y eliminar los programas / técnicos laborales por área.</p>
       </div>
+      <div class="role-card empresa" onclick="goAdminModule('reporte')">
+        <div class="icon">📋</div>
+        <h3>Reporte de visitas</h3>
+        <p>Una fila por cada visita registrada: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.</p>
+      </div>
     </div>
   </div>
 
@@ -242,6 +247,19 @@
     <div class="card">
       <div class="section-bar deep">Programas por área</div>
       <div id="programasList"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: REPORTE DE VISITAS -->
+  <div class="screen" id="screen-admin-reporte">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Reporte de visitas</h2>
+    <p class="helptext">Una fila por cada visita ya registrada (Visita 1 o Visita 2) de cualquier estudiante.</p>
+    <div class="card">
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="ghost" onclick="downloadReporteVisitasCSV()">Descargar CSV</button>
+      </div>
+      <div id="reporteVisitasList" style="margin-top:12px;"></div>
     </div>
   </div>
 
@@ -458,6 +476,7 @@
 <script src="js/estudiante.js"></script>
 <script src="js/supervisor.js"></script>
 <script src="js/administrador.js"></script>
+<script src="js/reporte.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>initPwToggles();</script>
