@@ -12,7 +12,8 @@ async function renderAdministrador(){
 }
 async function saveDatosGeneralesAdmin(){
   const rec = state.record;
-  rec.nombre = val('adm-nombre'); rec.correo = val('adm-correo'); rec.telefono = val('adm-telefono');
+  rec.nombre = val('adm-nombre'); rec.apellidos = val('adm-apellidos'); rec.nombres = val('adm-nombres');
+  rec.correo = val('adm-correo'); rec.telefono = val('adm-telefono');
   rec.sede = val('adm-sede'); rec.semestre = val('adm-semestre'); rec.modalidad = val('adm-modalidad');
   rec.periodoAcademico = val('adm-periodo'); rec.funcionario = val('adm-funcionario');
   rec.programa = val('adm-programa') || PROGRAMA;
