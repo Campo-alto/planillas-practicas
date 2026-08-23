@@ -106,8 +106,15 @@ function goRoleLogin(role){
   document.getElementById('roleEmail').value = '';
   document.getElementById('rolePassword').value = '';
   document.getElementById('roleLoginMsg').innerHTML = '';
+  document.getElementById('forgotRoleHelp').style.display = 'none';
   showScreen('screen-role-login');
   setTimeout(()=>document.getElementById('roleEmail').focus(), 50);
+}
+function toggleForgotRoleHelp(){
+  const panel = document.getElementById('forgotRoleHelp');
+  const email = document.getElementById('roleEmail').value.trim();
+  document.getElementById('forgotRoleEmailShown').textContent = email || 'el que usas para entrar';
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 async function doRoleLogin(){
   if(!requireSupabase()) return;
