@@ -43,6 +43,31 @@ async function doAdminLogin(){
   state.role = 'administrador';
   showScreen('screen-admin-hub');
 }
+async function doForgotPassword(){
+  if(!requireSupabase()) return;
+  const email = document.getElementById('adminEmail').value.trim();
+  const msg = document.getElementById('adminLoginMsg');
+  if(!email){ msg.innerHTML = '<span style="color:var(--danger)">Escribe tu correo arriba primero, y dale de nuevo a "¿Olvidaste tu contraseña?".</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Enviando correo…</span>';
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+  if(error){ msg.innerHTML = '<span style="color:var(--danger)">No se pudo enviar el correo: '+error.message+'</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--teal-dark)">Listo — revisa tu correo y sigue el enlace para elegir una contraseña nueva.</span>';
+}
+async function doSetNewPassword(){
+  if(!requireSupabase()) return;
+  const p1 = document.getElementById('resetPassword1').value;
+  const p2 = document.getElementById('resetPassword2').value;
+  const msg = document.getElementById('resetPasswordMsg');
+  if(!p1 || !p2){ msg.innerHTML = '<span style="color:var(--danger)">Completa los dos campos.</span>'; return; }
+  if(p1.length < 6){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener al menos 6 caracteres.</span>'; return; }
+  if(p1 !== p2){ msg.innerHTML = '<span style="color:var(--danger)">Las dos contraseñas no coinciden.</span>'; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Guardando…</span>';
+  const { error } = await sb.auth.updateUser({ password: p1 });
+  if(error){ msg.innerHTML = '<span style="color:var(--danger)">No se pudo guardar: '+error.message+'</span>'; return; }
+  toast('Contraseña actualizada');
+  state.role = 'administrador';
+  showScreen('screen-admin-hub');
+}
 async function adminLogout(){
   if(sb) await sb.auth.signOut();
   goHome();
