@@ -5,13 +5,20 @@ function renderEmpresa(){
   showScreen('screen-empresa');
   document.getElementById('empDocLabel').textContent = state.documento;
   document.getElementById('empDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'emp');
+  const mesesActivos = mesesPorModalidad(state.record.modalidad);
+  if(state.empMonth >= mesesActivos) state.empMonth = 0;
   renderEmpOverview();
   setTimeout(()=>initSigPad('sig-empresa', state.record.meses[state.empMonth].firmaEmpresa, !!state.record.meses[state.empMonth].bloqueado), 30);
 }
 
+function mesLabel(rec, i){
+  return mesesPorModalidad(rec.modalidad)===1 ? 'Nota (Homologación)' : 'Mes '+(i+1);
+}
+
 function renderEmpOverview(){
   const rec = state.record;
-  const rows = rec.meses.map((m,i)=>{
+  const mesesActivos = mesesPorModalidad(rec.modalidad);
+  const rows = rec.meses.slice(0, mesesActivos).map((m,i)=>{
     const scores = COMPETENCIAS.map(c=>rec.competencias[c.key][i]);
     const nCalificadas = scores.filter(s=>s!=null).length;
     const notasTxt = nCalificadas===0 ? 'Sin calificar' : (nCalificadas+'/4 competencias');
@@ -21,7 +28,7 @@ function renderEmpOverview(){
     const estado = m.bloqueado ? '🔒 Bloqueado' : 'Editable';
     const isOpen = i === state.empMonth;
     const mainRow = `<tr class="rowlink${isOpen?' active-month':''}" onclick="empGoToMonth(${i})">
-      <td>Mes ${i+1}${isOpen ? ' ▾' : ''}</td>
+      <td>${mesLabel(rec,i)}${isOpen ? ' ▾' : ''}</td>
       <td>${m.sitio || '—'}</td>
       <td class="${notasCls}">${notasTxt}</td>
       <td class="${firmaCls}">${firmaTxt}</td>
@@ -30,8 +37,9 @@ function renderEmpOverview(){
     const expandRow = isOpen ? `<tr><td class="expand-cell" colspan="5">${empMonthEditorHtml(i)}</td></tr>` : '';
     return mainRow + expandRow;
   }).join('');
-  document.getElementById('empOverview').innerHTML =
-    `<table class="resumen-table"><thead><tr><th>Mes</th><th>Sitio</th><th>Notas</th><th>Firma</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const modalidadNote = rec.modalidad ? `<p class="helptext" style="margin-top:-4px;">Modalidad: <b>${rec.modalidad}</b> — ${mesesActivos===1?'1 nota':mesesActivos+' meses'}.</p>` : '<p class="helptext" style="margin-top:-4px;color:var(--danger);">El administrador todavía no asignó una modalidad a este estudiante — se muestran 6 meses por defecto.</p>';
+  document.getElementById('empOverview').innerHTML = modalidadNote +
+    `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Notas</th><th>Firma</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function empMonthEditorHtml(i){
@@ -71,7 +79,7 @@ function empMonthEditorHtml(i){
       </div>
     </div>
     <div class="actions-row">
-      <button class="primary" id="empSaveBtn" onclick="saveEmpresaMonth()" ${dis}>Guardar mes ${i+1}</button>
+      <button class="primary" id="empSaveBtn" onclick="saveEmpresaMonth()" ${dis}>Guardar ${mesLabel(rec,i).toLowerCase()}</button>
     </div>
   `;
 }
@@ -96,6 +104,6 @@ async function saveEmpresaMonth(){
   if(sig) rec.meses[i].firmaEmpresa = sig;
   if(!rec.nombre){ toast('Guarda primero los datos generales del estudiante', true); return; }
   await saveRecord(rec);
-  toast('Mes '+(i+1)+' guardado. El administrador lo bloqueará cuando lo revise.');
+  toast(mesLabel(rec,i)+' guardado. El administrador lo bloqueará cuando lo revise.');
   renderEmpresa();
 }
