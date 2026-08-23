@@ -159,19 +159,55 @@ async function doLookup(){
   else if(state.role==='administrador') await renderAdministrador();
 }
 
+let adminStudentsCache = [];
+let adminStudentsSoloPendientes = false;
+
 async function renderAdminList(){
   const el = document.getElementById('lookupAdminList');
   if(!sb){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No hay conexión con la base de datos. Revisa la consola (F12).</p>'; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const { data, error } = await sb.from('students').select('documento,nombre,sede,semestre,updated_at').order('nombre', {ascending:true});
+    const { data, error } = await sb.from('students').select('documento,nombre,sede,semestre,modalidad,competencias,updated_at').order('nombre', {ascending:true});
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado: '+error.message+'</p>'; return; }
-    if(!data || data.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay estudiantes registrados.</p>'; return; }
-    let rows = data.map(s=>`<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
-      <td>${s.nombre||'(sin nombre)'}</td><td>${s.documento}</td><td>${s.sede||'—'}</td><td>${s.semestre||'—'}</td>
-    </tr>`).join('');
-    el.innerHTML = `<table class="students-list"><thead><tr><th>Nombre</th><th>Documento</th><th>Sede</th><th>Semestre</th></tr></thead><tbody>${rows}</tbody></table>`;
+    adminStudentsCache = data || [];
+    renderAdminListTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado (revisa la consola).</p>'; }
+}
+function toggleAdminStudentsFiltro(){
+  adminStudentsSoloPendientes = !adminStudentsSoloPendientes;
+  renderAdminListTable();
+}
+function mesesCalificados(s){
+  const mesesActivos = mesesPorModalidad(s.modalidad);
+  const comp = s.competencias || {};
+  const keys = COMPETENCIAS.map(c=>c.key);
+  let count = 0;
+  for(let i=0;i<mesesActivos;i++){
+    const completo = keys.every(k => comp[k] && comp[k][i] != null);
+    if(completo) count++;
+  }
+  return { count, total: mesesActivos };
+}
+function renderAdminListTable(){
+  const el = document.getElementById('lookupAdminList');
+  if(!adminStudentsCache || adminStudentsCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay estudiantes registrados.</p>'; return; }
+  const filterBar = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+      <input type="checkbox" ${adminStudentsSoloPendientes?'checked':''} onchange="toggleAdminStudentsFiltro()"> Ver solo estudiantes con notas pendientes
+    </label>
+  </div>`;
+  let list = adminStudentsCache.map(s=>({ s, prog: mesesCalificados(s) }));
+  if(adminStudentsSoloPendientes) list = list.filter(x => x.prog.count < x.prog.total);
+  if(list.length===0){ el.innerHTML = filterBar + '<p style="color:var(--muted);font-size:13px;">No hay estudiantes con notas pendientes 🎉</p>'; return; }
+  const rows = list.map(({s,prog})=>{
+    const cls = prog.count===0 ? 'no' : (prog.count===prog.total ? 'ok' : '');
+    const notasTxt = prog.total===1 ? (prog.count===1?'Nota registrada':'Nota pendiente') : (prog.count+'/'+prog.total+' meses calificados');
+    return `<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
+      <td>${s.nombre||'(sin nombre)'}</td><td>${s.documento}</td><td>${s.sede||'—'}</td><td>${s.semestre||'—'}</td>
+      <td>${s.modalidad||'—'}</td><td class="${cls}">${notasTxt}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = filterBar + `<table class="students-list"><thead><tr><th>Nombre</th><th>Documento</th><th>Sede</th><th>Semestre</th><th>Modalidad</th><th>Notas</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function jumpToAdmin(doc){
   document.getElementById('lookupDoc').value = doc;
