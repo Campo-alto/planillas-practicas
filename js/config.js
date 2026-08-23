@@ -80,7 +80,7 @@ const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 
 function emptyRecord(documento){
   return {
-    documento, nombre:'', correo:'', telefono:'', sede:'', semestre:'', modalidad:'', periodoAcademico:'',
+    documento, nombre:'', apellidos:'', nombres:'', correo:'', telefono:'', sede:'', semestre:'', modalidad:'', periodoAcademico:'',
     funcionario:'', fechaEnvio:'', programa: PROGRAMA,
     competencias:{ ser:Array(6).fill(null), desempeno:Array(6).fill(null), producto:Array(6).fill(null), conocimiento:Array(6).fill(null) },
     meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null, bloqueado:false, subidoPlataforma:false})),
