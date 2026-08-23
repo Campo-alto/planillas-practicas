@@ -25,14 +25,16 @@ async function adminToggleLock(i, locked){
   await renderAdministrador();
 }
 function resumenPlanillaHtml(rec, editable){
+  const mesesActivos = mesesPorModalidad(rec.modalidad);
+  const heads = Array.from({length:mesesActivos}, (_,i)=>`<th>${mesLabel(rec,i)}</th>`).join('');
   const compRows = COMPETENCIAS.map(c=>{
-    const cells = rec.competencias[c.key].map(v=> v ? (v+' · '+SCORE_LABELS[v]) : '—').map(v=>`<td>${v}</td>`).join('');
+    const cells = rec.competencias[c.key].slice(0,mesesActivos).map(v=> v ? (v+' · '+SCORE_LABELS[v]) : '—').map(v=>`<td>${v}</td>`).join('');
     return `<tr><td>${c.name}</td>${cells}</tr>`;
   }).join('');
-  const compTable = `<table class="resumen-table"><thead><tr><th>Competencia</th><th>Mes 1</th><th>Mes 2</th><th>Mes 3</th><th>Mes 4</th><th>Mes 5</th><th>Mes 6</th></tr></thead><tbody>${compRows}</tbody></table>`;
+  const compTable = `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${compRows}</tbody></table>`;
 
-  const ctlRows = rec.meses.map((m,i)=>`<tr>
-      <td>Mes ${i+1}</td><td>${m.sitio||'—'}</td><td>${fmtDate(m.fechaInicio)}</td><td>${fmtDate(m.fechaFin)}</td>
+  const ctlRows = rec.meses.slice(0,mesesActivos).map((m,i)=>`<tr>
+      <td>${mesLabel(rec,i)}</td><td>${m.sitio||'—'}</td><td>${fmtDate(m.fechaInicio)}</td><td>${fmtDate(m.fechaFin)}</td>
       <td class="${m.firmaEmpresa?'ok':'no'}">${m.firmaEmpresa?'Firmado':'Pendiente'}</td>
       <td class="${m.firmaEstudiante?'ok':'no'}">${m.firmaEstudiante?'Firmado':'Pendiente'}</td>
       <td>${editable
@@ -41,7 +43,7 @@ function resumenPlanillaHtml(rec, editable){
             : `Editable <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleLock(${i}, true)">Bloquear</button>`)
         : (m.bloqueado ? '🔒 Bloqueado' : 'Editable')}</td>
     </tr>`).join('');
-  const ctlTable = `<table class="resumen-table"><thead><tr><th>Mes</th><th>Sitio</th><th>Inicio</th><th>Final</th><th>Firma empresa</th><th>Firma estudiante</th><th>Estado</th></tr></thead><tbody>${ctlRows}</tbody></table>`;
+  const ctlTable = `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Inicio</th><th>Final</th><th>Firma empresa</th><th>Firma estudiante</th><th>Estado</th></tr></thead><tbody>${ctlRows}</tbody></table>`;
 
   const rf = rec.revisionFunciones;
   const rfTable = `<table class="resumen-table"><thead><tr><th>Revisión de funciones</th><th>Fecha</th><th>Sitio</th><th>Firma jefe</th><th>Firma estudiante</th><th>Firma supervisor</th></tr></thead><tbody>
@@ -59,7 +61,12 @@ function resumenPlanillaHtml(rec, editable){
       <td class="${ds.obsSupervisor.firma?'ok':'no'}">${ds.obsSupervisor.firma?'Firmado':'Pendiente'}</td>
     </tr></tbody></table>`;
 
+  const modalidadNote = rec.modalidad
+    ? `<p class="helptext" style="margin-top:0;">Modalidad: <b>${rec.modalidad}</b> — ${mesesActivos===1?'1 nota':mesesActivos+' meses'}.</p>`
+    : `<p class="helptext" style="margin-top:0;color:var(--danger);">Sin modalidad asignada — asígnala en "Datos generales" para que la planilla muestre los meses correctos.</p>`;
+
   return `
+    ${modalidadNote}
     <div class="subhead" style="margin-top:0;">Competencias transversales</div>
     ${compTable}
     <div class="subhead">Control de cumplimiento</div>
