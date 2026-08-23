@@ -167,7 +167,7 @@ async function renderAdminList(){
   if(!sb){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No hay conexión con la base de datos. Revisa la consola (F12).</p>'; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const { data, error } = await sb.from('students').select('documento,nombre,sede,semestre,modalidad,competencias,updated_at').order('nombre', {ascending:true});
+    const { data, error } = await sb.from('students').select('documento,nombre,sede,semestre,modalidad,competencias,meses,updated_at').order('nombre', {ascending:true});
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado: '+error.message+'</p>'; return; }
     adminStudentsCache = data || [];
     renderAdminListTable();
@@ -188,6 +188,20 @@ function mesesCalificados(s){
   }
   return { count, total: mesesActivos };
 }
+function pendientesPlataforma(s){
+  const mesesActivos = mesesPorModalidad(s.modalidad);
+  const comp = s.competencias || {};
+  const keys = COMPETENCIAS.map(c=>c.key);
+  const meses = s.meses || [];
+  let pendientes = 0, subidas = 0;
+  for(let i=0;i<mesesActivos;i++){
+    const completo = keys.every(k => comp[k] && comp[k][i] != null);
+    if(!completo) continue;
+    if(meses[i] && meses[i].subidoPlataforma) subidas++;
+    else pendientes++;
+  }
+  return { pendientes, subidas };
+}
 function renderAdminListTable(){
   const el = document.getElementById('lookupAdminList');
   if(!adminStudentsCache || adminStudentsCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay estudiantes registrados.</p>'; return; }
@@ -196,18 +210,24 @@ function renderAdminListTable(){
       <input type="checkbox" ${adminStudentsSoloPendientes?'checked':''} onchange="toggleAdminStudentsFiltro()"> Ver solo estudiantes con notas pendientes
     </label>
   </div>`;
-  let list = adminStudentsCache.map(s=>({ s, prog: mesesCalificados(s) }));
+  let list = adminStudentsCache.map(s=>({ s, prog: mesesCalificados(s), plat: pendientesPlataforma(s) }));
+  const totalPendientesPlataforma = list.reduce((sum,x)=>sum+x.plat.pendientes, 0);
+  const contadorGlobal = `<div class="note-box" style="margin-bottom:12px;${totalPendientesPlataforma===0?'background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;':''}">${totalPendientesPlataforma===0
+    ? '✅ No hay notas calificadas pendientes de subir a la plataforma académica.'
+    : '📋 <b>'+totalPendientesPlataforma+'</b> nota(s) calificada(s), en total, todavía sin subir a la plataforma académica.'}</div>`;
   if(adminStudentsSoloPendientes) list = list.filter(x => x.prog.count < x.prog.total);
-  if(list.length===0){ el.innerHTML = filterBar + '<p style="color:var(--muted);font-size:13px;">No hay estudiantes con notas pendientes 🎉</p>'; return; }
-  const rows = list.map(({s,prog})=>{
+  if(list.length===0){ el.innerHTML = contadorGlobal + filterBar + '<p style="color:var(--muted);font-size:13px;">No hay estudiantes con notas pendientes 🎉</p>'; return; }
+  const rows = list.map(({s,prog,plat})=>{
     const cls = prog.count===0 ? 'no' : (prog.count===prog.total ? 'ok' : '');
     const notasTxt = prog.total===1 ? (prog.count===1?'Nota registrada':'Nota pendiente') : (prog.count+'/'+prog.total+' meses calificados');
+    const platTxt = plat.pendientes===0 ? (plat.subidas>0 ? '✅ Al día' : '—') : ('📋 '+plat.pendientes+' sin subir');
+    const platCls = plat.pendientes===0 ? (plat.subidas>0?'ok':'') : 'no';
     return `<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
       <td>${s.nombre||'(sin nombre)'}</td><td>${s.documento}</td><td>${s.sede||'—'}</td><td>${s.semestre||'—'}</td>
-      <td>${s.modalidad||'—'}</td><td class="${cls}">${notasTxt}</td>
+      <td>${s.modalidad||'—'}</td><td class="${cls}">${notasTxt}</td><td class="${platCls}">${platTxt}</td>
     </tr>`;
   }).join('');
-  el.innerHTML = filterBar + `<table class="students-list"><thead><tr><th>Nombre</th><th>Documento</th><th>Sede</th><th>Semestre</th><th>Modalidad</th><th>Notas</th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML = contadorGlobal + filterBar + `<table class="students-list"><thead><tr><th>Nombre</th><th>Documento</th><th>Sede</th><th>Semestre</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function jumpToAdmin(doc){
   document.getElementById('lookupDoc').value = doc;
