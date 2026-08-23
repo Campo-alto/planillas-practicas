@@ -426,6 +426,16 @@
       <div id="admResumen"></div>
       <div class="actions-row"><button class="ghost" onclick="downloadPdf()">Descargar PDF</button></div>
     </div>
+
+    <div class="card" style="border-color:#E4C3BE;">
+      <div class="section-bar" style="background:var(--danger);">Zona de peligro — eliminar estudiante</div>
+      <p class="helptext" style="margin-top:-4px;">Descarga primero el acta en PDF para guardarla — una vez eliminado el estudiante, esta información no se puede recuperar.</p>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="ghost" onclick="downloadPdfBeforeDelete()">1. Descargar acta (PDF)</button>
+        <button class="danger" onclick="startDeleteStudent()" id="btnStartDelete" disabled>2. Eliminar estudiante</button>
+      </div>
+      <div id="deleteStudentPanel" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);"></div>
+    </div>
   </div>
 
 </div>
