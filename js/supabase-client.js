@@ -18,6 +18,17 @@ const sb = (function(){
     return null;
   }
 })();
+
+// Cuando alguien llega desde el enlace del correo "restablecer contraseña",
+// Supabase dispara este evento automáticamente — lo mandamos directo a la
+// pantalla de elegir contraseña nueva, sin que tenga que iniciar sesión primero.
+if(sb){
+  sb.auth.onAuthStateChange((event)=>{
+    if(event === 'PASSWORD_RECOVERY'){
+      showScreen('screen-reset-password');
+    }
+  });
+}
 function requireSupabase(){
   if(!sb){
     toast('No hay conexión con la base de datos. Abre la consola (F12) y revisa el error.', true);
