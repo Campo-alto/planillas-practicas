@@ -12,12 +12,18 @@ async function renderAdministrador(){
 }
 async function saveDatosGeneralesAdmin(){
   const rec = state.record;
-  rec.nombre = val('adm-nombre'); rec.apellidos = val('adm-apellidos'); rec.nombres = val('adm-nombres');
+  rec.apellidos = val('adm-apellidos'); rec.nombres = val('adm-nombres');
+  // El nombre completo se arma solo a partir de Apellidos + Nombres. Si el
+  // estudiante es de antes de este cambio y todavía no tiene esos dos campos
+  // separados, se conserva el nombre completo que ya tenía guardado.
+  if(rec.apellidos || rec.nombres){
+    rec.nombre = nombreCompletoDesde(rec.apellidos, rec.nombres);
+  }
   rec.correo = val('adm-correo'); rec.telefono = val('adm-telefono');
   rec.sede = val('adm-sede'); rec.semestre = val('adm-semestre'); rec.modalidad = val('adm-modalidad');
   rec.periodoAcademico = val('adm-periodo'); rec.funcionario = val('adm-funcionario');
   rec.programa = val('adm-programa') || PROGRAMA;
-  if(!rec.nombre){ toast('Escribe al menos el nombre del estudiante', true); return; }
+  if(!rec.nombre){ toast('Escribe al menos apellidos o nombres del estudiante', true); return; }
   await saveRecord(rec);
   toast('Datos del estudiante guardados');
   await renderAdministrador();
