@@ -46,16 +46,16 @@ function resumenPlanillaHtml(rec, editable){
   const ctlTable = `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Inicio</th><th>Final</th><th>Firma empresa</th><th>Firma estudiante</th><th>Estado</th></tr></thead><tbody>${ctlRows}</tbody></table>`;
 
   const rf = rec.revisionFunciones;
-  const rfTable = `<table class="resumen-table"><thead><tr><th>Revisión de funciones</th><th>Fecha</th><th>Sitio</th><th>Firma jefe</th><th>Firma estudiante</th><th>Firma supervisor</th></tr></thead><tbody>
-    <tr><td>Visita 1</td><td>${fmtDate(rf.fecha)}</td><td>${rf.sitio||'—'}</td>
+  const rfTable = `<table class="resumen-table"><thead><tr><th>Revisión de funciones</th><th>Fecha</th><th>Modalidad</th><th>Sitio</th><th>Firma jefe</th><th>Firma estudiante</th><th>Firma supervisor</th></tr></thead><tbody>
+    <tr><td>Visita 1</td><td>${fmtDate(rf.fecha)}</td><td>${rf.modalidadVisita||'—'}</td><td>${rf.sitio||'—'}</td>
       <td class="${rf.firmaJefe?'ok':'no'}">${rf.firmaJefe?'Firmado':'Pendiente'}</td>
       <td class="${rf.firmaEstudiante?'ok':'no'}">${rf.firmaEstudiante?'Firmado':'Pendiente'}</td>
       <td class="${rf.firmaSupervisor?'ok':'no'}">${rf.firmaSupervisor?'Firmado':'Pendiente'}</td>
     </tr></tbody></table>`;
 
   const ds = rec.datosSupervision;
-  const dsTable = `<table class="resumen-table"><thead><tr><th>Datos de supervisión</th><th>Fecha</th><th>Obs. estudiante</th><th>Obs. jefe</th><th>Obs. supervisor</th></tr></thead><tbody>
-    <tr><td>Visita 2</td><td>${fmtDate(ds.fecha)}</td>
+  const dsTable = `<table class="resumen-table"><thead><tr><th>Datos de supervisión</th><th>Fecha</th><th>Modalidad</th><th>Obs. estudiante</th><th>Obs. jefe</th><th>Obs. supervisor</th></tr></thead><tbody>
+    <tr><td>Visita 2</td><td>${fmtDate(ds.fecha)}</td><td>${ds.modalidadVisita||'—'}</td>
       <td class="${ds.obsEstudiante.firma?'ok':'no'}">${ds.obsEstudiante.firma?'Firmado':'Pendiente'}</td>
       <td class="${ds.obsJefe.firma?'ok':'no'}">${ds.obsJefe.firma?'Firmado':'Pendiente'}</td>
       <td class="${ds.obsSupervisor.firma?'ok':'no'}">${ds.obsSupervisor.firma?'Firmado':'Pendiente'}</td>
