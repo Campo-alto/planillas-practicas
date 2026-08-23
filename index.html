@@ -247,15 +247,24 @@
 
     <div class="card">
       <div class="section-bar teal">Mis notas — competencias transversales</div>
-      <p class="helptext" style="margin-top:-4px;">Estas notas las pone la empresa y no puedes editarlas. Si no estás de acuerdo, usa la sección de observaciones más abajo.</p>
+      <p class="helptext" style="margin-top:-4px;">Estas notas las pone la empresa y no puedes editarlas.</p>
       <div id="estNotasView"></div>
     </div>
 
     <div class="card">
-      <div class="section-bar teal">Mi control de cumplimiento</div>
-      <p class="helptext" style="margin-top:-4px;">Esta información la diligencia la empresa. Las firmas se recogen cuando el supervisor institucional haga sus visitas.</p>
+      <div class="section-bar teal">Mi control de cumplimiento · firma tu mes</div>
+      <p class="helptext" style="margin-top:-4px;">El sitio, las fechas y las observaciones las diligencia la empresa. Tú revisas y firmas cada mes.</p>
       <div class="tabs" id="estMonthTabs"></div>
       <div id="estControlView"></div>
+      <div class="sig-wrap">
+        <label>Firma estudiante (control de cumplimiento del mes)</label>
+        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-mes"></canvas></div>
+        <div class="sig-actions">
+          <span class="sig-status" id="sig-estudiante-mes-status">Sin firmar</span>
+          <button class="ghost" onclick="clearSig('sig-estudiante-mes')">Borrar firma</button>
+        </div>
+      </div>
+      <div class="actions-row"><button class="primary" onclick="saveEstudianteMes()">Guardar firma del mes</button></div>
     </div>
   </div>
 
