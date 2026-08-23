@@ -10,9 +10,8 @@ function renderEstudiante(){
   const tabs = document.getElementById('estMonthTabs');
   tabs.innerHTML = '';
   for(let i=0;i<mesesActivos;i++){
-    const filled = !!state.record.meses[i].firmaEstudiante;
     const b = document.createElement('button');
-    b.className = 'tab'+(i===state.estMonth?' active':'')+(filled?' filled':'');
+    b.className = 'tab'+(i===state.estMonth?' active':'');
     b.textContent = mesLabel(state.record, i);
     b.onclick = ()=>{ state.estMonth = i; renderEstudiante(); };
     tabs.appendChild(b);
@@ -26,13 +25,6 @@ function renderEstudiante(){
     </div>
     <div class="field"><label>Observaciones de la práctica</label><div>${m.observaciones||'—'}</div></div>
   `;
-  setTimeout(()=>initSigPad('sig-estudiante-mes', m.firmaEstudiante), 30);
-
-  // observaciones section
-  document.querySelectorAll('input[name="estP1"]').forEach(r=>{ r.checked = r.value === state.record.datosSupervision.obsEstudiante.p1; });
-  document.querySelectorAll('input[name="estP2"]').forEach(r=>{ r.checked = r.value === state.record.datosSupervision.obsEstudiante.p2; });
-  document.getElementById('estComentarios').value = state.record.datosSupervision.obsEstudiante.comentarios || '';
-  setTimeout(()=>initSigPad('sig-estudiante-obs', state.record.datosSupervision.obsEstudiante.firma), 30);
 }
 function renderEstNotasView(){
   const rec = state.record;
@@ -44,26 +36,4 @@ function renderEstNotasView(){
   }).join('');
   document.getElementById('estNotasView').innerHTML =
     `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
-}
-async function saveEstudianteMes(){
-  const rec = state.record; const i = state.estMonth;
-  const sig = sigDataUrl('sig-estudiante-mes');
-  if(!sig){ toast('Firma primero en el recuadro', true); return; }
-  rec.meses[i].firmaEstudiante = sig;
-  await saveRecord(rec);
-  toast('Firma de '+mesLabel(rec,i).toLowerCase()+' guardada');
-  renderEstudiante();
-}
-async function saveEstudianteObs(){
-  const rec = state.record;
-  const p1 = document.querySelector('input[name="estP1"]:checked');
-  const p2 = document.querySelector('input[name="estP2"]:checked');
-  rec.datosSupervision.obsEstudiante.p1 = p1 ? p1.value : '';
-  rec.datosSupervision.obsEstudiante.p2 = p2 ? p2.value : '';
-  rec.datosSupervision.obsEstudiante.comentarios = document.getElementById('estComentarios').value.trim();
-  const sig = sigDataUrl('sig-estudiante-obs');
-  if(sig) rec.datosSupervision.obsEstudiante.firma = sig;
-  await saveRecord(rec);
-  toast('Observaciones guardadas');
-  renderEstudiante();
 }
