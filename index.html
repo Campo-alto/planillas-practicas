@@ -278,8 +278,9 @@
       <div id="supPlanillaView"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="rf-card">
       <div class="section-bar deep">Revisión de funciones y actividades — visita 1</div>
+      <div id="rf-lock-banner"></div>
       <div class="field-row">
         <div class="field"><label>Fecha de la visita</label><input type="date" id="rf-fecha"></div>
         <div class="field"><label>Modalidad de la visita</label>
@@ -318,11 +319,12 @@
         <div class="sig-wrap"><label>Firma estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-estudiante')">Borrar</button></div></div>
         <div class="sig-wrap"><label>Firma supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-supervisor')">Borrar</button></div></div>
       </div>
-      <div class="actions-row"><button class="primary" onclick="saveRevisionFunciones()">Guardar visita 1</button></div>
+      <div class="actions-row"><button class="primary" id="rfSaveBtn" onclick="saveRevisionFunciones()">Guardar visita 1</button></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="ds-card">
       <div class="section-bar deep">Datos de supervisión — visita 2</div>
+      <div id="ds-lock-banner"></div>
       <div class="field-row">
         <div class="field"><label>Fecha de la visita</label><input type="date" id="ds-fecha"></div>
         <div class="field"><label>Modalidad de la visita</label>
@@ -365,7 +367,7 @@
 
       <div class="actions-row">
         <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
-        <button class="primary" onclick="saveDatosSupervision()">Guardar visita 2</button>
+        <button class="primary" id="dsSaveBtn" onclick="saveDatosSupervision()">Guardar visita 2</button>
       </div>
     </div>
   </div>
