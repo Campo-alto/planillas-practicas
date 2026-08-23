@@ -24,6 +24,9 @@ function mesesPorModalidad(modalidad){
   const m = MODALIDADES.find(x=>x.nombre===modalidad);
   return m ? m.meses : 6; // si la modalidad no está en la lista (registros viejos), se muestran los 6
 }
+function mesCalificado(rec, i){
+  return COMPETENCIAS.every(c => rec.competencias[c.key][i] != null);
+}
 const CODIGO = 'PPS-GAA-F-006';
 const VERSION_FORMATO = '8';
 
@@ -80,7 +83,7 @@ function emptyRecord(documento){
     documento, nombre:'', correo:'', telefono:'', sede:'', semestre:'', modalidad:'', periodoAcademico:'',
     funcionario:'', fechaEnvio:'', programa: PROGRAMA,
     competencias:{ ser:Array(6).fill(null), desempeno:Array(6).fill(null), producto:Array(6).fill(null), conocimiento:Array(6).fill(null) },
-    meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null, bloqueado:false})),
+    meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null, bloqueado:false, subidoPlataforma:false})),
     revisionFunciones:{ fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', tutor:'', funcionesAsignadas:'', aceptacionFunciones:'', observacionesMejora:'', compromisos:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null, bloqueado:false },
     datosSupervision:{
       fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', bloqueado:false,
