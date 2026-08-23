@@ -10,8 +10,9 @@ function renderEstudiante(){
   const tabs = document.getElementById('estMonthTabs');
   tabs.innerHTML = '';
   for(let i=0;i<mesesActivos;i++){
+    const filled = !!state.record.meses[i].firmaEstudiante;
     const b = document.createElement('button');
-    b.className = 'tab'+(i===state.estMonth?' active':'');
+    b.className = 'tab'+(i===state.estMonth?' active':'')+(filled?' filled':'');
     b.textContent = mesLabel(state.record, i);
     b.onclick = ()=>{ state.estMonth = i; renderEstudiante(); };
     tabs.appendChild(b);
@@ -25,6 +26,7 @@ function renderEstudiante(){
     </div>
     <div class="field"><label>Observaciones de la práctica</label><div>${m.observaciones||'—'}</div></div>
   `;
+  setTimeout(()=>initSigPad('sig-estudiante-mes', m.firmaEstudiante), 30);
 }
 function renderEstNotasView(){
   const rec = state.record;
@@ -36,4 +38,13 @@ function renderEstNotasView(){
   }).join('');
   document.getElementById('estNotasView').innerHTML =
     `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+async function saveEstudianteMes(){
+  const rec = state.record; const i = state.estMonth;
+  const sig = sigDataUrl('sig-estudiante-mes');
+  if(!sig){ toast('Firma primero en el recuadro', true); return; }
+  rec.meses[i].firmaEstudiante = sig;
+  await saveRecord(rec);
+  toast('Firma de '+mesLabel(rec,i).toLowerCase()+' guardada');
+  renderEstudiante();
 }
