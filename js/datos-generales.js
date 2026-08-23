@@ -9,7 +9,12 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
         <div class="field"><label>Teléfono</label><input id="${formIdPrefix}-telefono" value="${escapeAttr(rec.telefono)}"></div>
         <div class="field"><label>Sede</label><input id="${formIdPrefix}-sede" value="${escapeAttr(rec.sede)}"></div>
         <div class="field"><label>Semestre</label><input id="${formIdPrefix}-semestre" value="${escapeAttr(rec.semestre)}"></div>
-        <div class="field"><label>Modalidad</label><input id="${formIdPrefix}-modalidad" value="${escapeAttr(rec.modalidad)}"></div>
+        <div class="field"><label>Modalidad</label>
+          <select id="${formIdPrefix}-modalidad">
+            <option value="">Selecciona una modalidad…</option>
+            ${MODALIDADES.map(m=>`<option value="${escapeAttr(m.nombre)}" ${m.nombre===rec.modalidad?'selected':''}>${m.nombre} (${m.meses===1?'1 nota':m.meses+' meses'})</option>`).join('')}
+          </select>
+        </div>
         <div class="field"><label>Periodo académico</label><input id="${formIdPrefix}-periodo" value="${escapeAttr(rec.periodoAcademico)}"></div>
         <div class="field"><label>Funcionario que procesa</label><input id="${formIdPrefix}-funcionario" value="${escapeAttr(rec.funcionario)}"></div>
         ${renderAreaProgramaSelects(formIdPrefix, rec.programa)}
@@ -30,4 +35,4 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
   `;
 }
 function escapeAttr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
-function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; } 
+function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
