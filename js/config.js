@@ -81,9 +81,9 @@ function emptyRecord(documento){
     funcionario:'', fechaEnvio:'', programa: PROGRAMA,
     competencias:{ ser:Array(6).fill(null), desempeno:Array(6).fill(null), producto:Array(6).fill(null), conocimiento:Array(6).fill(null) },
     meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null, bloqueado:false})),
-    revisionFunciones:{ fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', tutor:'', funcionesAsignadas:'', aceptacionFunciones:'', observacionesMejora:'', compromisos:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null },
+    revisionFunciones:{ fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', tutor:'', funcionesAsignadas:'', aceptacionFunciones:'', observacionesMejora:'', compromisos:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null, bloqueado:false },
     datosSupervision:{
-      fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'',
+      fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', bloqueado:false,
       obsEstudiante:{p1:'', p2:'', comentarios:'', firma:null},
       obsJefe:{p1:'', p2:'', comentarios:'', firma:null},
       obsSupervisor:{comentarios:'', firma:null}
