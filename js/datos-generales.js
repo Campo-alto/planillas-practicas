@@ -5,6 +5,8 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
       <div class="section-bar">Datos generales del estudiante</div>
       <div class="field-row">
         <div class="field"><label>Nombre completo</label><input id="${formIdPrefix}-nombre" value="${escapeAttr(rec.nombre)}"></div>
+        <div class="field"><label>Apellidos</label><input id="${formIdPrefix}-apellidos" value="${escapeAttr(rec.apellidos)}" placeholder="Para el reporte de visitas"></div>
+        <div class="field"><label>Nombres</label><input id="${formIdPrefix}-nombres" value="${escapeAttr(rec.nombres)}" placeholder="Para el reporte de visitas"></div>
         <div class="field"><label>Correo</label><input id="${formIdPrefix}-correo" value="${escapeAttr(rec.correo)}"></div>
         <div class="field"><label>Teléfono</label><input id="${formIdPrefix}-telefono" value="${escapeAttr(rec.telefono)}"></div>
         <div class="field"><label>Sede</label><input id="${formIdPrefix}-sede" value="${escapeAttr(rec.sede)}"></div>
