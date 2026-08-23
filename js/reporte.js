@@ -1,5 +1,8 @@
 /* ============================= REPORTE DE VISITAS (Administrador) ============================= */
-let reporteVisitasCache = [];
+let reporteVisitasCache = []; // todas las filas, sin filtrar
+let reporteFiltroSupervisorVal = '';
+let reporteFiltroDesdeVal = '';
+let reporteFiltroHastaVal = '';
 
 async function renderReporteVisitas(){
   const el = document.getElementById('reporteVisitasList');
@@ -22,7 +25,6 @@ async function renderReporteVisitas(){
           documento: s.documento,
           apellidos: s.apellidos || '',
           nombres: s.nombres || '',
-          nombreCompleto: s.nombre || '',
           modalidadVisita: rf.modalidadVisita || '',
           empresa: rf.sitio || '',
           jefeInmediato: rf.jefeInmediato || '',
@@ -36,7 +38,6 @@ async function renderReporteVisitas(){
           documento: s.documento,
           apellidos: s.apellidos || '',
           nombres: s.nombres || '',
-          nombreCompleto: s.nombre || '',
           modalidadVisita: ds.modalidadVisita || '',
           empresa: ds.sitio || '',
           jefeInmediato: ds.jefeInmediato || '',
@@ -47,50 +48,80 @@ async function renderReporteVisitas(){
     rows.sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
     reporteVisitasCache = rows;
 
-    if(rows.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay visitas registradas por ningún supervisor.</p>'; return; }
+    // arma la lista de supervisores para el filtro, conservando lo que ya estaba elegido
+    const sel = document.getElementById('reporteFiltroSupervisor');
+    const supervisores = Array.from(new Set(rows.map(r=>r.supervisor).filter(Boolean))).sort();
+    const valorPrevio = reporteFiltroSupervisorVal;
+    sel.innerHTML = '<option value="">Todos</option>' + supervisores.map(s=>`<option value="${escapeAttr(s)}" ${s===valorPrevio?'selected':''}>${s}</option>`).join('');
 
-    const trs = rows.map(r=>`<tr>
-      <td>${r.supervisor || '—'}</td>
-      <td>${fmtDate(r.fecha) || '—'}</td>
-      <td>${r.visita}</td>
-      <td>${r.documento}</td>
-      <td>${r.apellidos || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
-      <td>${r.nombres || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
-      <td>${r.modalidadVisita || '—'}</td>
-      <td>${r.empresa || '—'}</td>
-      <td>${r.jefeInmediato || '—'}</td>
-    </tr>`).join('');
-    el.innerHTML = `<table class="resumen-table"><thead><tr>
-      <th>Supervisor</th><th>Fecha visita</th><th>Visita</th><th>Documento estudiante</th><th>Apellidos</th><th>Nombres</th><th>Modalidad visita</th><th>Empresa</th><th>Jefe inmediato</th>
-    </tr></thead><tbody>${trs}</tbody></table>
-    <p class="helptext">Si "Apellidos"/"Nombres" salen vacíos para algún estudiante, edítalos en su ficha (Estudiantes → Datos generales) — antes solo se guardaba el nombre completo en un solo campo.</p>`;
+    renderReporteVisitasTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar (revisa la consola).</p>'; }
 }
 
-function csvEscape(v){
-  const s = String(v==null ? '' : v);
-  if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
-  return s;
-}
-function downloadReporteVisitasCSV(){
-  if(!reporteVisitasCache || reporteVisitasCache.length===0){ toast('No hay datos para descargar todavía', true); return; }
-  const headers = ['Supervisor','Fecha visita','Visita','Documento estudiante','Apellidos','Nombres','Modalidad visita','Empresa','Jefe inmediato'];
-  const lines = [headers.join(',')];
-  reporteVisitasCache.forEach(r=>{
-    lines.push([
-      csvEscape(r.supervisor), csvEscape(fmtDate(r.fecha)), csvEscape(r.visita), csvEscape(r.documento),
-      csvEscape(r.apellidos), csvEscape(r.nombres), csvEscape(r.modalidadVisita), csvEscape(r.empresa), csvEscape(r.jefeInmediato)
-    ].join(','));
+function filasFiltradas(){
+  return reporteVisitasCache.filter(r=>{
+    if(reporteFiltroSupervisorVal && r.supervisor !== reporteFiltroSupervisorVal) return false;
+    if(reporteFiltroDesdeVal && r.fecha < reporteFiltroDesdeVal) return false;
+    if(reporteFiltroHastaVal && r.fecha > reporteFiltroHastaVal) return false;
+    return true;
   });
-  const csv = '\uFEFF' + lines.join('\r\n'); // BOM para que Excel lea bien las tildes
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'reporte_visitas.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('CSV descargado');
+}
+
+function aplicarFiltrosReporte(){
+  reporteFiltroSupervisorVal = document.getElementById('reporteFiltroSupervisor').value;
+  reporteFiltroDesdeVal = document.getElementById('reporteFiltroDesde').value;
+  reporteFiltroHastaVal = document.getElementById('reporteFiltroHasta').value;
+  renderReporteVisitasTable();
+}
+function limpiarFiltrosReporte(){
+  document.getElementById('reporteFiltroSupervisor').value = '';
+  document.getElementById('reporteFiltroDesde').value = '';
+  document.getElementById('reporteFiltroHasta').value = '';
+  reporteFiltroSupervisorVal = ''; reporteFiltroDesdeVal = ''; reporteFiltroHastaVal = '';
+  renderReporteVisitasTable();
+}
+
+function renderReporteVisitasTable(){
+  const el = document.getElementById('reporteVisitasList');
+  const rows = filasFiltradas();
+  if(reporteVisitasCache.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay visitas registradas por ningún supervisor.</p>'; return; }
+  if(rows.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Ninguna visita coincide con estos filtros.</p>'; return; }
+
+  const trs = rows.map(r=>`<tr>
+    <td>${r.supervisor || '—'}</td>
+    <td>${fmtDate(r.fecha) || '—'}</td>
+    <td>${r.visita}</td>
+    <td>${r.documento}</td>
+    <td>${r.apellidos || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
+    <td>${r.nombres || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
+    <td>${r.modalidadVisita || '—'}</td>
+    <td>${r.empresa || '—'}</td>
+    <td>${r.jefeInmediato || '—'}</td>
+  </tr>`).join('');
+  el.innerHTML = `<p class="helptext" style="margin-top:0;">${rows.length} de ${reporteVisitasCache.length} visita(s).</p>
+    <table class="resumen-table"><thead><tr>
+      <th>Supervisor</th><th>Fecha visita</th><th>Visita</th><th>Documento estudiante</th><th>Apellidos</th><th>Nombres</th><th>Modalidad visita</th><th>Empresa</th><th>Jefe inmediato</th>
+    </tr></thead><tbody>${trs}</tbody></table>
+    <p class="helptext">Si "Apellidos"/"Nombres" salen vacíos para algún estudiante, edítalos en su ficha (Estudiantes → Datos generales).</p>`;
+}
+
+function downloadReporteVisitasXLSX(){
+  const rows = filasFiltradas();
+  if(!rows || rows.length===0){ toast('No hay datos para descargar con estos filtros', true); return; }
+  if(typeof XLSX === 'undefined'){ toast('No se pudo cargar el generador de Excel. Revisa tu conexión y recarga la página.', true); return; }
+  const headers = ['Supervisor','Fecha visita','Visita','Documento estudiante','Apellidos','Nombres','Modalidad visita','Empresa','Jefe inmediato'];
+  const data = [headers].concat(rows.map(r=>[
+    r.supervisor, fmtDate(r.fecha), r.visita, r.documento, r.apellidos, r.nombres, r.modalidadVisita, r.empresa, r.jefeInmediato
+  ]));
+  try{
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [ {wch:20}, {wch:12}, {wch:9}, {wch:16}, {wch:20}, {wch:20}, {wch:14}, {wch:26}, {wch:20} ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte visitas');
+    XLSX.writeFile(wb, 'reporte_visitas.xlsx');
+    toast('Excel descargado');
+  }catch(e){
+    console.error(e);
+    toast('No se pudo generar el Excel: '+e.message, true);
+  }
 }
