@@ -32,6 +32,12 @@ async function adminToggleVisitaLock(seccion, locked){
   toast(locked ? 'Visita bloqueada' : 'Visita desbloqueada — el supervisor ya puede editarla');
   await renderAdministrador();
 }
+async function adminToggleSubidoPlataforma(i, subido){
+  const rec = state.record;
+  rec.meses[i].subidoPlataforma = subido;
+  await saveRecord(rec);
+  await renderAdministrador();
+}
 function resumenPlanillaHtml(rec, editable){
   const mesesActivos = mesesPorModalidad(rec.modalidad);
   const heads = Array.from({length:mesesActivos}, (_,i)=>`<th>${mesLabel(rec,i)}</th>`).join('');
@@ -41,7 +47,19 @@ function resumenPlanillaHtml(rec, editable){
   }).join('');
   const compTable = `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${compRows}</tbody></table>`;
 
-  const ctlRows = rec.meses.slice(0,mesesActivos).map((m,i)=>`<tr>
+  const ctlRows = rec.meses.slice(0,mesesActivos).map((m,i)=>{
+    const calificado = mesCalificado(rec, i);
+    let plataformaCell;
+    if(!calificado){
+      plataformaCell = '<span style="color:var(--muted);">— sin calificar aún —</span>';
+    } else if(editable){
+      plataformaCell = m.subidoPlataforma
+        ? `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--teal-dark);font-weight:700;"><input type="checkbox" checked onchange="adminToggleSubidoPlataforma(${i}, this.checked)"> ✅ Subida</label>`
+        : `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--danger);font-weight:700;"><input type="checkbox" onchange="adminToggleSubidoPlataforma(${i}, this.checked)"> ⬜ Sin subir</label>`;
+    } else {
+      plataformaCell = m.subidoPlataforma ? '<span style="color:var(--teal-dark);font-weight:700;">✅ Subida</span>' : '<span style="color:var(--danger);font-weight:700;">⬜ Sin subir</span>';
+    }
+    return `<tr>
       <td>${mesLabel(rec,i)}</td><td>${m.sitio||'—'}</td><td>${fmtDate(m.fechaInicio)}</td><td>${fmtDate(m.fechaFin)}</td>
       <td class="${m.firmaEmpresa?'ok':'no'}">${m.firmaEmpresa?'Firmado':'Pendiente'}</td>
       <td class="${m.firmaEstudiante?'ok':'no'}">${m.firmaEstudiante?'Firmado':'Pendiente'}</td>
@@ -50,8 +68,19 @@ function resumenPlanillaHtml(rec, editable){
             ? `🔒 Bloqueado <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleLock(${i}, false)">Desbloquear</button>`
             : `Editable <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleLock(${i}, true)">Bloquear</button>`)
         : (m.bloqueado ? '🔒 Bloqueado' : 'Editable')}</td>
-    </tr>`).join('');
-  const ctlTable = `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Inicio</th><th>Final</th><th>Firma empresa</th><th>Firma estudiante</th><th>Estado</th></tr></thead><tbody>${ctlRows}</tbody></table>`;
+      <td>${plataformaCell}</td>
+    </tr>`;
+  }).join('');
+  const ctlTable = `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Inicio</th><th>Final</th><th>Firma empresa</th><th>Firma estudiante</th><th>Estado</th><th>Plataforma académica</th></tr></thead><tbody>${ctlRows}</tbody></table>`;
+
+  const totalCalificados = rec.meses.slice(0,mesesActivos).filter((m,i)=>mesCalificado(rec,i)).length;
+  const totalSubidos = rec.meses.slice(0,mesesActivos).filter((m,i)=>mesCalificado(rec,i) && m.subidoPlataforma).length;
+  const totalPendientes = totalCalificados - totalSubidos;
+  const contadorPlataforma = totalCalificados===0
+    ? ''
+    : `<div class="note-box" style="margin-bottom:12px;${totalPendientes===0?'background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;':''}">${totalPendientes===0
+        ? '✅ Todas las notas calificadas de este estudiante ya están marcadas como subidas a la plataforma académica.'
+        : '📋 <b>'+totalPendientes+'</b> de '+totalCalificados+' nota(s) calificada(s) todavía sin subir a la plataforma académica.'}</div>`;
 
   const rf = rec.revisionFunciones;
   const rfTable = `<table class="resumen-table"><thead><tr><th>Revisión de funciones</th><th>Fecha</th><th>Modalidad</th><th>Sitio</th><th>Firma jefe</th><th>Firma estudiante</th><th>Firma supervisor</th><th>Estado</th></tr></thead><tbody>
@@ -88,6 +117,7 @@ function resumenPlanillaHtml(rec, editable){
     <div class="subhead" style="margin-top:0;">Competencias transversales</div>
     ${compTable}
     <div class="subhead">Control de cumplimiento</div>
+    ${contadorPlataforma}
     ${ctlTable}
     <div class="subhead">Supervisión</div>
     ${rfTable}
