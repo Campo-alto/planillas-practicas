@@ -75,6 +75,33 @@
         <button class="primary" onclick="doAdminLogin()">Iniciar sesión</button>
       </div>
       <div id="adminLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+      <button class="linkbtn" style="margin-top:10px;padding:0;" onclick="doForgotPassword()">¿Olvidaste tu contraseña?</button>
+    </div>
+  </div>
+
+  <!-- RESTABLECER CONTRASEÑA -->
+  <div class="screen" id="screen-reset-password">
+    <h2 style="margin:12px 0 4px;">Elegir una contraseña nueva</h2>
+    <p class="helptext">Escribe tu nueva contraseña para tu cuenta de administrador.</p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Contraseña nueva</label>
+          <div class="pw-wrap">
+            <input type="password" id="resetPassword1" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+        <div class="field"><label>Confirmar contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="resetPassword2" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doSetNewPassword()">Guardar contraseña</button>
+      </div>
+      <div id="resetPasswordMsg" style="margin-top:12px;font-size:13.5px;"></div>
     </div>
   </div>
 
