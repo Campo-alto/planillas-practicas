@@ -11,6 +11,11 @@ function renderSupervisor(){
   document.getElementById('rf-area').value = rf.area || '';
   document.getElementById('rf-jefe').value = rf.jefeInmediato || '';
   document.getElementById('rf-supervisor').value = rf.supervisor || '';
+  document.getElementById('rf-tutor').value = rf.tutor || '';
+  document.getElementById('rf-funciones').value = rf.funcionesAsignadas || '';
+  document.querySelectorAll('input[name="rfAceptacion"]').forEach(r=>{ r.checked = r.value === rf.aceptacionFunciones; });
+  document.getElementById('rf-observaciones-mejora').value = rf.observacionesMejora || '';
+  document.getElementById('rf-compromisos').value = rf.compromisos || '';
   setTimeout(()=>{
     initSigPad('sig-rf-jefe', rf.firmaJefe);
     initSigPad('sig-rf-estudiante', rf.firmaEstudiante);
@@ -36,6 +41,12 @@ async function saveRevisionFunciones(){
   const rec = state.record; const rf = rec.revisionFunciones;
   rf.fecha = document.getElementById('rf-fecha').value;
   rf.sitio = val('rf-sitio'); rf.area = val('rf-area'); rf.jefeInmediato = val('rf-jefe'); rf.supervisor = val('rf-supervisor');
+  rf.tutor = val('rf-tutor');
+  rf.funcionesAsignadas = document.getElementById('rf-funciones').value.trim();
+  const rfAcept = document.querySelector('input[name="rfAceptacion"]:checked');
+  rf.aceptacionFunciones = rfAcept ? rfAcept.value : '';
+  rf.observacionesMejora = document.getElementById('rf-observaciones-mejora').value.trim();
+  rf.compromisos = document.getElementById('rf-compromisos').value.trim();
   const sj = sigDataUrl('sig-rf-jefe'); if(sj) rf.firmaJefe = sj;
   const se = sigDataUrl('sig-rf-estudiante'); if(se) rf.firmaEstudiante = se;
   const ss = sigDataUrl('sig-rf-supervisor'); if(ss) rf.firmaSupervisor = ss;
