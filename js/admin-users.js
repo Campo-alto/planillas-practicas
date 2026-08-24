@@ -18,18 +18,18 @@ function renderRoleAccountsTable(){
     <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}</td>
     <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
     <td style="white-space:nowrap;">
-      <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="resetRoleAccountPassword('${escapeAttr(u.email)}', '${escapeAttr(u.nombre||'')}')">Restablecer contraseña</button>
+      <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editRoleAccount('${escapeAttr(u.email)}', '${escapeAttr(u.nombre||'')}')">Editar</button>
       <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button>
     </td>
   </tr>`).join('');
   el.innerHTML = `<table class="students-list"><thead><tr><th>Cuenta</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-function resetRoleAccountPassword(email, nombre){
+function editRoleAccount(email, nombre){
   document.getElementById('ruEmail').value = email;
   document.getElementById('ruNombre').value = nombre;
   document.getElementById('ruPassword').value = '';
-  document.getElementById('roleAccountsMsg').innerHTML = '<span style="color:var(--muted)">Escribe la contraseña nueva para '+email+' y dale Guardar usuario.</span>';
-  document.getElementById('ruPassword').focus();
+  document.getElementById('roleAccountsMsg').innerHTML = '<span style="color:var(--muted)">Editando '+email+' — cambia el nombre si hace falta. Deja la contraseña en blanco para conservar la actual, o escribe una nueva para cambiarla.</span>';
+  document.getElementById('ruNombre').focus();
 }
 async function saveRoleAccount(){
   if(!requireSupabase()) return;
@@ -38,17 +38,17 @@ async function saveRoleAccount(){
   const role = state.adminModuleRole;
   const password = document.getElementById('ruPassword').value;
   const msg = document.getElementById('roleAccountsMsg');
-  if(!email || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe correo y contraseña.</span>'; return; }
-  if(password.length < 6){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener mínimo 6 caracteres.</span>'; return; }
+  if(!email){ msg.innerHTML = '<span style="color:var(--danger)">Escribe el correo.</span>'; return; }
+  if(password && password.length < 6){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener mínimo 6 caracteres (o déjala en blanco para conservar la actual).</span>'; return; }
   msg.innerHTML = '<span style="color:var(--muted)">Guardando…</span>';
   try{
-    const { data, error } = await sb.rpc('admin_save_role_account', { p_email: email, p_role: role, p_password: password, p_nombre: nombre });
+    const { data, error } = await sb.rpc('admin_save_role_account', { p_email: email, p_role: role, p_password: password || null, p_nombre: nombre });
     if(error){ throw new Error(error.message); }
     document.getElementById('ruEmail').value = '';
     document.getElementById('ruNombre').value = '';
     document.getElementById('ruPassword').value = '';
     msg.innerHTML = (data && data.updated)
-      ? '<span style="color:var(--teal-dark)">Ya existía — se actualizó su contraseña.</span>'
+      ? '<span style="color:var(--teal-dark)">Usuario actualizado.</span>'
       : '<span style="color:var(--teal-dark)">Usuario creado.</span>';
     renderRoleAccounts();
   }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">Error: '+e.message+'</span>'; }
