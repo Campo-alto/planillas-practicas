@@ -76,7 +76,7 @@ function goAdminModule(module){
   if(module === 'empresa' || module === 'supervisor'){
     state.adminModuleRole = module;
     document.getElementById('roleModuleTitle').textContent = module==='empresa' ? 'Usuarios de Empresa' : 'Usuarios de Supervisor';
-    document.getElementById('roleModuleHelp').textContent = 'Crea la cuenta con su correo. Si el correo ya existe, se actualiza su contraseña.';
+    document.getElementById('roleModuleHelp').textContent = 'Crea la cuenta con su correo. Para editar una ya existente, dale "Editar" en la lista de abajo — puedes cambiar el nombre sin tocar la contraseña.';
     document.getElementById('roleModuleListTitle').textContent = module==='empresa' ? 'Empresas registradas' : 'Supervisores registrados';
     document.getElementById('ruEmail').value = '';
     document.getElementById('ruNombre').value = '';
