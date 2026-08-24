@@ -75,7 +75,7 @@ const CRITERIOS_PDF = {
   }
 };
 
-let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false, adminModuleRole: null };
+let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false, adminModuleRole: null, currentUserNombre: '', currentUserEmail: '' };
 const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 
 function emptyRecord(documento){
@@ -84,9 +84,9 @@ function emptyRecord(documento){
     funcionario:'', fechaEnvio:'', programa: PROGRAMA,
     competencias:{ ser:Array(6).fill(null), desempeno:Array(6).fill(null), producto:Array(6).fill(null), conocimiento:Array(6).fill(null) },
     meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null, bloqueado:false, subidoPlataforma:false})),
-    revisionFunciones:{ fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', tutor:'', funcionesAsignadas:'', aceptacionFunciones:'', observacionesMejora:'', compromisos:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null, bloqueado:false },
+    revisionFunciones:{ fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', supervisorCorreo:'', tutor:'', funcionesAsignadas:'', aceptacionFunciones:'', observacionesMejora:'', compromisos:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null, bloqueado:false },
     datosSupervision:{
-      fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', bloqueado:false,
+      fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', supervisorCorreo:'', bloqueado:false,
       obsEstudiante:{p1:'', p2:'', comentarios:'', firma:null},
       obsJefe:{p1:'', p2:'', comentarios:'', firma:null},
       obsSupervisor:{comentarios:'', firma:null}
