@@ -9,7 +9,7 @@ function showScreen(id){
 function roleLabel(role){
   return role==='empresa' ? 'Empresa' : role==='estudiante' ? 'Estudiante' : role==='supervisor' ? 'Supervisor' : role==='administrador' ? 'Administrador' : '';
 }
-function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false}; showScreen('screen-home'); }
+function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:''}; showScreen('screen-home'); }
 
 async function goAdminEntry(){
   if(!requireSupabase()) return;
@@ -129,14 +129,17 @@ async function doRoleLogin(){
   try{
     const { data, error } = await sb.rpc('login_role_account', { p_email: email, p_password: password });
     if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">Error verificando credenciales.</span>'; return; }
-    if(!data || data !== state.pendingRole){
+    if(!data || data.role !== state.pendingRole){
       msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>';
       return;
     }
+    state.currentUserNombre = data.nombre || '';
+    state.currentUserEmail = data.email || email;
     goRole(state.pendingRole);
   }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">No se pudo conectar (revisa la consola).</span>'; }
 }
 function roleLogout(){
+  state.currentUserNombre = ''; state.currentUserEmail = '';
   goHome();
 }
 
