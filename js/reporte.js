@@ -21,6 +21,7 @@ async function renderReporteVisitas(){
       if(rf.fecha){
         rows.push({
           supervisor: rf.supervisor || '',
+          supervisorCorreo: rf.supervisorCorreo || '',
           fecha: rf.fecha,
           documento: s.documento,
           apellidos: s.apellidos || '',
@@ -34,6 +35,7 @@ async function renderReporteVisitas(){
       if(ds.fecha){
         rows.push({
           supervisor: ds.supervisor || '',
+          supervisorCorreo: ds.supervisorCorreo || '',
           fecha: ds.fecha,
           documento: s.documento,
           apellidos: s.apellidos || '',
@@ -89,6 +91,7 @@ function renderReporteVisitasTable(){
 
   const trs = rows.map(r=>`<tr>
     <td>${r.supervisor || '—'}</td>
+    <td>${r.supervisorCorreo || '—'}</td>
     <td>${fmtDate(r.fecha) || '—'}</td>
     <td>${r.visita}</td>
     <td>${r.documento}</td>
@@ -100,7 +103,7 @@ function renderReporteVisitasTable(){
   </tr>`).join('');
   el.innerHTML = `<p class="helptext" style="margin-top:0;">${rows.length} de ${reporteVisitasCache.length} visita(s).</p>
     <table class="resumen-table"><thead><tr>
-      <th>Supervisor</th><th>Fecha visita</th><th>Visita</th><th>Documento estudiante</th><th>Apellidos</th><th>Nombres</th><th>Modalidad visita</th><th>Empresa</th><th>Jefe inmediato</th>
+      <th>Supervisor</th><th>Correo supervisor</th><th>Fecha visita</th><th>Visita</th><th>Documento estudiante</th><th>Apellidos</th><th>Nombres</th><th>Modalidad visita</th><th>Empresa</th><th>Jefe inmediato</th>
     </tr></thead><tbody>${trs}</tbody></table>
     <p class="helptext">Si "Apellidos"/"Nombres" salen vacíos para algún estudiante, edítalos en su ficha (Estudiantes → Datos generales).</p>`;
 }
@@ -109,13 +112,13 @@ function downloadReporteVisitasXLSX(){
   const rows = filasFiltradas();
   if(!rows || rows.length===0){ toast('No hay datos para descargar con estos filtros', true); return; }
   if(typeof XLSX === 'undefined'){ toast('No se pudo cargar el generador de Excel. Revisa tu conexión y recarga la página.', true); return; }
-  const headers = ['Supervisor','Fecha visita','Visita','Documento estudiante','Apellidos','Nombres','Modalidad visita','Empresa','Jefe inmediato'];
+  const headers = ['Supervisor','Correo supervisor','Fecha visita','Visita','Documento estudiante','Apellidos','Nombres','Modalidad visita','Empresa','Jefe inmediato'];
   const data = [headers].concat(rows.map(r=>[
-    r.supervisor, fmtDate(r.fecha), r.visita, r.documento, r.apellidos, r.nombres, r.modalidadVisita, r.empresa, r.jefeInmediato
+    r.supervisor, r.supervisorCorreo, fmtDate(r.fecha), r.visita, r.documento, r.apellidos, r.nombres, r.modalidadVisita, r.empresa, r.jefeInmediato
   ]));
   try{
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [ {wch:20}, {wch:12}, {wch:9}, {wch:16}, {wch:20}, {wch:20}, {wch:14}, {wch:26}, {wch:20} ];
+    ws['!cols'] = [ {wch:20}, {wch:24}, {wch:12}, {wch:9}, {wch:16}, {wch:20}, {wch:20}, {wch:14}, {wch:26}, {wch:20} ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Reporte visitas');
     XLSX.writeFile(wb, 'reporte_visitas.xlsx');
