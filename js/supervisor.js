@@ -19,7 +19,6 @@ function renderSupervisor(){
   document.getElementById('rf-sitio').value = rf.sitio || '';
   document.getElementById('rf-area').value = rf.area || '';
   document.getElementById('rf-jefe').value = rf.jefeInmediato || '';
-  document.getElementById('rf-supervisor').value = rf.supervisor || '';
   document.getElementById('rf-tutor').value = rf.tutor || '';
   document.getElementById('rf-funciones').value = rf.funcionesAsignadas || '';
   document.querySelectorAll('input[name="rfAceptacion"]').forEach(r=>{ r.checked = r.value === rf.aceptacionFunciones; });
@@ -31,6 +30,12 @@ function renderSupervisor(){
     initSigPad('sig-rf-supervisor', rf.firmaSupervisor, rf.bloqueado);
   }, 30);
   setCardLocked('rf-card', rf.bloqueado);
+  // El nombre/correo del supervisor viene de la cuenta con la que inició sesión —
+  // se muestra siempre, aunque el resto de la tarjeta esté bloqueada.
+  document.getElementById('rf-supervisor').value = state.currentUserNombre || rf.supervisor || '';
+  document.getElementById('rf-supervisor').disabled = true;
+  document.getElementById('rf-supervisor-correo').value = state.currentUserEmail || rf.supervisorCorreo || '';
+  document.getElementById('rf-supervisor-correo').disabled = true;
 
   const ds = state.record.datosSupervision;
   document.getElementById('ds-lock-banner').innerHTML = ds.bloqueado
@@ -40,7 +45,6 @@ function renderSupervisor(){
   document.getElementById('ds-sitio').value = ds.sitio || '';
   document.getElementById('ds-area').value = ds.area || '';
   document.getElementById('ds-jefe').value = ds.jefeInmediato || '';
-  document.getElementById('ds-supervisor').value = ds.supervisor || '';
   document.querySelectorAll('input[name="estP1"]').forEach(r=>{ r.checked = r.value === ds.obsEstudiante.p1; });
   document.querySelectorAll('input[name="estP2"]').forEach(r=>{ r.checked = r.value === ds.obsEstudiante.p2; });
   document.getElementById('ds-estComentarios').value = ds.obsEstudiante.comentarios || '';
@@ -54,13 +58,19 @@ function renderSupervisor(){
     initSigPad('sig-ds-supervisor', ds.obsSupervisor.firma, ds.bloqueado);
   }, 30);
   setCardLocked('ds-card', ds.bloqueado);
+  document.getElementById('ds-supervisor').value = state.currentUserNombre || ds.supervisor || '';
+  document.getElementById('ds-supervisor').disabled = true;
+  document.getElementById('ds-supervisor-correo').value = state.currentUserEmail || ds.supervisorCorreo || '';
+  document.getElementById('ds-supervisor-correo').disabled = true;
 }
 async function saveRevisionFunciones(){
   const rec = state.record; const rf = rec.revisionFunciones;
   if(rf.bloqueado){ toast('Esta visita está bloqueada. Pide al administrador que la desbloquee.', true); return; }
   rf.fecha = document.getElementById('rf-fecha').value;
   rf.modalidadVisita = document.getElementById('rf-modalidad-visita').value;
-  rf.sitio = val('rf-sitio'); rf.area = val('rf-area'); rf.jefeInmediato = val('rf-jefe'); rf.supervisor = val('rf-supervisor');
+  rf.sitio = val('rf-sitio'); rf.area = val('rf-area'); rf.jefeInmediato = val('rf-jefe');
+  rf.supervisor = state.currentUserNombre || rf.supervisor || '';
+  rf.supervisorCorreo = state.currentUserEmail || rf.supervisorCorreo || '';
   rf.tutor = val('rf-tutor');
   rf.funcionesAsignadas = document.getElementById('rf-funciones').value.trim();
   const rfAcept = document.querySelector('input[name="rfAceptacion"]:checked');
@@ -80,7 +90,9 @@ async function saveDatosSupervision(){
   if(ds.bloqueado){ toast('Esta visita está bloqueada. Pide al administrador que la desbloquee.', true); return; }
   ds.fecha = document.getElementById('ds-fecha').value;
   ds.modalidadVisita = document.getElementById('ds-modalidad-visita').value;
-  ds.sitio = val('ds-sitio'); ds.area = val('ds-area'); ds.jefeInmediato = val('ds-jefe'); ds.supervisor = val('ds-supervisor');
+  ds.sitio = val('ds-sitio'); ds.area = val('ds-area'); ds.jefeInmediato = val('ds-jefe');
+  ds.supervisor = state.currentUserNombre || ds.supervisor || '';
+  ds.supervisorCorreo = state.currentUserEmail || ds.supervisorCorreo || '';
   const ep1 = document.querySelector('input[name="estP1"]:checked'); const ep2 = document.querySelector('input[name="estP2"]:checked');
   ds.obsEstudiante.p1 = ep1 ? ep1.value : ''; ds.obsEstudiante.p2 = ep2 ? ep2.value : '';
   ds.obsEstudiante.comentarios = document.getElementById('ds-estComentarios').value.trim();
