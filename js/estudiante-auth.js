@@ -137,12 +137,3 @@ async function generarClavesMasivas(){
   XLSX.writeFile(wb, 'accesos-estudiantes.xlsx');
   toast(data.length + ' accesos creados. Guarda el Excel: las claves no se vuelven a mostrar.');
 }
-
-// Al abrir un estudiante en el panel del administrador, mostrar su bloque de acceso
-(function(){
-  const _renderAdm = renderAdministrador;
-  renderAdministrador = async function(){
-    await _renderAdm();
-    renderAccesoEstudianteAdmin();
-  };
-})();
