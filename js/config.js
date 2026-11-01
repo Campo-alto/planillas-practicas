@@ -75,7 +75,7 @@ const CRITERIOS_PDF = {
   }
 };
 
-let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false, adminModuleRole: null, currentUserNombre: '', currentUserEmail: '' };
+let state = { role: null, documento: null, record: null, empMonth: 0, estMonth: 0, pendingRole: null, isNewRecord: false, adminModuleRole: null, currentUserNombre: '', currentUserEmail: '', token: null };
 const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 
 function emptyRecord(documento){
