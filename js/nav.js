@@ -135,16 +135,21 @@ async function doRoleLogin(){
     }
     state.currentUserNombre = data.nombre || '';
     state.currentUserEmail = data.email || email;
+    state.token = data.token;
+    document.getElementById('rolePassword').value = '';
     goRole(state.pendingRole);
   }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">No se pudo conectar (revisa la consola).</span>'; }
 }
 function roleLogout(){
+  if(sb && state.token){ sb.rpc('role_logout', { p_token: state.token }); }  // invalida el token en el servidor
+  state.token = null;
   state.currentUserNombre = ''; state.currentUserEmail = '';
   goHome();
 }
 
 function goRole(role){
   state.role = role;
+  if(role === 'estudiante') state.token = null;  // cada consulta de estudiante abre su propia sesión
   const titles = {
     empresa: ['Buscar practicante', 'Ingresa el documento del estudiante para diligenciar o continuar su planilla mensual.'],
     estudiante: ['Consultar mi planilla', 'Ingresa tu número de documento para ver lo diligenciado y firmar.'],
