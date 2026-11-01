@@ -2,8 +2,9 @@
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.getElementById('topbarActions').innerHTML = id==='screen-home' ? '' :
-    '<span class="pill">'+roleLabel(state.role)+'</span>';
+  const lbl = roleLabel(state.role || state.pendingRole);
+  document.getElementById('topbarActions').innerHTML = (id==='screen-home' || !lbl) ? '' :
+    '<span class="pill">'+lbl+'</span>';
   window.scrollTo(0,0);
 }
 function roleLabel(role){
