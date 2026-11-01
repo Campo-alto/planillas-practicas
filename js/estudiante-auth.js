@@ -90,14 +90,17 @@ async function renderAccesoEstudianteAdmin(){
   const el = document.getElementById('admAccesoEstudiante');
   if(!el) return;
   const { data, error } = await sb.rpc('admin_student_has_password', { p_documento: state.documento });
-  const estado = error ? 'No se pudo consultar' : (data ? '✅ Tiene acceso (usuario: <b>'+esc(state.documento)+'</b>)' : '⚠️ Aún no tiene contraseña');
+  const estado = error ? '<span style="color:var(--danger)">No se pudo consultar: '+esc(error.message)+'</span>'
+    : (data ? '✅ Ya tiene acceso. Usuario: <b>'+esc(state.documento)+'</b>. Por seguridad la contraseña actual no se puede ver (se guarda cifrada); si la olvidó, genera una nueva.'
+            : '⚠️ Aún no tiene contraseña. Usuario: <b>'+esc(state.documento)+'</b>');
   el.innerHTML =
     '<p style="margin:0 0 10px;font-size:14px;">'+estado+'</p>'+
-    '<div class="field-row" style="grid-template-columns:1fr auto;align-items:end;">'+
-      '<div class="field"><label>Contraseña inicial (mín. 8 caracteres)</label><input type="text" id="admEstPw" autocomplete="off"></div>'+
-      '<button class="ghost" type="button" onclick="document.getElementById(\'admEstPw\').value=generarClaveLocal()">Generar</button>'+
+    '<div class="field"><label>Contraseña nueva (mín. 8 caracteres)</label>'+
+    '<input type="text" id="admEstPw" autocomplete="off" value="'+generarClaveLocal()+'"></div>'+
+    '<div class="actions-row" style="justify-content:flex-start;">'+
+      '<button class="ghost" type="button" onclick="document.getElementById(\'admEstPw\').value=generarClaveLocal()">Generar otra</button>'+
+      '<button class="primary" type="button" onclick="guardarClaveEstudiante()">'+(data?'Restablecer contraseña':'Asignar contraseña')+'</button>'+
     '</div>'+
-    '<div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="guardarClaveEstudiante()">'+(data?'Restablecer contraseña':'Asignar contraseña')+'</button></div>'+
     '<div id="admEstPwMsg" style="margin-top:10px;font-size:13.5px;"></div>';
 }
 async function guardarClaveEstudiante(){
@@ -106,8 +109,8 @@ async function guardarClaveEstudiante(){
   if(pw.length < 8){ msg.innerHTML = '<span style="color:var(--danger)">Mínimo 8 caracteres.</span>'; return; }
   const { error } = await sb.rpc('admin_set_student_password', { p_documento: state.documento, p_password: pw });
   if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">'+esc(error.message)+'</span>'; return; }
-  msg.innerHTML = '<span style="color:var(--teal-dark)">Listo. Entrégale al estudiante: usuario <b>'+esc(state.documento)+'</b> · contraseña <b>'+esc(pw)+'</b>. Deberá cambiarla al ingresar. Esta clave no se vuelve a mostrar.</span>';
-  document.getElementById('admEstPw').value = '';
+  const txt = 'Usuario: '+state.documento+'  Contraseña: '+pw;
+  msg.innerHTML = '<div style="background:#EAF6F3;border:1px solid #BFE0D8;border-radius:8px;padding:10px 12px;"><b>Entrégale al estudiante:</b><br>Usuario: <b>'+esc(state.documento)+'</b><br>Contraseña: <b style="font-size:16px;letter-spacing:.5px;">'+esc(pw)+'</b><br><small>Deberá cambiarla al ingresar. Anótala ahora: no se vuelve a mostrar.</small><br><button class="ghost" type="button" style="margin-top:8px;" onclick="navigator.clipboard.writeText('+JSON.stringify(txt).replace(/"/g,'&quot;')+');toast(\'Copiado\')">Copiar usuario y contraseña</button></div>';
   toast('Contraseña guardada');
 }
 async function generarClavesMasivas(){
