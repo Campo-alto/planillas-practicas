@@ -223,7 +223,23 @@
   <div class="screen" id="screen-admin-admins">
     <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <h2 style="margin:12px 0 4px;">Administradores</h2>
-    <p class="helptext">Estas cuentas se crean directamente desde el panel de Supabase (Authentication → Users), no desde aquí — así nadie puede darse a sí mismo permisos de administrador.</p>
+    <p class="helptext">Ten cuidado a quién le das este acceso: un administrador puede ver, editar y eliminar cualquier estudiante. Solo un administrador con sesión activa puede crear a otro.</p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Correo</label><input type="email" id="admEmail" autocomplete="off"></div>
+        <div class="field"><label>Nombre</label><input type="text" id="admNombre" autocomplete="off"></div>
+        <div class="field"><label>Contraseña (mínimo 8)</label>
+          <div class="pw-wrap">
+            <input type="password" id="admPasswordNew" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="admPasswordNew" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="saveAdministrador()">Crear administrador</button>
+      </div>
+      <div id="admFormMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
     <div class="card">
       <div id="adminsList"></div>
     </div>
