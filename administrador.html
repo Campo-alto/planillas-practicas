@@ -121,6 +121,11 @@
         <h3>Administradores</h3>
         <p>Ver quién tiene acceso de administrador en este momento.</p>
       </div>
+      <div class="role-card estudiante" onclick="goAdminModule('empresas')">
+        <div class="icon">🏢</div>
+        <h3>Empresas y cupos</h3>
+        <p>Registrar empresas de práctica, sus cupos por programa y jornada, y ver las asignaciones de los estudiantes.</p>
+      </div>
       <div class="role-card supervisor" onclick="goAdminModule('programas')">
         <div class="icon">📚</div>
         <h3>Programas</h3>
@@ -228,6 +233,38 @@
     </div>
   </div>
 
+  <!-- ADMIN MÓDULO: EMPRESAS Y CUPOS -->
+  <div class="screen" id="screen-admin-empresas">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Empresas y cupos de práctica</h2>
+    <p class="helptext">Registra las empresas y sus cupos por programa y jornada. Cada cupo que toma un estudiante se descuenta solo; cuando llega a 0 deja de ofrecerse.</p>
+    <div class="card">
+      <div class="section-bar deep">Datos de la empresa</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre de la empresa</label><input type="text" id="empNombre" autocomplete="off"></div>
+        <div class="field"><label>NIT</label><input type="text" id="empNit" autocomplete="off"></div>
+        <div class="field"><label>Dirección</label><input type="text" id="empDireccion" autocomplete="off"></div>
+        <div class="field"><label>Ciudad</label><input type="text" id="empCiudad" autocomplete="off"></div>
+        <div class="field"><label>Teléfono</label><input type="text" id="empTelefono" autocomplete="off"></div>
+        <div class="field"><label>Correo</label><input type="email" id="empCorreo" autocomplete="off"></div>
+        <div class="field"><label>Persona de contacto</label><input type="text" id="empContacto" autocomplete="off"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" id="empSaveBtn" onclick="guardarEmpresa()">Guardar empresa</button>
+        <button class="ghost" id="empCancelBtn" onclick="limpiarFormEmpresa()" style="display:none;">Cancelar</button>
+      </div>
+      <div id="empresaMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div id="empresasList"></div>
+    <div class="card">
+      <div class="section-bar deep">Asignaciones de estudiantes</div>
+      <div class="actions-row" style="justify-content:flex-start;margin-bottom:10px;">
+        <button class="ghost" onclick="descargarAsignacionesXLSX()">Descargar Excel</button>
+      </div>
+      <div id="asignacionesList"></div>
+    </div>
+  </div>
+
   <!-- ADMINISTRADOR -->
   <div class="screen" id="screen-administrador">
     <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
@@ -275,6 +312,7 @@
 <script src="js/supervisor.js"></script>
 <script src="js/administrador.js"></script>
 <script src="js/reporte.js"></script>
+<script src="js/asignacion.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>
