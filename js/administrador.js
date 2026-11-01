@@ -10,6 +10,7 @@ async function renderAdministrador(){
   const panel = document.getElementById('deleteStudentPanel');
   if(panel){ panel.style.display = 'none'; panel.innerHTML = ''; }
   await mostrarAccesoEstudiante();
+  organizarPestanasAdmin();
 }
 // Bloque "Acceso del estudiante a la aplicación": se asegura de que js/estudiante-auth.js esté cargado
 function cargarScriptUnaVez(src){
@@ -27,6 +28,51 @@ async function mostrarAccesoEstudiante(){
     }
     await renderAccesoEstudianteAdmin();
   }catch(e){ console.error(e); toast('Error mostrando el acceso del estudiante: ' + e.message, true); }
+}
+// Pestañas de la ficha del estudiante: Datos generales · Acceso del estudiante · Estado de la planilla
+let admTabActual = 'datos';
+function organizarPestanasAdmin(){
+  const datos = document.getElementById('admDatosGenerales');
+  const acceso = document.getElementById('admAccesoEstudiante');
+  const resumen = document.getElementById('admResumen');
+  if(!datos || !resumen) return;
+  const cards = {
+    datos: datos,
+    acceso: acceso ? acceso.closest('.card') : null,
+    estado: resumen.closest('.card')
+  };
+  // orden: datos → acceso → estado (todas quedan juntas, una tras otra)
+  let ref = cards.datos;
+  ['acceso','estado'].forEach(k=>{
+    if(cards[k] && cards[k] !== ref.nextElementSibling){ ref.insertAdjacentElement('afterend', cards[k]); }
+    if(cards[k]) ref = cards[k];
+  });
+  let bar = document.getElementById('admTabs');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.className = 'tabs'; bar.id = 'admTabs';
+    cards.datos.insertAdjacentElement('beforebegin', bar);
+  }
+  bar.innerHTML =
+    '<button class="tab" id="admTab-datos" onclick="showAdmTab(\'datos\')">Datos generales</button>'+
+    '<button class="tab" id="admTab-acceso" onclick="showAdmTab(\'acceso\')">Acceso del estudiante</button>'+
+    '<button class="tab" id="admTab-estado" onclick="showAdmTab(\'estado\')">Estado de la planilla</button>';
+  showAdmTab(admTabActual);
+}
+function showAdmTab(tab){
+  admTabActual = tab;
+  const resumen = document.getElementById('admResumen');
+  const acceso = document.getElementById('admAccesoEstudiante');
+  const cards = {
+    datos: document.getElementById('admDatosGenerales'),
+    acceso: acceso ? acceso.closest('.card') : null,
+    estado: resumen ? resumen.closest('.card') : null
+  };
+  Object.keys(cards).forEach(k=>{
+    if(cards[k]) cards[k].style.display = (k === tab) ? '' : 'none';
+    const b = document.getElementById('admTab-'+k);
+    if(b) b.classList.toggle('active', k === tab);
+  });
 }
 async function saveDatosGeneralesAdmin(){
   const rec = state.record;
