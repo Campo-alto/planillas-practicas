@@ -67,34 +67,67 @@ function recordToRow(rec){
     updated_at: new Date().toISOString()
   };
 }
+// El token de sesión de Empresa/Supervisor/Estudiante vive SOLO en memoria
+// (state.token): no se guarda en localStorage, así que cerrar la pestaña lo borra.
 async function getRecord(doc){
   if(!requireSupabase()) return null;
   try{
-    const { data, error } = await sb.from('students').select('*').eq('documento', doc).maybeSingle();
-    if(error){ console.error(error); toast('Error consultando Supabase: '+error.message, true); return null; }
+    // Administrador: sesión real de Supabase Auth + política RLS is_admin()
+    if(state.role === 'administrador'){
+      const { data, error } = await sb.from('students').select('*').eq('documento', doc).maybeSingle();
+      if(error){ console.error(error); toast('Error consultando: '+error.message, true); return null; }
+      return data ? rowToRecord(data) : null;
+    }
+    // Estudiante: primero inicia su sesión por documento (con límite de intentos)
+    if(state.role === 'estudiante' && !state.token){
+      const { data: ses, error: e1 } = await sb.rpc('login_estudiante', { p_documento: doc });
+      if(e1){ console.error(e1); toast(e1.message, true); return null; }
+      if(!ses) return null;
+      state.token = ses.token;
+    }
+    if(!state.token){ toast('Tu sesión venció. Inicia sesión de nuevo.', true); return null; }
+    const { data, error } = await sb.rpc('get_student', { p_token: state.token, p_documento: doc });
+    if(error){ console.error(error); toast(error.message, true); return null; }
     return data ? rowToRecord(data) : null;
   }catch(e){
-    console.error(e); toast('No se pudo conectar con Supabase (revisa la consola)', true); return null;
+    console.error(e); toast('No se pudo conectar (revisa la consola)', true); return null;
   }
+}
+async function savePart(part, data, extraDoc){
+  const { error } = await sb.rpc('save_student_part', {
+    p_token: state.token, p_documento: extraDoc, p_part: part, p_data: data
+  });
+  if(error) throw error;
 }
 async function saveRecord(rec){
   if(!requireSupabase()) return;
   try{
     rec.lastUpdated = new Date().toISOString();
-    const row = recordToRow(rec);
-    let error;
-    if(state.isNewRecord){
-      // Solo pasa por aquí el Administrador, creando un estudiante que no existía.
-      ({ error } = await sb.from('students').insert(row));
-      if(!error) state.isNewRecord = false;
-    } else {
-      // Empresa/Estudiante/Supervisor siempre actualizan un estudiante que el
-      // administrador ya creó — nunca insertan, así que usamos update en vez de
-      // upsert (upsert exige permiso de insertar aunque termine actualizando).
-      ({ error } = await sb.from('students').update(row).eq('documento', rec.documento));
+    if(state.role === 'administrador'){
+      const row = recordToRow(rec);
+      let error;
+      if(state.isNewRecord){
+        ({ error } = await sb.from('students').insert(row));
+        if(!error) state.isNewRecord = false;
+      } else {
+        ({ error } = await sb.from('students').update(row).eq('documento', rec.documento));
+      }
+      if(error){ console.error(error); toast('Error guardando: '+error.message, true); }
+      return;
     }
-    if(error){ console.error(error); toast('Error guardando en Supabase: '+error.message, true); }
+    if(!state.token){ toast('Tu sesión venció. Inicia sesión de nuevo.', true); return; }
+    // Cada rol solo puede escribir SUS partes (también lo exige la base de datos)
+    if(state.role === 'empresa'){
+      await savePart('competencias', rec.competencias, rec.documento);
+      await savePart('meses', rec.meses, rec.documento);
+    } else if(state.role === 'estudiante'){
+      const idx = state.estMonth;
+      await savePart('firma_mes', { idx, firma: (rec.meses[idx] || {}).firmaEstudiante || null }, rec.documento);
+    } else if(state.role === 'supervisor'){
+      await savePart('revision_funciones', rec.revisionFunciones, rec.documento);
+      await savePart('datos_supervision', rec.datosSupervision, rec.documento);
+    }
   }catch(e){
-    console.error(e); toast('No se pudo conectar con Supabase (revisa la consola)', true);
+    console.error(e); toast('Error guardando: ' + (e.message || 'revisa la consola'), true);
   }
 }
