@@ -7,6 +7,7 @@ const COMPETENCIAS = [
   {key:'conocimiento', name:'4. Evaluación de conocimientos', desc:'Aplicación de normativa y confidencialidad'}
 ];
 const PROGRAMA = 'Auxiliar Administrativo en Salud';
+const JORNADAS = ['Mañana','Tarde','Noche','Sábado','Domingo'];
 const TITULO_PROGRAMA_PREFIJO = 'TÉCNICO LABORAL POR COMPETENCIAS EN';
 const AREAS_PROGRAMA = ['Salud','Administración y Negocios','Estética y Belleza','Mecánica','Sistemas','Educación','Cocina','Confección y Patronaje de Moda'];
 
@@ -81,7 +82,7 @@ const sigPads = {}; // id -> {canvas, ctx, drawing, empty}
 function emptyRecord(documento){
   return {
     documento, nombre:'', apellidos:'', nombres:'', correo:'', telefono:'', sede:'', semestre:'', modalidad:'', periodoAcademico:'',
-    funcionario:'', fechaEnvio:'', programa: PROGRAMA,
+    funcionario:'', fechaEnvio:'', programa: PROGRAMA, jornadaSolicitada:'',
     competencias:{ ser:Array(6).fill(null), desempeno:Array(6).fill(null), producto:Array(6).fill(null), conocimiento:Array(6).fill(null) },
     meses: Array.from({length:6}, ()=>({sitio:'', fechaInicio:'', fechaFin:'', observaciones:'', firmaEmpresa:null, firmaEstudiante:null, bloqueado:false, subidoPlataforma:false})),
     revisionFunciones:{ fecha:'', modalidadVisita:'', sitio:'', area:'', jefeInmediato:'', supervisor:'', supervisorCorreo:'', tutor:'', funcionesAsignadas:'', aceptacionFunciones:'', observacionesMejora:'', compromisos:'', firmaJefe:null, firmaEstudiante:null, firmaSupervisor:null, bloqueado:false },
