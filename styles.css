@@ -156,3 +156,30 @@
     .comp-row{grid-template-columns:1fr;}
     .status-strip{flex-direction:column;align-items:flex-start;}
   }
+
+/* ===== Pantallas de acceso: centradas y ordenadas ===== */
+#screen-admin-login, #screen-role-login, #screen-reset-password { max-width:440px; margin:7vh auto 0; }
+#screen-lookup { margin-top:4vh; }
+#screen-admin-login h2, #screen-role-login h2, #screen-reset-password h2, #screen-lookup h2 { text-align:center; font-size:26px; }
+#screen-admin-login .helptext, #screen-reset-password .helptext { text-align:center; margin-left:auto; margin-right:auto; }
+#screen-admin-login .card, #screen-role-login .card, #screen-reset-password .card,
+#screen-lookup .card:first-of-type {
+  max-width:100% !important; margin-left:auto !important; margin-right:auto !important;
+  padding:28px 28px 24px; box-shadow:0 8px 30px rgba(11,61,61,.08);
+}
+#screen-admin-login .actions-row, #screen-role-login .actions-row, #screen-reset-password .actions-row { justify-content:stretch !important; margin-top:16px; }
+#screen-admin-login .actions-row button, #screen-role-login .actions-row button, #screen-reset-password .actions-row button { width:100%; padding:12px 16px; }
+#screen-admin-login .card .linkbtn, #screen-role-login .card .linkbtn { display:block; margin:16px auto 0 !important; padding:0 !important; text-align:center; }
+#screen-admin-login #adminLoginMsg, #screen-role-login #roleLoginMsg, #screen-reset-password #resetPasswordMsg { text-align:center; }
+#screen-role-login #forgotRoleHelp { text-align:left; }
+#screen-lookup .lookup-form { flex-direction:column; align-items:stretch; gap:14px; }
+#screen-lookup .lookup-form button { width:100%; padding:12px 16px; }
+#screen-lookup #lookupMsg { text-align:center; }
+@media (max-width:520px){
+  #screen-admin-login, #screen-role-login, #screen-reset-password { margin-top:3vh; }
+  #screen-admin-login .card, #screen-role-login .card, #screen-reset-password .card, #screen-lookup .card:first-of-type { padding:22px 18px 20px; }
+}
+#screen-admin-login h2, #screen-role-login h2, #screen-reset-password h2, #screen-lookup h2 { margin:0 0 8px !important; }
+#screen-admin-login .helptext, #screen-role-login .helptext, #screen-reset-password .helptext, #screen-lookup .helptext {
+  text-align:center !important; margin:0 auto 22px !important; line-height:1.45;
+}
