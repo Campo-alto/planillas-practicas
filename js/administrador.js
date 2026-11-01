@@ -75,7 +75,7 @@ function showAdmTab(tab){
     if(b) b.classList.toggle('active', k === tab);
   });
 }
-// Banner con la empresa a la que fue asignado el estudiante (visible en todas las pestañas)
+// Panel de empresa asignada (visible en todas las pestañas): empresa actual, retiro con motivo, nueva asignación e historial
 async function mostrarEmpresaAsignada(){
   const bar = document.getElementById('admTabs');
   if(!bar) return;
@@ -86,19 +86,71 @@ async function mostrarEmpresaAsignada(){
     box.style.cssText = 'margin:0 0 12px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:14px;';
     bar.insertAdjacentElement('beforebegin', box);
   }
+  if(state.isNewRecord){ box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">— (estudiante aún sin guardar)</span>'; return; }
   box.innerHTML = '<span style="color:var(--muted)">Consultando empresa asignada…</span>';
-  if(state.isNewRecord){ box.innerHTML = '<b>Empresa asignada:</b> <span style="color:var(--muted)">— (estudiante aún sin guardar)</span>'; return; }
   try{
-    const { data, error } = await sb.rpc('admin_list_asignaciones');
+    const { data, error } = await sb.rpc('admin_historial_estudiante', { p_documento: state.documento });
     if(error) throw error;
-    const a = (data || []).find(x => x.documento === state.documento && x.estado === 'activa');
-    box.innerHTML = a
-      ? '🏢 <b>Empresa asignada:</b> '+esc(a.empresa)+' <span style="color:var(--muted)">· Jornada '+esc(a.jornada)+' · '+esc(a.programa)+'</span>'
-      : '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">aún no tiene empresa asignada</span>';
+    const hist = data || [];
+    const act = hist.find(x => x.estado === 'activa');
+    const previas = hist.filter(x => x.estado !== 'activa');
+    const inicio = hist.length ? hist[0].desde : null;
+    let html;
+    if(act){
+      html = '🏢 <b>Empresa asignada:</b> '+esc(act.empresa)+' <span style="color:var(--muted)">· Jornada '+esc(act.jornada)+' · '+esc(act.programa)+'</span>'+
+        ' <button class="danger" type="button" style="padding:4px 10px;font-size:12px;margin-left:8px;" onclick="liberarDesdeFicha(\''+act.id+'\')">Inactivar de esta empresa</button>';
+    } else {
+      html = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">'+(previas.length ? 'inactivo(a) — sin empresa actualmente' : 'aún no tiene empresa asignada')+'</span>';
+      if(previas.length){
+        const t = tiempoRestantePractica(inicio, state.record.modalidad);
+        if(t) html += '<div style="margin-top:6px;font-size:13px;">⏳ Tiempo restante de práctica: <b>'+t.dias+' días</b> (hasta el '+t.fin.toLocaleDateString()+'). El estudiante puede elegir una nueva empresa, o puedes asignársela aquí:</div>';
+      }
+      html += '<div id="admNuevaEmpresa" style="margin-top:8px;"></div>';
+    }
+    if(previas.length){
+      html += '<details style="margin-top:8px;font-size:13px;"><summary style="cursor:pointer;color:var(--muted);">Historial de empresas ('+previas.length+' anterior'+(previas.length>1?'es':'')+')</summary><ul style="margin:6px 0 0 18px;padding:0;">'+
+        previas.map(p=>'<li>'+esc(p.empresa)+' · '+esc(p.jornada)+' · '+new Date(p.desde).toLocaleDateString()+' → '+(p.hasta?new Date(p.hasta).toLocaleDateString():'—')+(p.motivo?' · <i>'+esc(p.motivo)+'</i>':'')+'</li>').join('')+
+        '</ul></details>';
+    }
+    box.innerHTML = html;
+    if(!act) cargarOpcionesNuevaEmpresa();
   }catch(e){
     console.error(e);
-    box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--danger)">no se pudo consultar</span>';
+    box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--danger)">no se pudo consultar ('+esc(e.message||'')+'). ¿Ejecutaste el SQL de cambio de empresa?</span>';
   }
+}
+async function liberarDesdeFicha(id){
+  const motivo = prompt('Motivo del retiro del estudiante de esta empresa (obligatorio):');
+  if(motivo === null) return;
+  if(motivo.trim().length < 3){ toast('Escribe el motivo del retiro', true); return; }
+  if(!confirm('¿Inactivar al estudiante de esta empresa? El cupo volverá a estar disponible y el estudiante podrá elegir una nueva empresa por el tiempo que le falta.')) return;
+  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id, p_motivo: motivo.trim() });
+  if(error){ toast(errMsg(error), true); return; }
+  toast('Estudiante inactivado de la empresa');
+  mostrarEmpresaAsignada();
+}
+async function cargarOpcionesNuevaEmpresa(){
+  const host = document.getElementById('admNuevaEmpresa');
+  if(!host) return;
+  const { data, error } = await sb.from('empresas_practica').select('id,nombre,activa,cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados)').eq('activa', true).order('nombre');
+  if(error){ host.innerHTML = '<span style="color:var(--danger)">No se pudieron cargar las empresas.</span>'; return; }
+  const prog = state.record.programa;
+  const ops = [];
+  (data||[]).forEach(e => (e.cupos_empresa||[]).forEach(c=>{
+    if(c.programa === prog && c.cupos_ocupados < c.cupos_total)
+      ops.push('<option value="'+c.id+'">'+esc(e.nombre)+' · '+esc(c.jornada)+' ('+(c.cupos_total-c.cupos_ocupados)+' disponibles)</option>');
+  }));
+  host.innerHTML = ops.length
+    ? '<select id="admNuevoCupo" style="max-width:100%;"><option value="">Elegir empresa y jornada…</option>'+ops.join('')+'</select> <button class="primary" type="button" style="padding:5px 12px;font-size:12.5px;" onclick="asignarNuevaEmpresa()">Asignar</button>'
+    : '<span style="color:var(--muted);font-size:13px;">No hay cupos disponibles para el programa de este estudiante.</span>';
+}
+async function asignarNuevaEmpresa(){
+  const id = document.getElementById('admNuevoCupo').value;
+  if(!id){ toast('Elige una empresa', true); return; }
+  const { data, error } = await sb.rpc('admin_asignar_cupo', { p_documento: state.documento, p_cupo_id: id });
+  if(error){ toast(errMsg(error), true); return; }
+  toast('Asignado a '+data.empresa);
+  mostrarEmpresaAsignada();
 }
 async function saveDatosGeneralesAdmin(){
   const rec = state.record;
