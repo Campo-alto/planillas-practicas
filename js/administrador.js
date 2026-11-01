@@ -9,6 +9,24 @@ async function renderAdministrador(){
   if(btn) btn.disabled = true;
   const panel = document.getElementById('deleteStudentPanel');
   if(panel){ panel.style.display = 'none'; panel.innerHTML = ''; }
+  await mostrarAccesoEstudiante();
+}
+// Bloque "Acceso del estudiante a la aplicación": se asegura de que js/estudiante-auth.js esté cargado
+function cargarScriptUnaVez(src){
+  return new Promise(res=>{
+    const s = document.createElement('script');
+    s.src = src; s.onload = ()=>res(true); s.onerror = ()=>res(false);
+    document.head.appendChild(s);
+  });
+}
+async function mostrarAccesoEstudiante(){
+  try{
+    if(typeof renderAccesoEstudianteAdmin !== 'function'){
+      const ok = await cargarScriptUnaVez('js/estudiante-auth.js');
+      if(!ok){ console.error('No se pudo cargar js/estudiante-auth.js (¿está dentro de la carpeta js?)'); toast('Falta el archivo js/estudiante-auth.js en GitHub', true); return; }
+    }
+    await renderAccesoEstudianteAdmin();
+  }catch(e){ console.error(e); toast('Error mostrando el acceso del estudiante: ' + e.message, true); }
 }
 async function saveDatosGeneralesAdmin(){
   const rec = state.record;
