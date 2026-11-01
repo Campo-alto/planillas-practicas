@@ -74,6 +74,7 @@ async function adminLogout(){
   goHome();
 }
 function goAdminModule(module){
+  if(module === 'empresa') module = 'empresas';  // un solo módulo de empresas (datos, cupos y acceso)
   if(module === 'empresa' || module === 'supervisor'){
     state.adminModuleRole = module;
     document.getElementById('roleModuleTitle').textContent = module==='empresa' ? 'Usuarios de Empresa' : 'Usuarios de Supervisor';
@@ -96,6 +97,7 @@ function goAdminModule(module){
   } else if(module === 'empresas'){
     limpiarFormEmpresa();
     showScreen('screen-admin-empresas');
+    showEmpresasTab('datos');
     renderEmpresasCupos();
   } else if(module === 'reporte'){
     showScreen('screen-admin-reporte');
