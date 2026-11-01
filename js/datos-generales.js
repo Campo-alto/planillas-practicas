@@ -23,6 +23,12 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
         <div class="field"><label>Periodo académico</label><input id="${formIdPrefix}-periodo" value="${escapeAttr(rec.periodoAcademico)}"></div>
         <div class="field"><label>Funcionario que procesa</label><input id="${formIdPrefix}-funcionario" value="${escapeAttr(rec.funcionario)}"></div>
         ${renderAreaProgramaSelects(formIdPrefix, rec.programa)}
+        <div class="field"><label>Jornada en que solicita el cupo de práctica</label>
+          <select id="${formIdPrefix}-jornada">
+            <option value="">Sin definir…</option>
+            ${JORNADAS.map(j=>`<option value="${j}" ${j===rec.jornadaSolicitada?'selected':''}>${j}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <div class="actions-row"><button class="ghost" onclick="saveDatosGeneralesAdmin()">Guardar datos generales</button></div>
     `;
@@ -35,6 +41,7 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
       <div class="field"><label>Sede</label><div>${rec.sede||'—'}</div></div>
       <div class="field"><label>Semestre</label><div>${rec.semestre||'—'}</div></div>
       <div class="field"><label>Modalidad</label><div>${rec.modalidad||'—'}</div></div>
+      <div class="field"><label>Jornada solicitada</label><div>${rec.jornadaSolicitada||'—'}</div></div>
       <div class="field" style="grid-column:1/-1;"><label>Programa</label><div>${rec.programa||'—'}</div></div>
     </div>
   `;
