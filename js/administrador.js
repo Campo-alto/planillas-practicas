@@ -11,6 +11,7 @@ async function renderAdministrador(){
   if(panel){ panel.style.display = 'none'; panel.innerHTML = ''; }
   await mostrarAccesoEstudiante();
   organizarPestanasAdmin();
+  mostrarEmpresaAsignada();
 }
 // Bloque "Acceso del estudiante a la aplicación": se asegura de que js/estudiante-auth.js esté cargado
 function cargarScriptUnaVez(src){
@@ -73,6 +74,31 @@ function showAdmTab(tab){
     const b = document.getElementById('admTab-'+k);
     if(b) b.classList.toggle('active', k === tab);
   });
+}
+// Banner con la empresa a la que fue asignado el estudiante (visible en todas las pestañas)
+async function mostrarEmpresaAsignada(){
+  const bar = document.getElementById('admTabs');
+  if(!bar) return;
+  let box = document.getElementById('admEmpresaAsignada');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'admEmpresaAsignada';
+    box.style.cssText = 'margin:0 0 12px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:14px;';
+    bar.insertAdjacentElement('beforebegin', box);
+  }
+  box.innerHTML = '<span style="color:var(--muted)">Consultando empresa asignada…</span>';
+  if(state.isNewRecord){ box.innerHTML = '<b>Empresa asignada:</b> <span style="color:var(--muted)">— (estudiante aún sin guardar)</span>'; return; }
+  try{
+    const { data, error } = await sb.rpc('admin_list_asignaciones');
+    if(error) throw error;
+    const a = (data || []).find(x => x.documento === state.documento && x.estado === 'activa');
+    box.innerHTML = a
+      ? '🏢 <b>Empresa asignada:</b> '+esc(a.empresa)+' <span style="color:var(--muted)">· Jornada '+esc(a.jornada)+' · '+esc(a.programa)+'</span>'
+      : '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">aún no tiene empresa asignada</span>';
+  }catch(e){
+    console.error(e);
+    box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--danger)">no se pudo consultar</span>';
+  }
 }
 async function saveDatosGeneralesAdmin(){
   const rec = state.record;
