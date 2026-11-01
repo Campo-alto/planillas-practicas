@@ -87,8 +87,21 @@ function generarClaveLocal(){
   return Array.from(b, x => abc[x % abc.length]).join('');
 }
 async function renderAccesoEstudianteAdmin(){
-  const el = document.getElementById('admAccesoEstudiante');
-  if(!el) return;
+  let el = document.getElementById('admAccesoEstudiante');
+  if(!el){
+    // si el HTML subido es una versión anterior, el bloque se crea desde aquí
+    const ref = document.getElementById('admResumen');
+    if(!ref) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<div class="section-bar teal">Acceso del estudiante a la aplicación</div><div id="admAccesoEstudiante"></div>';
+    ref.closest('.card').insertAdjacentElement('afterend', card);
+    el = document.getElementById('admAccesoEstudiante');
+  }
+  if(state.isNewRecord){
+    el.innerHTML = '<p style="margin:0;font-size:14px;">⚠️ Este estudiante aún no está guardado. Completa los datos generales, pulsa <b>Guardar</b> y vuelve a abrirlo para asignarle su contraseña.</p>';
+    return;
+  }
   const { data, error } = await sb.rpc('admin_student_has_password', { p_documento: state.documento });
   const estado = error ? '<span style="color:var(--danger)">No se pudo consultar: '+esc(error.message)+'</span>'
     : (data ? '✅ Ya tiene acceso. Usuario: <b>'+esc(state.documento)+'</b>. Por seguridad la contraseña actual no se puede ver (se guarda cifrada); si la olvidó, genera una nueva.'
