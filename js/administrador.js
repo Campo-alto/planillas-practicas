@@ -23,6 +23,7 @@ async function saveDatosGeneralesAdmin(){
   rec.sede = val('adm-sede'); rec.semestre = val('adm-semestre'); rec.modalidad = val('adm-modalidad');
   rec.periodoAcademico = val('adm-periodo'); rec.funcionario = val('adm-funcionario');
   rec.programa = val('adm-programa') || PROGRAMA;
+  rec.jornadaSolicitada = val('adm-jornada');
   if(!rec.nombre){ toast('Escribe al menos apellidos o nombres del estudiante', true); return; }
   await saveRecord(rec);
   toast('Datos del estudiante guardados');
