@@ -4,6 +4,7 @@ function renderEstudiante(){
   document.getElementById('estDocLabel').textContent = state.documento;
   document.getElementById('estDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'est');
   renderEstNotasView();
+  renderAsignacionEstudiante();
 
   const mesesActivos = mesesPorModalidad(state.record.modalidad);
   if(state.estMonth >= mesesActivos) state.estMonth = 0;
