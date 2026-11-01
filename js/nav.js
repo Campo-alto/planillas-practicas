@@ -93,6 +93,10 @@ function goAdminModule(module){
     document.getElementById('programasMsg').innerHTML = '';
     showScreen('screen-admin-programas');
     renderProgramasModule();
+  } else if(module === 'empresas'){
+    limpiarFormEmpresa();
+    showScreen('screen-admin-empresas');
+    renderEmpresasCupos();
   } else if(module === 'reporte'){
     showScreen('screen-admin-reporte');
     renderReporteVisitas();
