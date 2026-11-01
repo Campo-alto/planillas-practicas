@@ -174,10 +174,28 @@ async function renderAsignacionesAdmin(){
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(e.message)+'</p>'; }
 }
 async function liberarAsignacion(id){
-  if(!confirm('¿Liberar este cupo? El estudiante quedará sin empresa y el cupo volverá a estar disponible.')) return;
-  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id });
+  const motivo = prompt('Motivo del retiro del estudiante de esta empresa (obligatorio):');
+  if(motivo === null) return;
+  if(motivo.trim().length < 3){ toast('Escribe el motivo del retiro', true); return; }
+  if(!confirm('¿Inactivar al estudiante de esta empresa? Quedará sin empresa, el cupo volverá a estar disponible y podrá elegir una nueva por el tiempo que le falta.')) return;
+  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id, p_motivo: motivo.trim() });
   if(error){ toast(errMsg(error), true); return; }
-  toast('Cupo liberado'); renderEmpresasCupos();
+  toast('Estudiante inactivado de la empresa'); renderEmpresasCupos();
+}
+// Tiempo que le falta al estudiante: la práctica dura los meses de su modalidad desde su primera asignación
+function tiempoRestantePractica(inicio, modalidad){
+  if(!inicio) return null;
+  const ini = new Date(inicio); if(isNaN(ini)) return null;
+  const fin = new Date(ini); fin.setMonth(fin.getMonth() + mesesPorModalidad(modalidad));
+  const dias = Math.max(0, Math.ceil((fin - new Date()) / 86400000));
+  return { fin, dias };
+}
+function textoTiempoRestante(inicio, modalidad){
+  const t = tiempoRestantePractica(inicio, modalidad);
+  if(!t) return '';
+  return t.dias > 0
+    ? 'Te faltan aproximadamente <b>'+t.dias+' días</b> para completar la práctica (hasta el '+t.fin.toLocaleDateString()+').'
+    : 'El tiempo de tu práctica ya se cumplió (hasta el '+t.fin.toLocaleDateString()+').';
 }
 function descargarAsignacionesXLSX(){
   if(asignacionesCache.length===0){ toast('No hay asignaciones para descargar', true); return; }
@@ -214,7 +232,13 @@ async function renderAsignacionEstudiante(){
       return;
     }
     const lista = data.cupos || [];
-    const cab = `<p class="helptext" style="margin-top:-4px;">Programa: <b>${esc(data.programa)}</b> · Jornada: <b>${esc(data.jornada)}</b>. Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo.</p>`;
+    const hist = data.historial || [];
+    let aviso = '';
+    if(hist.length){
+      const u = hist[hist.length-1];
+      aviso = `<div class="note-box" style="margin-bottom:12px;">Fuiste retirado(a) de <b>${esc(u.empresa)}</b>${u.hasta?' el '+new Date(u.hasta).toLocaleDateString():''}${u.motivo?' (motivo: '+esc(u.motivo)+')':''}. Puedes elegir una nueva empresa por el tiempo que te falta. ${textoTiempoRestante(data.inicio, data.modalidad)}</div>`;
+    }
+    const cab = aviso + `<p class="helptext" style="margin-top:-4px;">Programa: <b>${esc(data.programa)}</b> · Jornada: <b>${esc(data.jornada)}</b>. Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>`;
     if(lista.length===0){ el.innerHTML = cab + '<div class="note-box">Por ahora no hay cupos disponibles para tu programa y jornada. Vuelve a revisar más tarde.</div>'; return; }
     const rows = lista.map(c=>`<tr>
       <td><b>${esc(c.empresa)}</b></td>
