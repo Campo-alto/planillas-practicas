@@ -8,6 +8,15 @@ function errMsg(e){ return (e && e.message) ? e.message.replace(/^.*?(Este|Ya|No
 let empresasCache = [];
 let editingEmpresaId = null;
 let asignacionesCache = [];
+let accesosCache = [];   // usuarios de acceso con rol empresa
+
+function showEmpresasTab(tab){
+  ['datos','asig','acceso'].forEach(t=>{
+    document.getElementById('empPane-'+t).style.display = t===tab ? '' : 'none';
+    document.getElementById('empTab-'+t).classList.toggle('active', t===tab);
+  });
+  if(tab==='acceso') renderAccesosEmpresa();
+}
 
 async function renderEmpresasCupos(){
   if(!requireSupabase()) return;
@@ -20,6 +29,10 @@ async function renderEmpresasCupos(){
       .order('nombre', { ascending: true });
     if(error) throw error;
     empresasCache = data || [];
+    try{
+      const r = await sb.rpc('admin_list_role_accounts');
+      accesosCache = (r.data || []).filter(u=>u.role==='empresa');
+    }catch(_){ accesosCache = []; }
     renderEmpresasListHtml();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(e.message)+'</p>'; }
   renderAsignacionesAdmin();
@@ -50,6 +63,7 @@ function renderEmpresasListHtml(){
           <span style="color:var(--muted);font-size:12.5px;">${esc(emp.direccion||'—')}${emp.ciudad?' · '+esc(emp.ciudad):''} · Tel. ${esc(emp.telefono||'—')}${emp.nit?' · NIT '+esc(emp.nit):''}</span>
         </div>
         <div style="white-space:nowrap;">
+          <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="gestionarAcceso('${emp.id}')">${tieneAcceso(emp)?'🔑 Acceso creado':'🔑 Crear acceso'}</button>
           <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editarEmpresa('${emp.id}')">Editar</button>
           <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="toggleEmpresaActiva('${emp.id}', ${!emp.activa})">${emp.activa?'Desactivar':'Activar'}</button>
           <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="eliminarEmpresa('${emp.id}')">Eliminar</button>
@@ -219,4 +233,79 @@ async function tomarCupo(cupoId, btn){
   if(error){ toast(errMsg(error), true); renderAsignacionEstudiante(); return; }
   toast('Cupo asignado: '+data.empresa);
   renderAsignacionEstudiante();
+}
+
+/* ---------- Acceso (usuario) de la empresa, dentro del mismo módulo ---------- */
+function tieneAcceso(emp){
+  const c = (emp.correo||'').trim().toLowerCase();
+  return !!c && accesosCache.some(u=>(u.email||'').toLowerCase()===c);
+}
+function opcionesEmpresasSelect(selectedId){
+  return '<option value="">Selecciona una empresa registrada…</option>' +
+    empresasCache.map(e=>`<option value="${e.id}" ${e.id===selectedId?'selected':''}>${esc(e.nombre)}</option>`).join('');
+}
+function llenarAccesoDesdeEmpresa(){
+  const id = document.getElementById('acEmpresa').value;
+  const e = empresasCache.find(x=>x.id===id);
+  document.getElementById('acEmail').value = e ? (e.correo||'') : '';
+  document.getElementById('acNombre').value = e ? e.nombre : '';
+  document.getElementById('acPassword').value = '';
+  const msg = document.getElementById('accesoMsg');
+  msg.innerHTML = (e && !e.correo) ? '<span style="color:var(--muted)">Esta empresa no tiene correo registrado: escríbelo aquí (se usará solo para el acceso).</span>' : '';
+}
+function gestionarAcceso(empresaId){
+  showEmpresasTab('acceso');
+  document.getElementById('acEmpresa').innerHTML = opcionesEmpresasSelect(empresaId);
+  llenarAccesoDesdeEmpresa();
+  document.getElementById('acPassword').focus();
+}
+async function renderAccesosEmpresa(){
+  const sel = document.getElementById('acEmpresa');
+  if(!sel.value) sel.innerHTML = opcionesEmpresasSelect('');
+  const el = document.getElementById('accesosList');
+  el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
+  try{
+    const { data, error } = await sb.rpc('admin_list_role_accounts');
+    if(error) throw error;
+    accesosCache = (data||[]).filter(u=>u.role==='empresa');
+    if(accesosCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay empresas con acceso.</p>'; return; }
+    el.innerHTML = '<table class="students-list"><thead><tr><th>Cuenta</th><th>Creado</th><th></th></tr></thead><tbody>' +
+      accesosCache.map(u=>`<tr>
+        <td>${u.nombre?esc(u.nombre)+'<br><span style="color:var(--muted);font-size:11.5px;">'+esc(u.email)+'</span>':esc(u.email)}</td>
+        <td>${u.created_at?new Date(u.created_at).toLocaleDateString():'—'}</td>
+        <td style="white-space:nowrap;">
+          <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editarAcceso('${u.id}')">Editar</button>
+          <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="eliminarAcceso('${u.id}')">Eliminar</button>
+        </td></tr>`).join('') + '</tbody></table>';
+  }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(e.message)+'</p>'; }
+}
+function editarAcceso(id){
+  const u = accesosCache.find(x=>x.id===id); if(!u) return;
+  const emp = empresasCache.find(e=>(e.correo||'').toLowerCase()===(u.email||'').toLowerCase());
+  document.getElementById('acEmpresa').innerHTML = opcionesEmpresasSelect(emp ? emp.id : '');
+  document.getElementById('acEmail').value = u.email;
+  document.getElementById('acNombre').value = u.nombre||'';
+  document.getElementById('acPassword').value = '';
+  document.getElementById('accesoMsg').innerHTML = '<span style="color:var(--muted)">Editando '+esc(u.email)+'. Deja la contraseña en blanco para conservar la actual.</span>';
+  window.scrollTo(0,0);
+}
+async function guardarAccesoEmpresa(){
+  if(!requireSupabase()) return;
+  const msg = document.getElementById('accesoMsg');
+  const email = val('acEmail'), nombre = val('acNombre'), password = document.getElementById('acPassword').value;
+  if(!email){ msg.innerHTML = '<span style="color:var(--danger)">Escribe el correo de acceso.</span>'; return; }
+  if(password && password.length < 8){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener mínimo 8 caracteres.</span>'; return; }
+  try{
+    const { data, error } = await sb.rpc('admin_save_role_account', { p_email: email, p_role: 'empresa', p_password: password || null, p_nombre: nombre });
+    if(error) throw error;
+    document.getElementById('acPassword').value = '';
+    msg.innerHTML = '<span style="color:var(--teal-dark)">'+((data&&data.updated)?'Acceso actualizado.':'Acceso creado.')+'</span>';
+    renderAccesosEmpresa();
+  }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">Error: '+esc(errMsg(e))+'</span>'; }
+}
+async function eliminarAcceso(id){
+  if(!confirm('¿Eliminar este acceso? La empresa dejará de poder entrar (sus datos y cupos no se borran).')) return;
+  const { error } = await sb.rpc('admin_delete_role_account', { p_id: id });
+  if(error){ toast('No se pudo eliminar: '+error.message, true); return; }
+  toast('Acceso eliminado'); renderAccesosEmpresa();
 }
