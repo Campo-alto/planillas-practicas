@@ -100,6 +100,7 @@ function caHvForm(hv){
   hv = hv || {};
   caHv.formacion = (hv.formacion && hv.formacion.length ? hv.formacion : [{titulo:'',institucion:'',anio:''}]).map(x=>({...x}));
   caHv.experiencia = (hv.experiencia||[]).map(x=>({...x}));
+  caHv.cursos = (hv.cursos||[]).map(x=>({...x}));
   return `<div class="subhead" style="margin-top:14px;">Mi hoja de vida (la ven las empresas SIN tu nombre, documento ni contacto hasta que te llamen a entrevista)</div>
     <div class="field-row">
       <div class="field"><label>Teléfono *</label><input id="hv-tel" maxlength="30" value="${escapeAttr(hv.telefono||state.record.telefono||'')}"></div>
@@ -108,15 +109,26 @@ function caHvForm(hv){
     </div>
     <div class="field"><label>Perfil profesional * (mínimo 30 caracteres)</label><textarea id="hv-perfil" maxlength="1200" rows="3">${esc(hv.perfil||'')}</textarea></div>
     <div class="field"><label>Habilidades y competencias *</label><textarea id="hv-hab" maxlength="600" rows="2">${esc(hv.habilidades||'')}</textarea></div>
+    <div class="field-row">
+      <div class="field"><label>Idiomas</label><input id="hv-idi" maxlength="200" placeholder="Ej. Inglés básico (A2)" value="${escapeAttr(hv.idiomas||'')}"></div>
+      <div class="field"><label>Herramientas y ofimática</label><input id="hv-her" maxlength="300" placeholder="Ej. Excel, Word, software contable" value="${escapeAttr(hv.herramientas||'')}"></div></div>
+    <div class="field"><label>Logros o reconocimientos (opcional)</label><textarea id="hv-logros" maxlength="600" rows="2">${esc(hv.logros||'')}</textarea></div>
     <div class="subhead">Formación académica * (mínimo 1)</div><div id="hv-form"></div>
     <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caHvAgregar('formacion')">+ Agregar formación</button></div>
+    <div class="subhead">Cursos y certificaciones (opcional)</div><div id="hv-cur"></div>
+    <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caHvAgregar('cursos')">+ Agregar curso</button></div>
     <div class="subhead">Experiencia (opcional)</div><div id="hv-exp"></div>
     <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caHvAgregar('experiencia')">+ Agregar experiencia</button></div>
     <div id="hvMsg" style="margin:8px 0;font-size:13px;"></div>
     <div class="actions-row"><button class="primary" onclick="caGuardarHv()">Guardar hoja de vida</button>${caHvEditando?'<button class="ghost" onclick="caHvEditando=false;caRenderEstudiante()">Cancelar</button>':''}</div>`;
 }
 function caHvPintar(){
-  const f = document.getElementById('hv-form'), x = document.getElementById('hv-exp'); if(!f||!x) return;
+  const f = document.getElementById('hv-form'), x = document.getElementById('hv-exp'), cu = document.getElementById('hv-cur'); if(!f||!x) return;
+  if(cu) cu.innerHTML = (caHv.cursos||[]).map((r,k)=>`<div class="field-row ca-fila">
+    <div class="field"><label>Curso / certificación</label><input maxlength="150" value="${escapeAttr(r.titulo)}" oninput="caHv.cursos[${k}].titulo=this.value"></div>
+    <div class="field"><label>Institución</label><input maxlength="150" value="${escapeAttr(r.institucion)}" oninput="caHv.cursos[${k}].institucion=this.value"></div>
+    <div class="field" style="max-width:110px"><label>Año</label><input maxlength="10" value="${escapeAttr(r.anio)}" oninput="caHv.cursos[${k}].anio=this.value"></div>
+    <button class="danger cp-del" onclick="caHvQuitar('cursos',${k})">Quitar</button></div>`).join('');
   f.innerHTML = caHv.formacion.map((r,k)=>`<div class="field-row ca-fila">
     <div class="field"><label>Título / programa</label><input maxlength="150" value="${escapeAttr(r.titulo)}" oninput="caHv.formacion[${k}].titulo=this.value"></div>
     <div class="field"><label>Institución</label><input maxlength="150" value="${escapeAttr(r.institucion)}" oninput="caHv.formacion[${k}].institucion=this.value"></div>
@@ -129,11 +141,11 @@ function caHvPintar(){
     <div class="field"><label>Descripción</label><input maxlength="400" value="${escapeAttr(r.descripcion)}" oninput="caHv.experiencia[${k}].descripcion=this.value"></div>
     <button class="danger cp-del" onclick="caHvQuitar('experiencia',${k})">Quitar</button></div>`).join('');
 }
-function caHvAgregar(t){ if(caHv[t].length>=10){ toast('Máximo 10 registros', true); return; } caHv[t].push(t==='formacion'?{titulo:'',institucion:'',anio:''}:{cargo:'',empresa:'',periodo:'',descripcion:''}); caHvPintar(); }
+function caHvAgregar(t){ if(caHv[t].length>=10){ toast('Máximo 10 registros', true); return; } caHv[t].push(t==='experiencia'?{cargo:'',empresa:'',periodo:'',descripcion:''}:{titulo:'',institucion:'',anio:''}); caHvPintar(); }
 function caHvQuitar(t,k){ caHv[t].splice(k,1); caHvPintar(); }
 async function caGuardarHv(){
-  const hv = { telefono: val('hv-tel'), ciudad: val('hv-ciudad'), disponibilidad: val('hv-disp'), perfil: val('hv-perfil'), habilidades: val('hv-hab'),
-               formacion: caHv.formacion.filter(r=>(r.titulo||'').trim()), experiencia: caHv.experiencia.filter(r=>(r.cargo||'').trim()) };
+  const hv = { telefono: val('hv-tel'), ciudad: val('hv-ciudad'), disponibilidad: val('hv-disp'), perfil: val('hv-perfil'), habilidades: val('hv-hab'), idiomas: val('hv-idi'), herramientas: val('hv-her'), logros: val('hv-logros'),
+               cursos: (caHv.cursos||[]).filter(r=>(r.titulo||'').trim()), formacion: caHv.formacion.filter(r=>(r.titulo||'').trim()), experiencia: caHv.experiencia.filter(r=>(r.cargo||'').trim()) };
   try{ const r = await caRpc('ca_guardar_hv', { p_token: state.token, p_hv: hv });
     toast(r && r.completa ? 'Hoja de vida completa: ya puedes postularte' : 'Guardada, pero falta completar los campos obligatorios (*)', !(r&&r.completa));
     caHvEditando = !(r && r.completa); await caCargarEstudiante();
@@ -277,16 +289,25 @@ async function caPintarOfertas(){
       <div class="field"><label>Cargo *</label><input id="ofCargo" maxlength="120"></div>
       <div class="field"><label>Programa de formación *</label><select id="ofProg"><option value="">Selecciona…</option>${progs}</select></div>
       <div class="field" style="max-width:110px"><label>Cupos *</label><input id="ofCupos" type="number" min="1" max="200" value="1"></div>
-      <div class="field"><label>Jornada</label><input id="ofJor" maxlength="80" placeholder="Ej. Lunes a viernes 8:00-17:00"></div>
       <div class="field"><label>Ciudad</label><input id="ofCiudad" maxlength="80"></div></div>
+    <div class="field"><label>Días de la jornada * (marca los que aplican)</label>
+      <div class="ca-dias">${CA_DIAS.map(d=>`<label class="ca-dia"><input type="checkbox" class="ofDia" value="${d}"><span>${d}</span></label>`).join('')}</div>
+      <div class="actions-row" style="justify-content:flex-start;margin:4px 0 0"><button type="button" class="ghost cp-del" onclick="caDiasSel('lv')">Lunes a viernes</button><button type="button" class="ghost cp-del" onclick="caDiasSel('ls')">Lunes a sábado</button><button type="button" class="ghost cp-del" onclick="caDiasSel('')">Limpiar</button></div></div>
+    <div class="field-row">
+      <div class="field" style="max-width:170px"><label>Hora de inicio *</label><input id="ofHi" type="time" value="08:00"></div>
+      <div class="field" style="max-width:170px"><label>Hora de fin *</label><input id="ofHf" type="time" value="17:00"></div>
+      <div class="field"><label>Nota del horario (opcional)</label><input id="ofNota" maxlength="80" placeholder="Ej. 1 hora de almuerzo"></div></div>
     <div class="field"><label>Funciones que desempeñará el aprendiz * (la institución verificará que correspondan al programa)</label><textarea id="ofFunc" rows="3" maxlength="2000"></textarea></div>
     <div id="ofMsg" style="margin:6px 0;font-size:13px;"></div><div class="actions-row"><button class="primary" onclick="caCrearOferta()">Enviar solicitud a la institución</button></div>`;
   const of = caEmp.ofertas || [];
-  h += `<div class="subhead" style="margin-top:16px;">Mis solicitudes</div>` + (of.length ? `<div class="cupos-wrap"><table class="cupos-table" style="min-width:760px"><thead><tr><th>Cargo</th><th>Programa</th><th>Funciones</th><th class="cp-c">Cupos</th><th class="cp-c">Contratados</th><th>Estado</th><th>Observación</th></tr></thead><tbody>${of.map(o=>`<tr><td><b>${esc(o.cargo)}</b></td><td>${esc(o.programa)}</td><td style="max-width:300px">${esc(o.funciones)}</td><td class="cp-c">${o.cupos}</td><td class="cp-c">${o.contratados}</td><td>${caChip(o.estado)}</td><td>${esc(o.observacion||'')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">Aún no has creado solicitudes.</p>');
+  h += `<div class="subhead" style="margin-top:16px;">Mis solicitudes</div>` + (of.length ? `<div class="cupos-wrap"><table class="cupos-table" style="min-width:760px"><thead><tr><th>Cargo</th><th>Programa</th><th>Funciones</th><th>Días y horario</th><th class="cp-c">Cupos</th><th class="cp-c">Contratados</th><th>Estado</th><th>Observación</th></tr></thead><tbody>${of.map(o=>`<tr><td><b>${esc(o.cargo)}</b></td><td>${esc(o.programa)}</td><td style="max-width:300px">${esc(o.funciones)}</td><td>${esc(o.jornada||'—')}</td><td class="cp-c">${o.cupos}</td><td class="cp-c">${o.contratados}</td><td>${caChip(o.estado)}</td><td>${esc(o.observacion||'')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">Aún no has creado solicitudes.</p>');
   body.innerHTML = h;
 }
+const CA_DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+function caDiasSel(modo){ document.querySelectorAll('.ofDia').forEach(c=>{ c.checked = modo==='lv' ? CA_DIAS.slice(0,5).includes(c.value) : modo==='ls' ? CA_DIAS.slice(0,6).includes(c.value) : false; }); }
 async function caCrearOferta(){
-  try{ await caRpc('ca_emp_crear_oferta', { p_token: state.token, p_cargo: val('ofCargo'), p_programa: val('ofProg'), p_funciones: val('ofFunc'), p_cupos: parseInt(val('ofCupos'),10), p_jornada: val('ofJor'), p_ciudad: val('ofCiudad') });
+  try{ await caRpc('ca_emp_crear_oferta', { p_token: state.token, p_cargo: val('ofCargo'), p_programa: val('ofProg'), p_funciones: val('ofFunc'), p_cupos: parseInt(val('ofCupos'),10),
+      p_dias: [...document.querySelectorAll('.ofDia:checked')].map(x=>x.value).join(','), p_hora_ini: val('ofHi'), p_hora_fin: val('ofHf'), p_nota: val('ofNota'), p_ciudad: val('ofCiudad') });
     toast('Solicitud enviada: queda pendiente de aprobación'); caAbrirPanel();
   }catch(e){ caMsg('ofMsg', e.message); }
 }
@@ -296,7 +317,8 @@ function caCandCard(c, acciones){
   const x = (c.experiencia||[]).map(y=>`${esc(y.cargo)}${y.empresa?' · '+esc(y.empresa):''}${y.periodo?' ('+esc(y.periodo)+')':''}${y.descripcion?': '+esc(y.descripcion):''}`).join('<br>') || '—';
   return `<div class="ca-cand"><div class="ca-cand-head"><b>${c.nombre?esc(c.nombre):'Candidato'}</b> <span class="cupo-jor">Semestre ${esc(c.semestre||'—')}</span> <span class="cupo-jor">${esc(c.ciudad||'—')}</span></div>
     ${c.nombre?`<div class="ca-contacto">✉ ${esc(c.correo||'—')} · ☎ ${esc(c.telefono||'—')}</div>`:''}
-    <p>${esc(c.perfil||'')}</p><div class="ca-cand-grid"><div><span>Habilidades</span>${esc(c.habilidades||'—')}</div><div><span>Disponibilidad</span>${esc(c.disponibilidad||'—')}</div><div><span>Formación</span>${f}</div><div><span>Experiencia</span>${x}</div></div>
+    <p>${esc(c.perfil||'')}</p><div class="ca-cand-grid"><div><span>Habilidades</span>${esc(c.habilidades||'—')}</div><div><span>Disponibilidad</span>${esc(c.disponibilidad||'—')}</div><div><span>Formación</span>${f}</div><div><span>Experiencia</span>${x}</div>
+      ${c.idiomas?`<div><span>Idiomas</span>${esc(c.idiomas)}</div>`:''}${c.herramientas?`<div><span>Herramientas</span>${esc(c.herramientas)}</div>`:''}${(c.cursos&&c.cursos.length)?`<div><span>Cursos y certificaciones</span>${c.cursos.map(y=>esc(y.titulo)+(y.institucion?' · '+esc(y.institucion):'')+(y.anio?' ('+esc(y.anio)+')':'')).join('<br>')}</div>`:''}${c.logros?`<div><span>Logros</span>${esc(c.logros)}</div>`:''}</div>
     <div class="ca-acc">${acciones}</div></div>`;
 }
 async function caPintarCandidatos(){
@@ -309,7 +331,9 @@ async function caPintarCandidatos(){
 async function caCargarCand(){
   const el = document.getElementById('caCandList'); const id = document.getElementById('caOfSel').value; el.innerHTML = '<p class="helptext">Cargando…</p>';
   try{ const list = await caRpc('ca_emp_candidatos', { p_token: state.token, p_oferta: id });
-    el.innerHTML = list.length ? list.map(c=>caCandCard(c, `<button class="primary" onclick="caTomar('${id}','${c.id}')">Llamar a entrevista</button>`)).join('') : '<p class="helptext">No hay candidatos disponibles para este programa por ahora.</p>';
+    if(list.length){ el.innerHTML = `<p class="helptext">${list.length} candidato(s) disponible(s). Ves su perfil sin nombre ni contacto; al llamarlo a entrevista se te muestran sus datos.</p>` + list.map(c=>caCandCard(c, `<button class="primary" onclick="caTomar('${id}','${c.id}')">Llamar a entrevista</button>`)).join(''); return; }
+    let inf = null; try{ inf = await caRpc('ca_emp_candidatos_info', { p_token: state.token, p_oferta: id }); }catch(_){}
+    el.innerHTML = `<div class="note-box"><b>Todavía no hay candidatos para esta solicitud.</b> Un estudiante aparece aquí cuando: se inscribió, la institución lo declaró <b>apto</b>, completó su <b>hoja de vida</b>, es del <b>mismo programa</b> de la solicitud y no está en otro proceso.${inf ? `<br><br>Estudiantes del programa — inscritos: <b>${inf.inscritos}</b> · aptos: <b>${inf.aptos}</b> · con hoja de vida completa: <b>${inf.con_hv}</b> · ya en otro proceso: <b>${inf.en_proceso}</b>.` : ''}<br>Los estudiantes también pueden postularse solos a tu solicitud: esos aparecen en la pestaña <b>Procesos</b>.</div>`;
   }catch(e){ el.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; }
 }
 async function caTomar(of, cand){ try{ await caRpc('ca_emp_tomar', { p_token: state.token, p_oferta: of, p_candidato: cand }); toast('Candidato llamado a entrevista'); caCargarCand(); }catch(e){ toast(e.message, true); caCargarCand(); } }
@@ -333,7 +357,7 @@ async function caPintarPlanillas(){
   try{
     const L = await caRpc('ca_emp_planillas', { p_token: state.token });
     body.innerHTML = '<div class="section-bar teal">Planillas de calificaciones de tus aprendices</div><p class="helptext">Se habilitan cuando la institución confirma la contratación del estudiante. Aquí calificas las competencias y diligencias el control mensual, igual que las demás empresas.</p>' +
-      (L.length ? `<div class="cupos-wrap"><table class="cupos-table" style="min-width:560px"><thead><tr><th>Aprendiz</th><th>Programa</th><th>Cargo</th><th>Contratado desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>${esc(x.documento)}</small></td><td>${esc(x.programa||'—')}</td><td>${esc(x.cargo||'—')}</td><td>${caFmt(x.desde)}</td><td><button class="primary cp-del" onclick="caAbrirPlanilla('${escapeAttr(x.documento)}')">Abrir planilla</button></td></tr>`).join('')}</tbody></table></div>`
+      (L.length ? `<div class="cupos-wrap"><table class="cupos-table" style="min-width:700px"><thead><tr><th>N.º de documento</th><th>Nombre</th><th>Programa</th><th>Cargo</th><th>Contratado desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.documento)}</td><td class="cp-prog"><b>${esc(x.nombre)}</b></td><td>${esc(x.programa||'—')}</td><td>${esc(x.cargo||'—')}</td><td>${caFmt(x.desde)}</td><td><button class="primary cp-del" onclick="caAbrirPlanilla('${escapeAttr(x.documento)}')">Abrir planilla</button></td></tr>`).join('')}</tbody></table></div>`
         : '<p class="helptext">Aún no tienes aprendices contratados. Cuando la institución confirme una contratación, aparecerá aquí con su planilla habilitada.</p>');
   }catch(e){ body.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; }
 }
@@ -412,7 +436,7 @@ function caAdmIns(){
     <td>${x.estado==='contratado'?caChip('contratado'):`<select class="cp-in" id="ins-e-${x.documento}"><option value="pendiente" ${x.estado==='pendiente'?'selected':''}>Pendiente</option><option value="apto" ${x.estado==='apto'?'selected':''}>Apto</option><option value="no_apto" ${x.estado==='no_apto'?'selected':''}>No apto</option></select>`}</td>
     <td><input class="cp-in cp-txt" id="ins-o-${x.documento}" maxlength="500" value="${escapeAttr(x.observacion||'')}" ${x.estado==='contratado'?'disabled':''}></td>
     <td class="cp-c">${x.hv_completa?'<span class="cupo-chip cupo-ok">Completa</span>':'<span class="cupo-chip cupo-low">Pendiente</span>'}</td>
-    <td>${x.estado==='contratado'?'':`<button class="primary cp-del" onclick="caAdmVerificar('${x.documento}')">Guardar</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+    <td><div class="ca-acc-col">${x.estado==='contratado'?'':`<button class="primary cp-del" onclick="caAdmVerificar('${x.documento}')">Guardar</button>`}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('inscripcion','${x.documento}',${x.estado==='contratado'})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function caAdmVerificar(doc){
   try{ await caRpc('admin_ca_verificar', { p_documento: doc, p_estado: caAdmInfo('ins-e-'+doc).value, p_pagos: caAdmInfo('ins-p-'+doc).checked, p_obs: caAdmInfo('ins-o-'+doc).value });
@@ -457,6 +481,15 @@ function caAdmPrecargar(i){
   const d = caAdmInfo('ne-razon').closest('details'); if(d){ d.open = true; d.scrollIntoView({ behavior:'smooth', block:'center' }); }
   toast('Datos cargados: completa el correo si falta y guarda. Anota la contraseña generada.');
 }
+async function caAdmEliminar(tipo, id, contratado){
+  const d = {
+    inscripcion: { rpc:'admin_ca_eliminar_inscripcion', arg:{ p_doc:id }, msg:'¿Eliminar esta inscripción?\n\nSe borran también su hoja de vida y sus postulaciones. El estudiante podrá inscribirse de nuevo.', bloq: contratado ? 'Está contratado: primero quita la contratación en la pestaña Procesos.' : '' },
+    oferta:      { rpc:'admin_ca_eliminar_oferta', arg:{ p_id:id }, msg:'¿Eliminar esta solicitud?\n\nSe borran también las postulaciones que tenga en curso.', bloq:'' },
+    proceso:     { rpc:'admin_ca_eliminar_postulacion', arg:{ p_id:id }, msg: contratado ? '¿Quitar la contratación de este estudiante?\n\nVuelve a quedar "apto", la solicitud se reabre y la empresa pierde el acceso a su planilla (las notas ya guardadas se conservan).' : '¿Eliminar este proceso?', bloq:'' } }[tipo];
+  if(d.bloq){ toast(d.bloq, true); return; }
+  if(!confirm(d.msg + '\n\nNo se puede deshacer.')) return;
+  try{ await caRpc(d.rpc, d.arg); toast('Eliminado'); caAdmPintar(); }catch(e){ toast(e.message, true); }
+}
 async function caAdmEmpEliminar(id, contratados){
   if(contratados > 0){ toast('Tiene estudiantes contratados: no se puede eliminar. Usa Rechazar para bloquear su acceso.', true); return; }
   if(!confirm('¿Eliminar esta empresa del portal de contrato de aprendizaje?\n\nSe borran su acceso, sus solicitudes y los procesos en curso. La ficha en el módulo Empresas se conserva. No se puede deshacer.')) return;
@@ -476,7 +509,7 @@ function caAdmOfe(){
   b.innerHTML = caExpBar() + `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Cargo / programa</th><th>Funciones</th><th class="cp-c">Cupos</th><th>Estado</th><th>Verificación y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
     <td class="cp-prog"><b>${esc(x.empresa)}</b><br>${caChip(x.empresa_estado)}</td><td><b>${esc(x.cargo)}</b><br><small>${esc(x.programa)}</small></td><td style="max-width:300px">${esc(x.funciones)}</td><td class="cp-c">${x.cupos}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="of-f-${x.id}" ${x.funciones_ok?'checked':''}> Funciones corresponden al programa</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="of-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
-    <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmOfEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmOfEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmOfEstado('${x.id}','cerrada')">Cerrar</button></div></td></tr>`).join('')}</tbody></table></div>`;
+    <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmOfEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmOfEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmOfEstado('${x.id}','cerrada')">Cerrar</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('oferta','${x.id}',false)">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function caAdmOfEstado(id, estado){
   try{ await caRpc('admin_ca_oferta_estado', { p_id: id, p_estado: estado, p_funciones_ok: caAdmInfo('of-f-'+id).checked, p_obs: caAdmInfo('of-o-'+id).value }); toast('Solicitud actualizada'); caAdmPintar(); }catch(e){ toast(e.message, true); }
@@ -490,7 +523,7 @@ function caAdmPro(){
     `<div class="cupos-wrap"><table class="cupos-table" style="min-width:860px"><thead><tr><th>Estudiante</th><th>Programa</th><th>Empresa / cargo</th><th>Origen</th><th>Estado</th><th>Desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
     <td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>${esc(x.documento)}</small></td><td>${esc(x.programa||'—')}</td><td><b>${esc(x.empresa)}</b><br><small>${esc(x.cargo)}</small></td>
     <td>${x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'}</td><td>${caChip(x.estado)}</td><td>${caFmt(x.desde)}</td>
-    <td>${x.estado==='seleccionado'?`<button class="primary cp-del" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
+    <td><div class="ca-acc-col">${x.estado==='seleccionado'?`<button class="primary cp-del" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button>`:''}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('proceso','${x.id}',${x.estado==='contratado'})">🗑 ${x.estado==='contratado'?'Quitar contratación':'Eliminar'}</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de este estudiante? Se cerrará su proceso como contratado.')) return;
   try{ await caRpc('admin_ca_confirmar', { p_post: id }); toast('Contratación confirmada'); caAdmPintar(); }catch(e){ toast(e.message, true); } }
