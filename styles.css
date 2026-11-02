@@ -318,3 +318,27 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .lista-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;}
 .lista-top .lista-busca{flex:0 1 460px;margin-left:auto;}
 @media(max-width:640px){ .adm-sep{display:none;} .adm-head-actions{gap:8px;} .lista-top .lista-busca{flex:1 1 100%;} .adm-foot{width:100%;justify-content:flex-end;} }
+
+/* ================= PANEL DEL ADMINISTRADOR POR ÁREAS ================= */
+.grupo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:18px;margin-top:20px;}
+.grupo-card{background:var(--card,#fff);border:1px solid var(--line);border-radius:14px;padding:22px;cursor:pointer;display:flex;flex-direction:column;gap:14px;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;border-top:5px solid var(--teal);}
+.grupo-card:hover,.grupo-card:focus-visible{transform:translateY(-3px);box-shadow:0 12px 26px rgba(11,61,61,.12);border-color:var(--teal);outline:none;}
+.grupo-card.empresa{border-top-color:var(--orange);}
+.grupo-card.supervisor{border-top-color:var(--deep);}
+.grupo-card.administrador{border-top-color:#6B4C9A;}
+.grupo-head{display:flex;gap:14px;align-items:flex-start;}
+.grupo-ico{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none;background:#EEF6F5;}
+.grupo-card.empresa .grupo-ico{background:#FCEBDD;}
+.grupo-card.supervisor .grupo-ico{background:#E4ECEB;}
+.grupo-card.administrador .grupo-ico{background:#EEE8F6;}
+.grupo-head h3{margin:0 0 4px;font-size:21px;}
+.grupo-head p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.45;}
+.grupo-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.grupo-chips span{font-size:12px;padding:4px 10px;border-radius:999px;background:#F3F0E8;color:var(--deep);border:1px solid var(--line);}
+.grupo-abrir{margin-top:auto;font-weight:600;font-size:13.5px;color:var(--teal-dark,#1F6F66);}
+.pg-titulo{display:flex;gap:14px;align-items:center;margin:12px 0 4px;}
+.pg-titulo h2{margin:0;}
+.pg-ico{padding:0!important;border:none!important;background:none!important;cursor:default!important;box-shadow:none!important;transform:none!important;}
+.pg-ico .icon{width:48px;height:48px;font-size:22px;margin:0;}
+.pg-funciones .role-card:focus-visible{outline:2px solid var(--teal);}
+@media(max-width:560px){ .grupo-grid{grid-template-columns:1fr;} }
