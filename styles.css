@@ -255,3 +255,22 @@
 .lista-acc{display:flex;gap:6px;margin-left:auto;}
 .lista-cuenta{font-size:12.5px;color:var(--muted);margin:2px 0 8px;}
 .lista-est{min-width:1050px;} .lista-est tbody tr{cursor:pointer;}
+
+/* ---- Contrato de aprendizaje ---- */
+.ca-chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;}
+.ca-ok{background:#DDF1E4;color:#1B6B3A;} .ca-low{background:#FCEBD2;color:#9A5A0B;} .ca-no{background:#F6DAD6;color:var(--danger);}
+.ca-pasos{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px;}
+.ca-paso{flex:1 1 150px;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px;color:var(--muted);}
+.ca-paso b{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#E8E4D8;color:var(--ink);font-size:12px;}
+.ca-paso.actual{border-color:var(--teal);color:var(--deep);font-weight:600;} .ca-paso.actual b{background:var(--teal);color:#fff;}
+.ca-paso.hecho{color:var(--teal-dark);} .ca-paso.hecho b{background:#DDF1E4;color:#1B6B3A;}
+.ca-fila{align-items:flex-end;margin-bottom:6px;}
+.ca-cand{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin:10px 0;background:#fff;}
+.ca-cand-head{font-size:15px;margin-bottom:4px;} .ca-contacto{font-size:13px;color:var(--teal-dark);margin-bottom:4px;}
+.ca-cand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;font-size:13px;}
+.ca-cand-grid span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600;}
+.ca-det{border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;margin:0 0 12px;background:#FCFBF8;} .ca-det summary{cursor:pointer;font-weight:600;color:var(--deep);}
+.ca-acc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;}
+.ca-acc-col{display:flex;flex-direction:column;gap:6px;min-width:104px;}
+.ca-tabla thead th:last-child{position:sticky;right:0;background:var(--deep);}
+.ca-tabla tbody td:last-child{position:sticky;right:0;background:#fff;box-shadow:-8px 0 8px -8px rgba(0,0,0,.18);}
