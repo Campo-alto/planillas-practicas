@@ -1,95 +1,681 @@
-// Edge Function: admin-manage
-// Crea, cambia la contraseña o elimina administradores DESDE LA APP.
-// La service_role key vive solo aquí (secreto del servidor), nunca en el navegador.
-// Seguridad: 1) exige un JWT válido; 2) verifica que quien llama esté en admin_users;
-// 3) valida los datos; 4) deja registro en audit_log.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+<!DOCTYPE html>
+<!-- VERSION-EMPRESAS-UNIFICADO -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campoalto · Planillas de Prácticas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
+  <div class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div class="brand-text">
+        <div class="b1">Campoalto</div>
+        <div class="b2">Planillas de Prácticas · PPS-GAA-F-006</div>
+      </div>
+    </div>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </div>
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <h1>Diligencia y firma la planilla de prácticas en un solo lugar</h1>
+      <p>Busca al estudiante por número de documento, registra el desempeño mensual, recoge las firmas de empresa, estudiante y supervisor, y descarga el PDF consolidado.</p>
+    </div>
+    <div class="role-grid">
+      <div class="role-card empresa" onclick="location.href='empresa.html'">
+        <div class="icon">E</div>
+        <h3>Empresa · Jefe inmediato</h3>
+        <p>Inicia sesión con el usuario que te dio el administrador para calificar el mes y firmar.</p>
+      </div>
+      <div class="role-card estudiante" onclick="location.href='estudiante.html'">
+        <div class="icon">A</div>
+        <h3>Estudiante</h3>
+        <p>Revisa lo diligenciado por tu jefe inmediato, responde las observaciones y firma cada mes.</p>
+      </div>
+      <div class="role-card supervisor" onclick="location.href='supervisor.html'">
+        <div class="icon">S</div>
+        <h3>Supervisor institucional</h3>
+        <p>Inicia sesión con el usuario que te dio el administrador para registrar la visita de seguimiento.</p>
+      </div>
+      <div class="role-card administrador" onclick="location.href='administrador.html'">
+        <div class="icon">Ad</div>
+        <h3>Administrador</h3>
+        <p>Inicia sesión para registrar estudiantes, crear usuarios de empresa/supervisor y ver el estado de cada planilla.</p>
+      </div>
+    </div>
+    <div class="note-box">El administrador inicia sesión con correo y contraseña, y desde ahí crea los usuarios de Empresa y Supervisor. El estudiante sigue entrando solo con su número de documento.</div>
+  </div>
 
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  <!-- ADMIN LOGIN -->
+  <div class="screen" id="screen-admin-login">
+    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <h2 style="margin:12px 0 4px;">Acceso de administrador</h2>
+    <p class="helptext">Solo el administrador y los usuarios de empresa/supervisor tienen cuenta. Todos usan correo y contraseña.</p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Correo</label><input type="email" id="adminEmail" autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="adminPassword" autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-target="adminPassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doAdminLogin()">Iniciar sesión</button>
+      </div>
+      <div id="adminLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+      <button class="linkbtn" style="margin-top:10px;padding:0;" onclick="doForgotPassword()">¿Olvidaste tu contraseña?</button>
+    </div>
+  </div>
 
-  // 1. ¿Quién llama?
-  const caller = createClient(url, anon, {
-    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-  });
-  const { data: { user } } = await caller.auth.getUser();
-  if (!user) return json({ error: "No autenticado" }, 401);
+  <!-- RESTABLECER CONTRASEÑA -->
+  <div class="screen" id="screen-reset-password">
+    <h2 style="margin:12px 0 4px;">Elegir una contraseña nueva</h2>
+    <p class="helptext">Escribe tu nueva contraseña para tu cuenta de administrador.</p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Contraseña nueva</label>
+          <div class="pw-wrap">
+            <input type="password" id="resetPassword1" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+        <div class="field"><label>Confirmar contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="resetPassword2" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doSetNewPassword()">Guardar contraseña</button>
+      </div>
+      <div id="resetPasswordMsg" style="margin-top:12px;font-size:13.5px;"></div>
+    </div>
+  </div>
 
-  // 2. ¿Es administrador? Se pregunta con la sesión de quien llama, usando la MISMA función is_admin()
-  //    que protege toda la base de datos (no depende de permisos de service_role sobre la tabla).
-  const admin = createClient(url, service, { auth: { persistSession: false } });
-  const { data: isAdm, error: admErr } = await caller.rpc("is_admin");
-  if (admErr) return json({ error: "No se pudo verificar el rol de administrador: " + admErr.message }, 500);
-  if (isAdm !== true) return json({ error: "No autorizado: se requiere ser administrador" }, 403);
+  <!-- EMPRESA / SUPERVISOR LOGIN -->
+  <div class="screen" id="screen-role-login">
+    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <h2 id="roleLoginTitle" style="margin:12px 0 4px;"></h2>
+    <p class="helptext" id="roleLoginHelp"></p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Correo</label><input type="email" id="roleEmail" autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="rolePassword" autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-target="rolePassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doRoleLogin()">Iniciar sesión</button>
+      </div>
+      <div id="roleLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+      <button class="linkbtn" style="margin-top:10px;padding:0;" onclick="toggleForgotRoleHelp()">¿Olvidaste tu contraseña?</button>
+      <div id="forgotRoleHelp" style="display:none;margin-top:10px;font-size:13px;background:#FBF3E7;border:1px solid #EFD9B5;border-radius:8px;padding:10px 12px;color:#7A5B21;">
+        Este usuario no tiene recuperación automática por correo. Escríbele al Administrador de tu institución con tu correo (<span id="forgotRoleEmailShown">el que usas para entrar</span>) y pídele que te asigne una contraseña nueva desde su panel — puede hacerlo en cualquier momento.
+      </div>
+    </div>
+  </div>
 
-  let body: any;
-  try { body = await req.json(); } catch { return json({ error: "Solicitud inválida" }, 400); }
-  const action = String(body.action || "");
-  const audit = (a: string, t: string) =>
-    admin.from("audit_log").insert({ actor: "admin:" + user.id, action: a, target: t });
+  <!-- ESTUDIANTE LOGIN -->
+  <div class="screen" id="screen-estudiante-login">
+    <button class="linkbtn" onclick="goHome()">← Volver</button>
+    <h2 style="margin:12px 0 4px;">Acceso Estudiante</h2>
+    <p class="helptext">Tu usuario es tu número de documento. La contraseña te la entrega el administrador.</p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Usuario (documento)</label><input type="text" id="estUsuario" inputmode="numeric" autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="estPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doEstudianteLogin()">
+            <button type="button" class="pw-toggle" data-target="estPassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="doEstudianteLogin()">Ingresar</button></div>
+      <div id="estLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+      <p class="helptext" style="margin-top:12px;">¿Olvidaste tu contraseña? Pídele al administrador que te asigne una nueva.</p>
+    </div>
+  </div>
 
-  const esAdminId = async (id: string) => {
-    const { data, error } = await admin.from("admin_users").select("user_id").eq("user_id", id).maybeSingle();
-    if (error) throw new Error("Permisos de service_role sobre admin_users: " + error.message + " (ejecuta fix-service-role-admin.sql)");
-    return !!data;
-  };
-  const validPass = (p: unknown) => typeof p === "string" && p.length >= 8 && p.length <= 72;
+  <!-- ESTUDIANTE CAMBIO DE CONTRASEÑA -->
+  <div class="screen" id="screen-estudiante-cambio">
+    <h2 style="margin:12px 0 4px;">Cambiar contraseña</h2>
+    <p class="helptext" id="estCambioHelp"></p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Contraseña actual</label>
+          <div class="pw-wrap"><input type="password" id="estPwActual" autocomplete="current-password"><button type="button" class="pw-toggle" data-target="estPwActual" aria-label="Mostrar contraseña"></button></div></div>
+        <div class="field"><label>Contraseña nueva (mín. 8 caracteres)</label>
+          <div class="pw-wrap"><input type="password" id="estPwNueva" autocomplete="new-password"><button type="button" class="pw-toggle" data-target="estPwNueva" aria-label="Mostrar contraseña"></button></div></div>
+        <div class="field"><label>Repite la contraseña nueva</label>
+          <div class="pw-wrap"><input type="password" id="estPwNueva2" autocomplete="new-password"><button type="button" class="pw-toggle" data-target="estPwNueva2" aria-label="Mostrar contraseña"></button></div></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="doEstudianteCambio()">Guardar contraseña</button>
+        <button class="ghost" id="estCambioCancel" onclick="cancelarCambioEstudiante()">Cancelar</button>
+      </div>
+      <div id="estCambioMsg" style="margin-top:12px;font-size:13.5px;"></div>
+    </div>
+  </div>
 
-  try {
-    if (action === "create") {
-      const email = String(body.email || "").trim().toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "Correo inválido" }, 400);
-      if (!validPass(body.password)) return json({ error: "La contraseña debe tener entre 8 y 72 caracteres" }, 400);
-      const { data, error } = await admin.auth.admin.createUser({
-        email, password: body.password, email_confirm: true,
-        user_metadata: { nombre: String(body.nombre || "").slice(0, 120) },
-      });
-      if (error) return json({ error: error.message }, 400);
-      const { error: insErr } = await admin.from("admin_users").insert({ user_id: data.user!.id });
-      if (insErr) {
-        await admin.auth.admin.deleteUser(data.user!.id);   // no dejar una cuenta a medias
-        return json({ error: "No se pudo registrar como administrador: " + insErr.message + " (ejecuta fix-service-role-admin.sql)" }, 500);
-      }
-      await audit("create_admin", email);
-      return json({ ok: true, id: data.user!.id });
-    }
+  <!-- LOOKUP -->
+  <div class="screen" id="screen-lookup">
+    <button class="linkbtn" onclick="goAdminBack()">← Volver</button>
+    <h2 id="lookupTitle" style="margin:12px 0 4px;"></h2>
+    <p class="helptext" id="lookupHelp"></p>
+    <div class="card">
+      <div class="lookup-form">
+        <div class="field">
+          <label>Número de documento del estudiante</label>
+          <input type="text" id="lookupDoc" inputmode="numeric" placeholder="Ej. 1128108664">
+        </div>
+        <button class="primary" onclick="doLookup()">Buscar</button>
+      </div>
+      <div id="lookupMsg" style="margin-top:12px;font-size:13.5px;"></div>
+    </div>
+    <div class="card" id="lookupAdminListCard" style="display:none;">
+      <div class="section-bar deep">Estudiantes registrados</div>
+      <div class="actions-row" style="justify-content:flex-start;margin-bottom:8px;"><button class="ghost" onclick="generarClavesMasivas()">🔑 Generar claves para estudiantes sin acceso (Excel)</button></div>
+      <div id="lookupAdminList"></div>
+    </div>
+  </div>
 
-    if (action === "set_password") {
-      if (!validPass(body.password)) return json({ error: "La contraseña debe tener entre 8 y 72 caracteres" }, 400);
-      if (!(await esAdminId(String(body.user_id)))) return json({ error: "Ese usuario no es administrador" }, 400);
-      const { error } = await admin.auth.admin.updateUserById(body.user_id, { password: body.password });
-      if (error) return json({ error: error.message }, 400);
-      await audit("set_admin_password", body.user_id);
-      return json({ ok: true });
-    }
+  <!-- ADMIN HUB -->
+  <div class="screen" id="screen-admin-hub">
+    <button class="linkbtn" onclick="adminLogout()">← Cerrar sesión</button>
+    <h2 style="margin:12px 0 4px;">Panel de administrador</h2>
+    <p class="helptext">Elige qué quieres gestionar.</p>
+    <div class="role-grid">
+      <div class="role-card administrador" onclick="goRole('administrador')">
+        <div class="icon">🎓</div>
+        <h3>Estudiantes</h3>
+        <p>Buscar, registrar y ver el estado de cada planilla de práctica.</p>
+      </div>
+      <div class="role-card supervisor" onclick="goAdminModule('supervisor')">
+        <div class="icon">S</div>
+        <h3>Supervisores</h3>
+        <p>Crear y administrar los usuarios de los supervisores institucionales.</p>
+      </div>
+      <div class="role-card administrador" onclick="goAdminModule('administradores')">
+        <div class="icon">Ad</div>
+        <h3>Administradores</h3>
+        <p>Ver quién tiene acceso de administrador en este momento.</p>
+      </div>
+      <div class="role-card empresa" onclick="goAdminModule('empresas')">
+        <div class="icon">🏢</div>
+        <h3>Empresas</h3>
+        <p>Datos de la empresa, cupos por programa y jornada, asignaciones de estudiantes y el usuario de acceso de la empresa.</p>
+      </div>
+      <div class="role-card supervisor" onclick="goAdminModule('programas')">
+        <div class="icon">📚</div>
+        <h3>Programas</h3>
+        <p>Crear, ver y eliminar los programas / técnicos laborales por área.</p>
+      </div>
+      <div class="role-card supervisor" onclick="abrirModalidades()">
+        <div class="icon">🗂</div>
+        <h3>Modalidades</h3>
+        <p>Agregar, modificar o eliminar modalidades y definir cuántos meses dura cada una.</p>
+      </div>
+      <div class="role-card administrador" onclick="abrirImportExport()">
+        <div class="icon">⇅</div>
+        <h3>Importar / Exportar</h3>
+        <p>Sube estudiantes, empresas y supervisores desde Excel, y descarga listados en Excel o PDF para imprimir.</p>
+      </div>
+      <div class="role-card empresa" onclick="goAdminModule('reporte')">
+        <div class="icon">📋</div>
+        <h3>Reporte de visitas</h3>
+        <p>Una fila por cada visita registrada: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.</p>
+      </div>
+    </div>
+  </div>
 
-    if (action === "delete") {
-      if (body.user_id === user.id) return json({ error: "No puedes eliminar tu propia cuenta" }, 400);
-      const { count, error: cErr } = await admin.from("admin_users").select("user_id", { count: "exact", head: true });
-      if (cErr) throw new Error("Permisos de service_role sobre admin_users: " + cErr.message + " (ejecuta fix-service-role-admin.sql)");
-      if ((count ?? 0) <= 1) return json({ error: "Debe quedar al menos un administrador" }, 400);
-      if (!(await esAdminId(String(body.user_id)))) return json({ error: "Ese usuario no es administrador" }, 400);
-      const { error } = await admin.auth.admin.deleteUser(body.user_id);
-      if (error) return json({ error: error.message }, 400);
-      await audit("delete_admin", body.user_id);
-      return json({ ok: true });
-    }
+  <!-- ADMIN MÓDULO: EMPRESAS / SUPERVISORES -->
+  <div class="screen" id="screen-admin-roleusers">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 id="roleModuleTitle" style="margin:12px 0 4px;"></h2>
+    <p class="helptext" id="roleModuleHelp"></p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Correo</label><input type="email" id="ruEmail" autocomplete="off"></div>
+        <div class="field"><label>Nombre a mostrar</label><input type="text" id="ruNombre" autocomplete="off" placeholder="Ej. Fundación Cardioinfantil"></div>
+        <div class="field"><label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="ruPassword" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="ruPassword" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="saveRoleAccount()">Guardar usuario</button>
+      </div>
+      <div id="roleAccountsMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-bar deep" id="roleModuleListTitle">Usuarios</div>
+      <div id="roleAccountsList"></div>
+    </div>
+  </div>
 
-    return json({ error: "Acción desconocida" }, 400);
-  } catch (e) {
-    return json({ error: e instanceof Error ? e.message : "Error interno" }, 500);
-  }
-});
+  <!-- ADMIN MÓDULO: ADMINISTRADORES -->
+  <div class="screen" id="screen-admin-admins">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Administradores</h2>
+    <p class="helptext">Ten cuidado a quién le das este acceso: un administrador puede ver, editar y eliminar cualquier estudiante. Solo un administrador con sesión activa puede crear a otro.</p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Correo</label><input type="email" id="admEmail" autocomplete="off"></div>
+        <div class="field"><label>Nombre</label><input type="text" id="admNombre" autocomplete="off"></div>
+        <div class="field"><label>Contraseña (mínimo 8)</label>
+          <div class="pw-wrap">
+            <input type="password" id="admPasswordNew" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="admPasswordNew" aria-label="Mostrar contraseña"></button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" onclick="saveAdministrador()">Crear administrador</button>
+      </div>
+      <div id="admFormMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div class="card">
+      <div id="adminsList"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: MODALIDADES -->
+  <div class="screen" id="screen-admin-modalidades">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Modalidades</h2>
+    <p class="helptext">Los meses definen cuántas notas mensuales tiene la planilla de cada modalidad. Marca "cupos y carta" en las modalidades de práctica no remunerada: solo ellas usan la elección de empresa, las fechas de inscripción y la carta de presentación.</p>
+    <div class="card">
+      <div class="section-bar deep">Nueva modalidad</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre</label><input type="text" id="modNuevoNombre" autocomplete="off"></div>
+        <div class="field"><label>Meses (1 a 12)</label><input type="number" id="modNuevoMeses" min="1" max="12" value="4"></div>
+        <div class="field"><label><input type="checkbox" id="modNuevoPnr"> Usa cupos y carta (práctica no remunerada)</label></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="agregarModalidad()">Agregar modalidad</button></div>
+      <div id="modMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div class="card"><div id="modalidadesList"></div></div>
+  </div>
+
+  <!-- ADMIN MÓDULO: IMPORTAR / EXPORTAR -->
+  <div class="screen" id="screen-admin-datos">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Importar y exportar</h2>
+    <p class="helptext">Carga masiva desde Excel y listados para imprimir. Antes de importar verás una vista previa con las filas válidas y los errores; nada se guarda hasta que confirmes.</p>
+    <div id="ieBody"></div>
+  </div>
+
+  <!-- ADMIN MÓDULO: EMPRESAS (datos, cupos, asignaciones y acceso) -->
+  <div class="screen" id="screen-admin-empresas">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Empresas</h2>
+    <p class="helptext">Registra la empresa una sola vez: desde aquí manejas sus datos, sus cupos, las asignaciones de estudiantes y el usuario con el que la empresa entra.</p>
+    <div class="tabs" id="empTabs">
+      <button class="tab active" id="empTab-datos" onclick="showEmpresasTab('datos')">Datos y cupos</button>
+      <button class="tab" id="empTab-asig" onclick="showEmpresasTab('asig')">Asignaciones</button>
+      <button class="tab" id="empTab-acceso" onclick="showEmpresasTab('acceso')">Acceso de la empresa</button>
+    </div>
+
+    <div id="empPane-datos">
+      <div class="card">
+        <div class="section-bar deep">Datos de la empresa</div>
+        <div class="field-row">
+          <div class="field"><label>Nombre de la empresa</label><input type="text" id="empNombre" autocomplete="off"></div>
+          <div class="field"><label>NIT</label><input type="text" id="empNit" autocomplete="off"></div>
+          <div class="field"><label>Dirección</label><input type="text" id="empDireccion" autocomplete="off"></div>
+          <div class="field"><label>Ciudad</label><input type="text" id="empCiudad" autocomplete="off"></div>
+          <div class="field"><label>Teléfono</label><input type="text" id="empTelefono" autocomplete="off"></div>
+          <div class="field"><label>Correo</label><input type="email" id="empCorreo" autocomplete="off"></div>
+          <div class="field"><label>Persona de contacto</label><input type="text" id="empContacto" autocomplete="off"></div>
+        </div>
+        <div class="actions-row" style="justify-content:flex-start;">
+          <button class="primary" id="empSaveBtn" onclick="guardarEmpresa()">Guardar empresa</button>
+          <button class="ghost" id="empCancelBtn" onclick="limpiarFormEmpresa()" style="display:none;">Cancelar</button>
+        </div>
+        <div id="empresaMsg" style="margin-top:8px;font-size:13px;"></div>
+      </div>
+      <div id="empresasList"></div>
+    </div>
+
+    <div id="empPane-asig" style="display:none;">
+      <div class="card">
+        <div class="section-bar deep">Asignaciones de estudiantes</div>
+        <div class="actions-row" style="justify-content:flex-start;margin-bottom:10px;">
+          <button class="ghost" onclick="descargarAsignacionesXLSX()">Descargar Excel</button>
+        </div>
+        <div id="asignacionesList"></div>
+      </div>
+    </div>
+
+    <div id="empPane-acceso" style="display:none;">
+      <div class="card">
+        <div class="section-bar deep">Usuario de acceso de la empresa</div>
+        <p class="helptext" style="margin-top:-4px;">Es el usuario con el que la empresa entra a su página para calificar a los estudiantes. Elige la empresa ya registrada y su nombre y correo se llenan solos.</p>
+        <div class="field-row">
+          <div class="field"><label>Empresa registrada</label><select id="acEmpresa" onchange="llenarAccesoDesdeEmpresa()"></select></div>
+          <div class="field"><label>Correo de acceso</label><input type="email" id="acEmail" autocomplete="off"></div>
+          <div class="field"><label>Nombre a mostrar</label><input type="text" id="acNombre" autocomplete="off"></div>
+          <div class="field"><label>Contraseña (mínimo 8)</label>
+            <div class="pw-wrap">
+              <input type="password" id="acPassword" autocomplete="new-password">
+              <button type="button" class="pw-toggle" data-target="acPassword" aria-label="Mostrar contraseña"></button>
+            </div>
+          </div>
+        </div>
+        <div class="actions-row" style="justify-content:flex-start;">
+          <button class="primary" onclick="guardarAccesoEmpresa()">Guardar acceso</button>
+        </div>
+        <div id="accesoMsg" style="margin-top:8px;font-size:13px;"></div>
+      </div>
+      <div class="card">
+        <div class="section-bar deep">Empresas con acceso</div>
+        <div id="accesosList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: PROGRAMAS -->
+  <div class="screen" id="screen-admin-programas">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Programas / Técnicos laborales</h2>
+    <p class="helptext">Estos son los que aparecen en el menú Área → Programa al registrar un estudiante.</p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Área</label><select id="progAreaSelect"></select></div>
+        <div class="field"><label>Nombre del programa</label><input type="text" id="progNombre" placeholder="Ej. Auxiliar de Enfermería"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="primary" id="progSaveBtn" onclick="savePrograma()">Agregar programa</button>
+        <button class="ghost" id="progCancelBtn" onclick="cancelEditPrograma()" style="display:none;">Cancelar</button>
+      </div>
+      <div id="programasMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-bar deep">Programas por área</div>
+      <div id="programasList"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: REPORTE DE VISITAS -->
+  <div class="screen" id="screen-admin-reporte">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Reporte de visitas</h2>
+    <p class="helptext">Una fila por cada visita ya registrada (Visita 1 o Visita 2) de cualquier estudiante.</p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Supervisor</label><select id="reporteFiltroSupervisor" onchange="aplicarFiltrosReporte()"><option value="">Todos</option></select></div>
+        <div class="field"><label>Desde</label><input type="date" id="reporteFiltroDesde" onchange="aplicarFiltrosReporte()"></div>
+        <div class="field"><label>Hasta</label><input type="date" id="reporteFiltroHasta" onchange="aplicarFiltrosReporte()"></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="ghost" onclick="limpiarFiltrosReporte()">Limpiar filtros</button>
+        <button class="primary" onclick="downloadReporteVisitasXLSX()">Descargar Excel</button>
+      </div>
+      <div id="reporteVisitasList" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- EMPRESA -->
+  <div class="screen" id="screen-empresa">
+    <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+
+    <div class="status-strip">
+      <div class="who">Editando como <b>Empresa / Jefe inmediato</b> · Documento <b id="empDocLabel"></b></div>
+      <div class="actions">
+        <button class="ghost" onclick="switchStudent('empresa')">Cambiar estudiante</button>
+        <button class="danger" onclick="roleLogout()">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div class="card" id="empDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar teal">Planillas mensuales — pon la nota</div>
+      <p class="helptext" style="margin-top:-4px;">Dale clic a un mes para abrirlo, calificar las 4 competencias y diligenciar el sitio de prácticas. Las firmas se recogen cuando el supervisor institucional haga sus visitas.</p>
+      <div id="empOverview"></div>
+    </div>
+  </div>
+
+  <!-- ESTUDIANTE -->
+  <div class="screen" id="screen-estudiante">
+    <div class="status-strip">
+      <div class="who">Estudiante · Documento <b id="estDocLabel"></b></div>
+      <div class="actions"><button class="ghost" onclick="goEstudianteCambio(false)">Cambiar contraseña</button><button class="danger" onclick="estudianteLogout()">Cerrar sesión</button></div>
+    </div>
+
+    <div class="card" id="estDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar deep">Asignación de práctica no remunerada</div>
+      <div id="estAsignacion"></div>
+    </div>
+
+
+    <div class="card">
+      <div class="section-bar teal">Mis notas — competencias transversales</div>
+      <p class="helptext" style="margin-top:-4px;">Estas notas las pone la empresa y no puedes editarlas.</p>
+      <div id="estNotasView"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-bar teal">Mi control de cumplimiento · firma tu mes</div>
+      <p class="helptext" style="margin-top:-4px;">El sitio, las fechas y las observaciones las diligencia la empresa. Tú revisas y firmas cada mes.</p>
+      <div class="tabs" id="estMonthTabs"></div>
+      <div id="estControlView"></div>
+      <div class="sig-wrap">
+        <label>Firma estudiante (control de cumplimiento del mes)</label>
+        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-mes"></canvas></div>
+        <div class="sig-actions">
+          <span class="sig-status" id="sig-estudiante-mes-status">Sin firmar</span>
+          <button class="ghost" onclick="clearSig('sig-estudiante-mes')">Borrar firma</button>
+        </div>
+      </div>
+      <div class="actions-row"><button class="primary" onclick="saveEstudianteMes()">Guardar firma del mes</button></div>
+    </div>
+  </div>
+
+  <!-- SUPERVISOR -->
+  <div class="screen" id="screen-supervisor">
+    <button class="linkbtn" onclick="goHome()">← Cambiar de rol</button>
+    <div class="status-strip">
+      <div class="who">Editando como <b>Supervisor institucional</b> · Documento <b id="supDocLabel"></b></div>
+      <div class="actions">
+        <button class="ghost" onclick="switchStudent('supervisor')">Cambiar estudiante</button>
+        <button class="danger" onclick="roleLogout()">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div class="card" id="supDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar deep">Planilla del estudiante — solo lectura</div>
+      <p class="helptext" style="margin-top:-4px;">Puedes revisar toda la planilla. Solo puedes diligenciar las secciones de Visita 1 y Visita 2, más abajo.</p>
+      <div id="supPlanillaView"></div>
+    </div>
+
+    <div class="card" id="rf-card">
+      <div class="section-bar deep">Revisión de funciones y actividades — visita 1</div>
+      <div id="rf-lock-banner"></div>
+      <div class="field-row">
+        <div class="field"><label>Fecha de la visita</label><input type="date" id="rf-fecha"></div>
+        <div class="field"><label>Modalidad de la visita</label>
+          <select id="rf-modalidad-visita">
+            <option value="">Selecciona…</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Virtual">Virtual</option>
+          </select>
+        </div>
+        <div class="field"><label>Sitio de prácticas</label><input type="text" id="rf-sitio"></div>
+        <div class="field"><label>Área de trabajo</label><input type="text" id="rf-area"></div>
+        <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="rf-jefe"></div>
+        <div class="field"><label>Nombre del supervisor</label><input type="text" id="rf-supervisor" disabled style="background:#F3F0E8;color:var(--muted);"></div>
+        <div class="field"><label>Correo del supervisor</label><input type="text" id="rf-supervisor-correo" disabled style="background:#F3F0E8;color:var(--muted);"></div>
+      </div>
+
+      <div class="subhead" style="margin-top:6px;">Aspectos de la visita</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre del tutor de la práctica</label><input type="text" id="rf-tutor"></div>
+      </div>
+      <div class="field"><label>Funciones asignadas al estudiante</label><textarea id="rf-funciones"></textarea></div>
+      <div class="field">
+        <label>¿El estudiante acepta las funciones delegadas y se relacionan con su programa de formación?</label>
+        <div class="yesno">
+          <label><input type="radio" name="rfAceptacion" value="SI"> Sí</label>
+          <label><input type="radio" name="rfAceptacion" value="NO"> No</label>
+        </div>
+      </div>
+      <div class="field"><label>Observaciones de mejora de la empresa al estudiante</label><textarea id="rf-observaciones-mejora"></textarea></div>
+      <div class="field"><label>Compromisos que se dan en la reunión</label><textarea id="rf-compromisos"></textarea></div>
+
+      <div class="field-row">
+        <div class="sig-wrap" style="grid-column:1/-1;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+        <div class="sig-wrap"><label>Firma jefe inmediato</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-jefe"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-jefe-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-jefe')">Borrar</button></div></div>
+        <div class="sig-wrap"><label>Firma estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-estudiante')">Borrar</button></div></div>
+        <div class="sig-wrap"><label>Firma supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-supervisor')">Borrar</button></div></div>
+      </div>
+      <div class="actions-row"><button class="primary" id="rfSaveBtn" onclick="saveRevisionFunciones()">Guardar visita 1</button></div>
+    </div>
+
+    <div class="card" id="ds-card">
+      <div class="section-bar deep">Datos de supervisión — visita 2</div>
+      <div id="ds-lock-banner"></div>
+      <div class="field-row">
+        <div class="field"><label>Fecha de la visita</label><input type="date" id="ds-fecha"></div>
+        <div class="field"><label>Modalidad de la visita</label>
+          <select id="ds-modalidad-visita">
+            <option value="">Selecciona…</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Virtual">Virtual</option>
+          </select>
+        </div>
+        <div class="field"><label>Sitio de prácticas</label><input type="text" id="ds-sitio"></div>
+        <div class="field"><label>Área de trabajo</label><input type="text" id="ds-area"></div>
+        <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="ds-jefe"></div>
+        <div class="field"><label>Nombre del supervisor</label><input type="text" id="ds-supervisor" disabled style="background:#F3F0E8;color:var(--muted);"></div>
+        <div class="field"><label>Correo del supervisor</label><input type="text" id="ds-supervisor-correo" disabled style="background:#F3F0E8;color:var(--muted);"></div>
+      </div>
+
+      <div class="subhead">Observaciones del estudiante</div>
+      <p class="helptext" style="margin-top:-4px;">El estudiante responde y firma en el momento de la visita.</p>
+      <div class="field-row">
+        <div class="field"><label>¿El lugar de prácticas es el indicado para su programa?</label>
+          <div class="yesno"><label><input type="radio" name="estP1" value="SI"> Sí</label><label><input type="radio" name="estP1" value="NO"> No</label></div></div>
+        <div class="field"><label>¿Ha recibido apoyo de su jefe inmediato en su formación?</label>
+          <div class="yesno"><label><input type="radio" name="estP2" value="SI"> Sí</label><label><input type="radio" name="estP2" value="NO"> No</label></div></div>
+      </div>
+      <div class="field"><label>Comentarios</label><textarea id="ds-estComentarios"></textarea></div>
+      <div class="sig-wrap"><label>Firma del estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-estudiante')">Borrar</button></div></div>
+
+      <div class="subhead">Observaciones del jefe inmediato</div>
+      <div class="field-row">
+        <div class="field"><label>¿Las funciones del estudiante cubren las necesidades del servicio?</label>
+          <div class="yesno"><label><input type="radio" name="jefeP1" value="SI"> Sí</label><label><input type="radio" name="jefeP1" value="NO"> No</label></div></div>
+        <div class="field"><label>¿Sus conocimientos cubren las necesidades del servicio?</label>
+          <div class="yesno"><label><input type="radio" name="jefeP2" value="SI"> Sí</label><label><input type="radio" name="jefeP2" value="NO"> No</label></div></div>
+      </div>
+      <div class="field"><label>Comentarios</label><textarea id="ds-jefeComentarios"></textarea></div>
+      <div class="sig-wrap"><label>Firma del jefe inmediato</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-jefe"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-jefe-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-jefe')">Borrar</button></div></div>
+
+      <div class="subhead">Observaciones del supervisor</div>
+      <div class="field"><label>Comentarios</label><textarea id="ds-supComentarios"></textarea></div>
+      <div class="sig-wrap"><label>Firma del supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-supervisor')">Borrar</button></div></div>
+
+      <div class="actions-row">
+        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
+        <button class="primary" id="dsSaveBtn" onclick="saveDatosSupervision()">Guardar visita 2</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMINISTRADOR -->
+  <div class="screen" id="screen-administrador">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <div class="status-strip">
+      <div class="who">Editando como <b>Administrador</b> · Documento <b id="admDocLabel"></b></div>
+      <div class="actions">
+        <button class="ghost" onclick="switchStudent('administrador')">Buscar / crear otro estudiante</button>
+        <button class="danger" onclick="adminLogout()">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div class="card" id="admDatosGenerales"></div>
+
+    <div class="card">
+      <div class="section-bar deep">Estado de la planilla</div>
+      <div id="admResumen"></div>
+      <div class="actions-row"><button class="ghost" onclick="downloadPdf()">Descargar PDF</button></div>
+    </div>
+
+    <div class="card">
+      <div class="section-bar teal">Acceso del estudiante a la aplicación</div>
+      <div id="admAccesoEstudiante"></div>
+    </div>
+
+    <div class="card" style="border-color:#E4C3BE;">
+      <div class="section-bar" style="background:var(--danger);">Zona de peligro — eliminar estudiante</div>
+      <p class="helptext" style="margin-top:-4px;">Descarga primero el acta en PDF para guardarla — una vez eliminado el estudiante, esta información no se puede recuperar.</p>
+      <div class="actions-row" style="justify-content:flex-start;">
+        <button class="ghost" onclick="downloadPdfBeforeDelete()">1. Descargar acta (PDF)</button>
+        <button class="danger" onclick="startDeleteStudent()" id="btnStartDelete" disabled>2. Eliminar estudiante</button>
+      </div>
+      <div id="deleteStudentPanel" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/password-toggle.js"></script>
+<script src="js/signature-pad.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/admin-users.js"></script>
+<script src="js/programas.js"></script>
+<script src="js/datos-generales.js"></script>
+<script src="js/empresa.js"></script>
+<script src="js/estudiante.js"></script>
+<script src="js/supervisor.js"></script>
+<script src="js/administrador.js"></script>
+<script src="js/estudiante-auth.js"></script>
+<script src="js/reporte.js"></script>
+<script src="js/asignacion.js"></script>
+<script src="js/impresion.js"></script>
+<script src="js/importexport.js"></script>
+<script src="js/modalidades.js"></script>
+<script src="js/rubrica.js"></script>
+<script src="js/contratacion.js"></script>
+<script src="js/carta-assets.js"></script>
+<script src="js/carta.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/sesion.js"></script>
+<script src="js/pie-sesion.js"></script>
+<script src="js/planilla-template.js"></script>
+<script src="js/pdf-export.js"></script>
+<script>initPwToggles();</script>
+</body>
+</html>
