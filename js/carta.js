@@ -35,7 +35,7 @@ function cartaEnvolver(font, texto, size, escala, ancho){
 }
 
 /* datos: { fecha:Date, contacto, empresa, direccion, telefono, estudiante, documento, programa,
-            inicio:'YYYY-MM-DD', fin:'YYYY-MM-DD', horario, jornada, requisitos, funciones } */
+            inicio:'YYYY-MM-DD', fin:'YYYY-MM-DD', horario, jornada, requisitos } */
 async function generarCartaPdf(d){
   const { PDFDocument, StandardFonts, rgb, setCharacterSpacing, setWordSpacing } = PDFLib;
   const pdf = await PDFDocument.create();
@@ -139,9 +139,8 @@ async function generarCartaPdf(d){
   // Requisitos (de la empresa; en mayúsculas como el modelo)
   txt(p1, 'Requisitos:', 66, Y(244.47));
   const req = L(String(d.requisitos || '').toUpperCase()).trim();
-  let lineasR = req ? cartaEnvolver(font, req, 10, 1, CARTA.ANCHO_REQ) : [];
-  const fun = L(String(d.funciones || '').toUpperCase()).trim();
-  if(fun){ lineasR = lineasR.concat(['', 'Funciones a desempeñar:'], cartaEnvolver(font, fun, 10, 1, CARTA.ANCHO_REQ)); }
+  const lineasR = req ? cartaEnvolver(font, req, 10, 1, CARTA.ANCHO_REQ) : [];
+
   let yr = Y(223.5), pag2 = [];
   lineasR.forEach(ln=>{
     if(yr >= CARTA.Y_MIN_P1){ if(ln) txt(p1, ln, 66, yr); yr -= CARTA.INTERLINEA_REQ; }
