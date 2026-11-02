@@ -81,15 +81,43 @@ function caChipFicha(emp){
   const est = c.estado==='aprobada' ? 'aprobada' : (c.estado==='pendiente' ? 'pendiente de aprobación' : 'rechazada');
   return '<br><span class="pill" style="background:#EEF3E4;color:#3B5B16;">Contrato de aprendizaje · '+est+' · '+c.ofertas+' solicitud(es) · '+c.contratados+' contratado(s)</span>';
 }
+var filtroEmpTexto = '', filtroEmpPrograma = '';
+function empNormTxt(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function asegurarFiltroEmpresas(){
+  const el = document.getElementById('empresasList'); if(!el) return;
+  let bar = document.getElementById('empFiltroBar');
+  if(!bar){
+    bar = document.createElement('div'); bar.id = 'empFiltroBar'; bar.className = 'lista-top';
+    bar.innerHTML = '<input type="search" id="empFiltroTxt" class="lista-busca" placeholder="🔎 Buscar por nombre de empresa, NIT o ciudad…" oninput="filtroEmpTexto=this.value;renderEmpresasListHtml()">' +
+      '<select id="empFiltroProg" style="max-width:340px;" onchange="filtroEmpPrograma=this.value;renderEmpresasListHtml()"></select>' +
+      '<button class="ghost" onclick="limpiarFiltrosEmpresas()">Limpiar filtros</button>';
+    el.parentNode.insertBefore(bar, el);
+  }
+  const sel = document.getElementById('empFiltroProg');
+  const nombres = new Set((programasCache||[]).map(p=>p.nombre));
+  (empresasCache||[]).forEach(e=>(e.cupos_empresa||[]).forEach(c=>nombres.add(c.programa)));
+  const lista = [...nombres].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '<option value="">Todos los programas</option>' + lista.map(n=>'<option value="'+escapeAttr(n)+'"'+(n===filtroEmpPrograma?' selected':'')+'>'+esc(n)+'</option>').join('');
+}
+function limpiarFiltrosEmpresas(){
+  filtroEmpTexto = ''; filtroEmpPrograma = '';
+  const t = document.getElementById('empFiltroTxt'); if(t) t.value = '';
+  renderEmpresasListHtml();
+}
 function renderEmpresasListHtml(){
   const el = document.getElementById('empresasList');
+  asegurarFiltroEmpresas();
   if(empresasCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay empresas registradas.</p>'; return; }
   const cuentaCat = id => empresasCache.filter(e=>(e.categoria||'practica_no_remunerada')===id).length;
   const filtros = '<div class="tabs" style="margin-bottom:12px;">'+
     '<button class="tab '+(filtroCategoriaEmpresa==='todas'?'active':'')+'" onclick="setFiltroCategoria(\'todas\')">Todas ('+empresasCache.length+')</button>'+
     CATEGORIAS_EMPRESA.map(c=>'<button class="tab '+(filtroCategoriaEmpresa===c.id?'active':'')+'" onclick="setFiltroCategoria(\''+c.id+'\')">'+c.corto+' ('+cuentaCat(c.id)+')</button>').join('')+'</div>';
-  const visibles = filtroCategoriaEmpresa==='todas' ? empresasCache : empresasCache.filter(e=>(e.categoria||'practica_no_remunerada')===filtroCategoriaEmpresa);
-  if(visibles.length===0){ el.innerHTML = filtros + '<p style="color:var(--muted);font-size:13px;">No hay empresas en esta categoría.</p>'; return; }
+  const q = empNormTxt(filtroEmpTexto).trim();
+  const visibles = empresasCache.filter(e=>
+    (filtroCategoriaEmpresa==='todas' || (e.categoria||'practica_no_remunerada')===filtroCategoriaEmpresa) &&
+    (!q || empNormTxt([e.nombre, e.nit, e.ciudad, e.contacto].join(' ')).includes(q)) &&
+    (!filtroEmpPrograma || (e.cupos_empresa||[]).some(c=>c.programa===filtroEmpPrograma)));
+  if(visibles.length===0){ el.innerHTML = filtros + '<p style="color:var(--muted);font-size:13px;">No hay empresas que coincidan con los filtros.</p>'; return; }
   const progOpts = (programasCache||[]).map(p=>`<option value="${esc(p.nombre)}">${esc(p.nombre)}</option>`).join('');
   const jorOpts = JORNADAS.map(j=>`<option value="${j}">${j}</option>`).join('');
   el.innerHTML = filtros + visibles.map(emp=>{
