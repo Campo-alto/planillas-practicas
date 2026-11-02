@@ -508,7 +508,7 @@ function datosCarta(rec, a){
   return {
     contacto: a.contacto, empresa: a.empresa, direccion: a.direccion, telefono: a.telefono,
     estudiante: rec.nombre, documento: rec.documento, programa: rec.programa,
-    inicio: a.fecha_inicio, fin: a.fecha_fin, horario: a.horario, jornada: a.dias || a.jornada, requisitos: a.requisitos, funciones: a.funciones
+    inicio: a.fecha_inicio, fin: a.fecha_fin, horario: a.horario, jornada: a.dias || a.jornada, requisitos: a.requisitos
   };
 }
 async function descargarCartaEstudiante(){
