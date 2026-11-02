@@ -158,6 +158,7 @@ async function eliminarCupo(id){
 
 async function renderAsignacionesAdmin(){
   const el = document.getElementById('asignacionesList');
+  renderVentanaAdmin();
   try{
     const { data, error } = await sb.rpc('admin_list_asignaciones');
     if(error) throw error;
@@ -177,25 +178,58 @@ async function liberarAsignacion(id){
   const motivo = prompt('Motivo del retiro del estudiante de esta empresa (obligatorio):');
   if(motivo === null) return;
   if(motivo.trim().length < 3){ toast('Escribe el motivo del retiro', true); return; }
-  if(!confirm('¿Inactivar al estudiante de esta empresa? Quedará sin empresa, el cupo volverá a estar disponible y podrá elegir una nueva por el tiempo que le falta.')) return;
-  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id, p_motivo: motivo.trim() });
+  const a = asignacionesCache.find(x=>x.id===id);
+  let meses = null;
+  if(a){ const rec = await getRecord(a.documento); if(rec) meses = mesesRestantesPractica(rec); }
+  if(!confirm('¿Inactivar al estudiante de esta empresa?'+(meses!==null?' Podrá elegir una nueva por '+meses+' mes'+(meses===1?'':'es')+'.':'')+' El cupo volverá a estar disponible.')) return;
+  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id, p_motivo: motivo.trim(), p_meses: meses });
   if(error){ toast(errMsg(error), true); return; }
   toast('Estudiante inactivado de la empresa'); renderEmpresasCupos();
 }
-// Tiempo que le falta al estudiante: la práctica dura los meses de su modalidad desde su primera asignación
-function tiempoRestantePractica(inicio, modalidad){
-  if(!inicio) return null;
-  const ini = new Date(inicio); if(isNaN(ini)) return null;
-  const fin = new Date(ini); fin.setMonth(fin.getMonth() + mesesPorModalidad(modalidad));
-  const dias = Math.max(0, Math.ceil((fin - new Date()) / 86400000));
-  return { fin, dias };
+// Meses que se le asignan al estudiante que se retira: meses de la práctica menos los meses ya calificados
+// (4 meses: 1 nota → 3 meses, 2 notas → 2 meses, 3 notas → 1 mes). Se cuenta por meses, no por días.
+function notasCalificadas(rec){
+  const total = mesesPorModalidad(rec.modalidad);
+  let n = 0; for(let i=0;i<total;i++){ if(mesCalificado(rec,i)) n++; }
+  return n;
 }
-function textoTiempoRestante(inicio, modalidad){
-  const t = tiempoRestantePractica(inicio, modalidad);
-  if(!t) return '';
-  return t.dias > 0
-    ? 'Te faltan aproximadamente <b>'+t.dias+' días</b> para completar la práctica (hasta el '+t.fin.toLocaleDateString()+').'
-    : 'El tiempo de tu práctica ya se cumplió (hasta el '+t.fin.toLocaleDateString()+').';
+function mesesRestantesPractica(rec){
+  return Math.max(0, mesesPorModalidad(rec.modalidad) - notasCalificadas(rec));
+}
+function textoMeses(n){ return n+' mes'+(n===1?'':'es'); }
+// ISO ↔ campo datetime-local
+function isoALocalInput(iso){
+  if(!iso) return '';
+  const d = new Date(iso); if(isNaN(d)) return '';
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+}
+async function renderVentanaAdmin(){
+  const pane = document.getElementById('empPane-asig');
+  if(!pane) return;
+  let box = document.getElementById('ventanaAsignacion');
+  if(!box){
+    box = document.createElement('div'); box.className = 'card'; box.id = 'ventanaAsignacion';
+    pane.insertAdjacentElement('afterbegin', box);
+  }
+  const { data, error } = await sb.rpc('admin_get_ventana');
+  if(error){ box.innerHTML = '<div class="section-bar deep">Fechas de apertura y cierre</div><p style="color:var(--danger);font-size:13px;">'+esc(errMsg(error))+' (¿ejecutaste el SQL de ventana?)</p>'; return; }
+  const estado = data.abierta ? '<b style="color:var(--teal-dark)">🟢 Abierta ahora</b>'
+    : (!data.abre || !data.cierra ? '<b style="color:var(--danger)">🔴 Cerrada (sin fechas configuradas)</b>' : '<b style="color:var(--danger)">🔴 Cerrada ahora</b>');
+  box.innerHTML = '<div class="section-bar deep">Fechas de apertura y cierre para que los estudiantes elijan su sitio de práctica</div>'+
+    '<p style="margin:0 0 10px;font-size:14px;">'+estado+'. Fuera de estas fechas los estudiantes no pueden tomar cupos (tú sí puedes asignarlos desde la ficha).</p>'+
+    '<div class="field-row">'+
+      '<div class="field"><label>Apertura</label><input type="datetime-local" id="ventAbre" value="'+isoALocalInput(data.abre)+'"></div>'+
+      '<div class="field"><label>Cierre</label><input type="datetime-local" id="ventCierra" value="'+isoALocalInput(data.cierra)+'"></div>'+
+    '</div>'+
+    '<div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="guardarVentana()">Guardar fechas</button></div>';
+}
+async function guardarVentana(){
+  const a = document.getElementById('ventAbre').value, c = document.getElementById('ventCierra').value;
+  if(!a || !c){ toast('Indica la fecha de apertura y la de cierre', true); return; }
+  const { error } = await sb.rpc('admin_set_ventana', { p_abre: new Date(a).toISOString(), p_cierra: new Date(c).toISOString() });
+  if(error){ toast(errMsg(error), true); return; }
+  toast('Fechas guardadas'); renderVentanaAdmin();
 }
 function descargarAsignacionesXLSX(){
   if(asignacionesCache.length===0){ toast('No hay asignaciones para descargar', true); return; }
@@ -236,7 +270,15 @@ async function renderAsignacionEstudiante(){
     let aviso = '';
     if(hist.length){
       const u = hist[hist.length-1];
-      aviso = `<div class="note-box" style="margin-bottom:12px;">Fuiste retirado(a) de <b>${esc(u.empresa)}</b>${u.hasta?' el '+new Date(u.hasta).toLocaleDateString():''}${u.motivo?' (motivo: '+esc(u.motivo)+')':''}. Puedes elegir una nueva empresa por el tiempo que te falta. ${textoTiempoRestante(data.inicio, data.modalidad)}</div>`;
+      const m = (u.meses!==null && u.meses!==undefined) ? u.meses : (state.record ? mesesRestantesPractica(state.record) : null);
+      aviso = `<div class="note-box" style="margin-bottom:12px;">Fuiste retirado(a) de <b>${esc(u.empresa)}</b>${u.hasta?' el '+new Date(u.hasta).toLocaleDateString():''}${u.motivo?' (motivo: '+esc(u.motivo)+')':''}. Puedes elegir una nueva empresa${m!==null?' por <b>'+textoMeses(m)+'</b>, que es el tiempo que te falta de práctica':' por el tiempo que te falta'}.</div>`;
+    }
+    const v = data.ventana || {};
+    if(!v.abierta){
+      const fmt = d => new Date(d).toLocaleString([], {dateStyle:'medium', timeStyle:'short'});
+      const fechas = (v.abre && v.cierra) ? ' Fechas habilitadas: del <b>'+fmt(v.abre)+'</b> al <b>'+fmt(v.cierra)+'</b>.' : ' Aún no se han definido las fechas.';
+      el.innerHTML = aviso + '<div class="note-box">🔒 La ubicación en sitios de práctica no está habilitada en este momento.'+fechas+'</div>';
+      return;
     }
     const cab = aviso + `<p class="helptext" style="margin-top:-4px;">Programa: <b>${esc(data.programa)}</b> · Jornada: <b>${esc(data.jornada)}</b>. Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>`;
     if(lista.length===0){ el.innerHTML = cab + '<div class="note-box">Por ahora no hay cupos disponibles para tu programa y jornada. Vuelve a revisar más tarde.</div>'; return; }
