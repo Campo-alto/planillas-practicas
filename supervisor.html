@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- VERSION-EMPRESAS-UNIFICADO -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -67,6 +68,7 @@
     </div>
     <div class="card" id="lookupAdminListCard" style="display:none;">
       <div class="section-bar deep">Estudiantes registrados</div>
+      <div class="actions-row" style="justify-content:flex-start;margin-bottom:8px;"><button class="ghost" onclick="generarClavesMasivas()">🔑 Generar claves para estudiantes sin acceso (Excel)</button></div>
       <div id="lookupAdminList"></div>
     </div>
   </div>
@@ -202,7 +204,10 @@
 <script src="js/estudiante.js"></script>
 <script src="js/supervisor.js"></script>
 <script src="js/administrador.js"></script>
+<script src="js/estudiante-auth.js"></script>
 <script src="js/reporte.js"></script>
+<script src="js/asignacion.js"></script>
+<script src="js/importexport.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>
