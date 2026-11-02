@@ -26,7 +26,10 @@ const CATEGORIAS_EMPRESA = [
 ];
 let filtroCategoriaEmpresa = 'todas';
 function nombreCategoria(id){ const c = CATEGORIAS_EMPRESA.find(x=>x.id===id); return c ? c.nombre : id; }
-function esModalidadPNR(m){ return /no remunerada/i.test(m||''); }
+function esModalidadPNR(m){
+  const x = MODALIDADES.find(y=>y.nombre===m);
+  return x ? !!x.es_pnr : /no remunerada/i.test(m||'');
+}
 // Agrega el selector de categoría al formulario si el HTML no lo trae
 function asegurarCampoCategoria(){
   if(document.getElementById('empCategoria')) return;
@@ -36,17 +39,26 @@ function asegurarCampoCategoria(){
     CATEGORIAS_EMPRESA.map(c=>'<option value="'+c.id+'">'+c.nombre+'</option>').join('')+'</select>';
   nom.closest('.field').insertAdjacentElement('afterend', f);
 }
+function asegurarCampoRequisitos(){
+  if(document.getElementById('empRequisitos')) return;
+  const c = document.getElementById('empContacto'); if(!c) return;
+  const row = c.closest('.field-row');
+  const f = document.createElement('div'); f.className = 'field'; f.style.gridColumn = '1 / -1';
+  f.innerHTML = '<label>Requisitos de la empresa (aparecen en la carta de presentación del estudiante)</label>'+
+    '<textarea id="empRequisitos" rows="3" maxlength="1500" placeholder="Ej. Uniforme blanco, hoja de vida formato Campoalto, fotocopia del documento, certificado de la EPS…"></textarea>';
+  row.appendChild(f);
+}
 function setFiltroCategoria(id){ filtroCategoriaEmpresa = id; renderEmpresasListHtml(); }
 
 async function renderEmpresasCupos(){
-  asegurarCampoCategoria();
+  asegurarCampoCategoria(); asegurarCampoRequisitos();
   if(!requireSupabase()) return;
   await loadProgramas();
   const el = document.getElementById('empresasList');
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
     const { data, error } = await sb.from('empresas_practica')
-      .select('*, cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados)')
+      .select('*, cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados,fecha_inicio,fecha_fin,horario,dias)')
       .order('nombre', { ascending: true });
     if(error) throw error;
     empresasCache = data || [];
@@ -79,10 +91,14 @@ function renderEmpresasListHtml(){
         <td><input type="number" min="${c.cupos_ocupados}" max="500" value="${c.cupos_total}" style="width:70px;" onchange="actualizarCupoTotal('${c.id}', this.value)"></td>
         <td>${c.cupos_ocupados}</td>
         <td><b style="color:${disp>0?'var(--teal-dark)':'var(--danger)'};">${disp}</b></td>
+        <td><input type="date" value="${esc(c.fecha_inicio||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_inicio',this.value)"></td>
+        <td><input type="date" value="${esc(c.fecha_fin||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_fin',this.value)"></td>
+        <td><input type="text" maxlength="60" value="${esc(c.horario||'')}" placeholder="08:00 A 17:00" style="width:110px;" onchange="actualizarCupoCampo('${c.id}','horario',this.value)"></td>
+        <td><input type="text" maxlength="80" value="${esc(c.dias||'')}" placeholder="MIERCOLES" style="width:110px;" onchange="actualizarCupoCampo('${c.id}','dias',this.value)"></td>
         <td><button class="danger" style="padding:4px 8px;font-size:12px;" onclick="eliminarCupo('${c.id}')">Quitar</button></td>
       </tr>`;
     }).join('');
-    const tabla = cupos.length ? `<table class="students-list"><thead><tr><th>Programa</th><th>Jornada</th><th>Cupos</th><th>Ocupados</th><th>Disponibles</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+    const tabla = cupos.length ? `<table class="students-list"><thead><tr><th>Programa</th><th>Jornada</th><th>Cupos</th><th>Ocupados</th><th>Disponibles</th><th>Inicio</th><th>Fin</th><th>Horario</th><th>Días</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
       : '<p style="color:var(--muted);font-size:13px;">Esta empresa todavía no tiene cupos.</p>';
     return `<div class="card" style="${emp.activa?'':'opacity:.65;'}">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
@@ -102,6 +118,10 @@ function renderEmpresasListHtml(){
         <div class="field"><label>Programa</label><select id="cupoProg-${emp.id}">${progOpts}</select></div>
         <div class="field"><label>Jornada</label><select id="cupoJor-${emp.id}">${jorOpts}</select></div>
         <div class="field"><label>Cupos</label><input type="number" min="0" max="500" id="cupoNum-${emp.id}" value="1"></div>
+        <div class="field"><label>Fecha inicio</label><input type="date" id="cupoIni-${emp.id}"></div>
+        <div class="field"><label>Fecha finalización</label><input type="date" id="cupoFin-${emp.id}"></div>
+        <div class="field"><label>Horario</label><input type="text" maxlength="60" id="cupoHor-${emp.id}" placeholder="08:00 A 17:00"></div>
+        <div class="field"><label>Días (jornada en la carta)</label><input type="text" maxlength="80" id="cupoDia-${emp.id}" placeholder="MIERCOLES"></div>
         <div class="field"><button class="primary" onclick="agregarCupo('${emp.id}')">Agregar cupos</button></div>
       </div>` : `<p style="margin:12px 0 0;color:var(--muted);font-size:13px;">Esta categoría no maneja cupos ni fechas de inscripción: solo aplican a prácticas no remuneradas.</p>`}
     </div>`;
@@ -111,6 +131,7 @@ function limpiarFormEmpresa(){
   editingEmpresaId = null;
   ['empNombre','empNit','empDireccion','empCiudad','empTelefono','empCorreo','empContacto'].forEach(id=>document.getElementById(id).value='');
   const cs = document.getElementById('empCategoria'); if(cs) cs.value = 'practica_no_remunerada';
+  const rq = document.getElementById('empRequisitos'); if(rq) rq.value = '';
   document.getElementById('empSaveBtn').textContent = 'Guardar empresa';
   document.getElementById('empCancelBtn').style.display = 'none';
   document.getElementById('empresaMsg').innerHTML = '';
@@ -125,7 +146,8 @@ function editarEmpresa(id){
   document.getElementById('empTelefono').value = e.telefono||'';
   document.getElementById('empCorreo').value = e.correo||'';
   document.getElementById('empContacto').value = e.contacto||'';
-  asegurarCampoCategoria(); document.getElementById('empCategoria').value = e.categoria || 'practica_no_remunerada';
+  asegurarCampoCategoria(); asegurarCampoRequisitos(); document.getElementById('empCategoria').value = e.categoria || 'practica_no_remunerada';
+  document.getElementById('empRequisitos').value = e.requisitos || '';
   document.getElementById('empSaveBtn').textContent = 'Actualizar empresa';
   document.getElementById('empCancelBtn').style.display = '';
   document.getElementById('empresaMsg').innerHTML = '<span style="color:var(--muted)">Editando '+esc(e.nombre)+'.</span>';
@@ -137,7 +159,8 @@ async function guardarEmpresa(){
   const row = {
     nombre: val('empNombre'), nit: val('empNit'), direccion: val('empDireccion'), ciudad: val('empCiudad'),
     telefono: val('empTelefono'), correo: val('empCorreo'), contacto: val('empContacto'),
-    categoria: (document.getElementById('empCategoria')||{}).value || 'practica_no_remunerada'
+    categoria: (document.getElementById('empCategoria')||{}).value || 'practica_no_remunerada',
+    requisitos: ((document.getElementById('empRequisitos')||{}).value || '').trim().slice(0,1500)
   };
   if(row.nombre.length < 2){ msg.innerHTML = '<span style="color:var(--danger)">Escribe el nombre de la empresa.</span>'; return; }
   try{
@@ -168,9 +191,18 @@ async function agregarCupo(empresaId){
   const cupos_total = parseInt(document.getElementById('cupoNum-'+empresaId).value, 10);
   if(!programa){ toast('Primero crea programas en el módulo Programas', true); return; }
   if(isNaN(cupos_total) || cupos_total < 0 || cupos_total > 500){ toast('Cupos debe estar entre 0 y 500', true); return; }
-  const { error } = await sb.from('cupos_empresa').insert({ empresa_id: empresaId, programa, jornada, cupos_total });
+  const ini = document.getElementById('cupoIni-'+empresaId).value || null, fin = document.getElementById('cupoFin-'+empresaId).value || null;
+  if(ini && fin && fin < ini){ toast('La fecha de finalización no puede ser anterior a la de inicio', true); return; }
+  const { error } = await sb.from('cupos_empresa').insert({ empresa_id: empresaId, programa, jornada, cupos_total, fecha_inicio: ini, fecha_fin: fin,
+    horario: document.getElementById('cupoHor-'+empresaId).value.trim(), dias: document.getElementById('cupoDia-'+empresaId).value.trim() });
   if(error){ toast(error.code==='23505' ? 'Ya existe ese programa y jornada para esta empresa: edita el número de cupos.' : 'Error: '+error.message, true); return; }
   toast('Cupos agregados'); renderEmpresasCupos();
+}
+async function actualizarCupoCampo(id, campo, valor){
+  const v = (campo==='fecha_inicio' || campo==='fecha_fin') ? (valor || null) : String(valor||'').trim();
+  const { error } = await sb.from('cupos_empresa').update({ [campo]: v }).eq('id', id);
+  if(error){ toast(error.message.includes('cupos_fechas_ok') ? 'La fecha de finalización no puede ser anterior a la de inicio' : 'No se pudo guardar: '+error.message, true); renderEmpresasCupos(); return; }
+  toast('Guardado');
 }
 async function actualizarCupoTotal(id, value){
   const n = parseInt(value, 10);
@@ -285,6 +317,7 @@ async function renderAsignacionEstudiante(){
       return;
     }
     const a = data.asignacion;
+    window.asigEstudiante = a || null;
     if(a){
       el.innerHTML = `<div class="note-box" style="background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">✅ Ya tienes tu práctica asignada.</div>
         <div class="field-row" style="margin-top:12px;">
@@ -293,7 +326,14 @@ async function renderAsignacionEstudiante(){
           <div class="field"><label>Dirección</label><div>${esc(a.direccion||'—')}${a.ciudad?' · '+esc(a.ciudad):''}</div></div>
           <div class="field"><label>Teléfono</label><div>${esc(a.telefono||'—')}</div></div>
           ${a.contacto?`<div class="field"><label>Contacto</label><div>${esc(a.contacto)}</div></div>`:''}
-        </div>`;
+          <div class="field"><label>Fechas de la práctica</label><div>${a.fecha_inicio?esc(cartaFechaCorta(a.fecha_inicio)):'—'} a ${a.fecha_fin?esc(cartaFechaCorta(a.fecha_fin)):'—'}</div></div>
+          <div class="field"><label>Horario</label><div>${esc(a.horario||'—')}${a.dias?' · '+esc(a.dias):''}</div></div>
+        </div>
+        <div class="field" style="margin-top:8px;"><label>Requisitos de la empresa</label><div style="white-space:pre-wrap;">${esc(a.requisitos||'La empresa no tiene requisitos registrados.')}</div></div>
+        <div class="actions-row" style="justify-content:flex-start;margin-top:12px;">
+          <button class="primary" onclick="descargarCartaEstudiante()">📄 Descargar carta de presentación (PDF)</button>
+        </div>
+        <p class="helptext" style="margin-top:6px;">Entrega esta carta en la empresa como soporte de ingreso.</p>`;
       return;
     }
     if(!data.jornada){
@@ -318,7 +358,7 @@ async function renderAsignacionEstudiante(){
     const cab = aviso + `<p class="helptext" style="margin-top:-4px;">Programa: <b>${esc(data.programa)}</b> · Jornada: <b>${esc(data.jornada)}</b>. Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>`;
     if(lista.length===0){ el.innerHTML = cab + '<div class="note-box">Por ahora no hay cupos disponibles para tu programa y jornada. Vuelve a revisar más tarde.</div>'; return; }
     const rows = lista.map(c=>`<tr>
-      <td><b>${esc(c.empresa)}</b></td>
+      <td><b>${esc(c.empresa)}</b>${c.requisitos?'<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--muted);">Ver requisitos</summary>'+esc(c.requisitos)+'</details>':''}</td>
       <td>${esc(c.direccion||'—')}${c.ciudad?'<br><span style="color:var(--muted);font-size:11.5px;">'+esc(c.ciudad)+'</span>':''}</td>
       <td>${esc(c.telefono||'—')}</td>
       <td><b style="color:var(--teal-dark);">${c.disponibles}</b> de ${c.total}</td>
@@ -409,4 +449,30 @@ async function eliminarAcceso(id){
   const { error } = await sb.rpc('admin_delete_role_account', { p_id: id });
   if(error){ toast('No se pudo eliminar: '+error.message, true); return; }
   toast('Acceso eliminado'); renderAccesosEmpresa();
+}
+
+/* ---------- Carta de presentación ---------- */
+function datosCarta(rec, a){
+  return {
+    contacto: a.contacto, empresa: a.empresa, direccion: a.direccion, telefono: a.telefono,
+    estudiante: rec.nombre, documento: rec.documento, programa: rec.programa,
+    inicio: a.fecha_inicio, fin: a.fecha_fin, horario: a.horario, jornada: a.dias || a.jornada, requisitos: a.requisitos
+  };
+}
+async function descargarCartaEstudiante(){
+  const a = window.asigEstudiante;
+  if(!a){ toast('Aún no tienes una empresa asignada', true); return; }
+  if(!a.fecha_inicio || !a.fecha_fin || !a.horario){
+    toast('La administración aún no ha definido las fechas y el horario de tu práctica. Intenta más tarde.', true); return;
+  }
+  await descargarCartaPdf(datosCarta(state.record, a));
+}
+async function descargarCartaAdmin(){
+  const { data, error } = await sb.rpc('admin_carta_datos', { p_documento: state.documento });
+  if(error){ toast(errMsg(error), true); return; }
+  if(!data){ toast('El estudiante no tiene empresa asignada', true); return; }
+  if(!data.fecha_inicio || !data.fecha_fin || !data.horario){
+    if(!confirm('Falta definir fechas u horario del cupo (módulo Empresas). ¿Generar la carta de todos modos con esos campos vacíos?')) return;
+  }
+  await descargarCartaPdf(datosCarta(state.record, data));
 }
