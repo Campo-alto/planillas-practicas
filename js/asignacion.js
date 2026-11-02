@@ -360,17 +360,22 @@ async function renderAsignacionEstudiante(){
     const a = data.asignacion;
     window.asigEstudiante = a || null;
     if(a){
-      el.innerHTML = `<div class="note-box" style="background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">✅ Ya tienes tu práctica asignada.</div>
-        <div class="field-row" style="margin-top:12px;">
-          <div class="field"><label>Empresa</label><div><b>${esc(a.empresa)}</b></div></div>
-          <div class="field"><label>Jornada</label><div>${esc(a.jornada)}</div></div>
-          <div class="field"><label>Dirección</label><div>${esc(a.direccion||'—')}${a.ciudad?' · '+esc(a.ciudad):''}</div></div>
-          <div class="field"><label>Teléfono</label><div>${esc(a.telefono||'—')}</div></div>
-          ${a.contacto?`<div class="field"><label>Contacto</label><div>${esc(a.contacto)}</div></div>`:''}
-          <div class="field"><label>Fechas de la práctica</label><div>${a.fecha_inicio?esc(cartaFechaCorta(a.fecha_inicio)):'—'} a ${a.fecha_fin?esc(cartaFechaCorta(a.fecha_fin)):'—'}</div></div>
-          <div class="field"><label>Horario</label><div>${esc(a.horario||'—')}${a.dias?' · '+esc(a.dias):''}</div></div>
-        </div>
-        <div class="field" style="margin-top:8px;"><label>Requisitos de la empresa</label><div style="white-space:pre-wrap;">${esc(a.requisitos||'La empresa no tiene requisitos registrados.')}</div></div>
+      const fila = (t,v)=>`<tr><th scope="row">${t}</th><td>${v}</td></tr>`;
+      const fechas = (a.fecha_inicio?esc(cartaFechaCorta(a.fecha_inicio)):'—')+' &nbsp;a&nbsp; '+(a.fecha_fin?esc(cartaFechaCorta(a.fecha_fin)):'—');
+      el.innerHTML = `<div class="asig-ok">✅ Ya tienes tu práctica asignada</div>
+        <table class="asig-tabla"><tbody>
+          <tr class="asig-titulo"><th colspan="2">Datos de tu sitio de práctica</th></tr>
+          ${fila('Empresa','<b>'+esc(a.empresa)+'</b>')}
+          ${fila('Jornada',esc(a.jornada))}
+          ${fila('Dirección',esc(a.direccion||'—')+(a.ciudad?' · '+esc(a.ciudad):''))}
+          ${fila('Teléfono',esc(a.telefono||'—'))}
+          ${a.contacto?fila('Contacto',esc(a.contacto)):''}
+          <tr class="asig-titulo"><th colspan="2">Condiciones de la práctica</th></tr>
+          ${fila('Fechas de la práctica',fechas)}
+          ${fila('Horario',esc(a.horario||'—'))}
+          ${fila('Días',esc(a.dias||'—'))}
+          ${fila('Requisitos de la empresa','<div style="white-space:pre-wrap;">'+esc(a.requisitos||'La empresa no tiene requisitos registrados.')+'</div>')}
+        </tbody></table>
         <div class="actions-row" style="justify-content:flex-start;margin-top:12px;">
           <button class="primary" onclick="descargarCartaEstudiante()">📄 Descargar carta de presentación (PDF)</button>
         </div>
@@ -396,7 +401,7 @@ async function renderAsignacionEstudiante(){
       el.innerHTML = aviso + '<div class="note-box">🔒 La ubicación en sitios de práctica no está habilitada en este momento.'+fechas+'</div>';
       return;
     }
-    const cab = aviso + `<p class="helptext" style="margin-top:-4px;">Programa: <b>${esc(data.programa)}</b> · Jornada: <b>${esc(data.jornada)}</b>. Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>`;
+    const cab = aviso + `<table class="asig-tabla asig-mini"><tbody><tr><th scope="row">Programa</th><td>${esc(data.programa)}</td><th scope="row">Jornada</th><td>${esc(data.jornada)}</td></tr></tbody></table><p class="helptext" style="margin-top:8px;text-align:justify;">Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>`;
     if(lista.length===0){ el.innerHTML = cab + '<div class="note-box">Por ahora no hay cupos disponibles para tu programa y jornada. Vuelve a revisar más tarde.</div>'; return; }
     const rows = lista.map(c=>`<tr>
       <td><b>${esc(c.empresa)}</b>${c.requisitos?'<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--muted);">Ver requisitos</summary>'+esc(c.requisitos)+'</details>':''}</td>
@@ -405,7 +410,7 @@ async function renderAsignacionEstudiante(){
       <td><b style="color:var(--teal-dark);">${c.disponibles}</b> de ${c.total}</td>
       <td><button class="primary" style="padding:6px 12px;font-size:12.5px;" onclick="tomarCupo('${c.id}', this)">Tomar cupo</button></td>
     </tr>`).join('');
-    el.innerHTML = cab + `<table class="students-list"><thead><tr><th>Empresa</th><th>Dirección</th><th>Teléfono</th><th>Cupos disponibles</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    el.innerHTML = cab + `<table class="students-list asig-cupos"><thead><tr><th>Empresa</th><th>Dirección</th><th>Teléfono</th><th>Cupos disponibles</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(errMsg(e))+'</p>'; }
 }
 async function tomarCupo(cupoId, btn){
