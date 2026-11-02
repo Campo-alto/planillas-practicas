@@ -93,7 +93,7 @@ function empMonthEditorHtml(i){
     ${rubricaHtml(i, dis)}
     <div class="subhead" style="margin-top:16px;">Control de cumplimiento del mes</div>
     <div class="field-row">
-      <div class="field"><label>Sitio de prácticas</label><input id="ctl-sitio" value="${escapeAttr(m.sitio)}" ${dis}></div>
+      <div class="field"><label>Sitio de prácticas</label><input id="ctl-sitio" value="${escapeAttr(m.sitio || sitioCache[rec.documento] || '')}" ${dis} ${sitioCache[rec.documento] ? 'readonly title="Es la empresa donde el estudiante tiene su práctica asignada"' : ''}></div>
       <div class="field"><label>Fecha inicio</label><input type="date" id="ctl-inicio" value="${m.fechaInicio||''}" ${dis}></div>
       <div class="field"><label>Fecha final</label><input type="date" id="ctl-fin" value="${m.fechaFin||''}" ${dis}></div>
     </div>
@@ -136,3 +136,18 @@ async function saveEmpresaMonth(){
   toast(mesLabel(rec,i)+' guardado. El administrador lo bloqueará cuando lo revise.');
   renderEmpresa();
 }
+
+/* Sitio de prácticas por defecto: la empresa donde el estudiante ya está asignado o contratado */
+const sitioCache = {};
+async function empCargarSitio(){
+  const rec = state.record; if(!rec || !state.token || !sb) return;
+  const d = rec.documento; if(d in sitioCache) return;
+  try{
+    const { data, error } = await sb.rpc('sitio_practica', { p_token: state.token, p_documento: d });
+    if(error) throw error;
+    sitioCache[d] = data || '';
+  }catch(e){ console.error(e); return; }      // sin el SQL de la etapa 14 el campo queda editable como antes
+  const inp = document.getElementById('ctl-sitio');
+  if(inp && sitioCache[d]){ if(!inp.value) inp.value = sitioCache[d]; inp.readOnly = true; inp.title = 'Es la empresa donde el estudiante tiene su práctica asignada'; }
+}
+(function(){ const _re = renderEmpresa; renderEmpresa = function(){ const r = _re.apply(this, arguments); empCargarSitio(); return r; }; })();
