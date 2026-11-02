@@ -13,12 +13,12 @@ function _ssClear(){ try{ sessionStorage.removeItem(SESION_KEY); }catch(e){} }
 
 function guardarSesion(screenId){
   if(!state || !state.token) return;   // el borrado ocurre solo al cerrar sesión o si el servidor rechaza el token
-  const role = state.role || state.pendingRole;
+  const role = state.caMode ? 'empresa_ca' : (state.role || state.pendingRole);
   if(!role || role==='administrador') return;
   _ssSet({ token: state.token, role, documento: state.documento || null,
            nombre: state.currentUserNombre || '', email: state.currentUserEmail || '',
            screen: screenId, empMonth: state.empMonth||0, estMonth: state.estMonth||0,
-           cambio: !!state.cambioObligatorio, t: Date.now() });
+           cambio: !!state.cambioObligatorio, ca: !!state.caMode, t: Date.now() });
 }
 
 // cada cambio de pantalla actualiza lo guardado; cerrar sesión lo borra
