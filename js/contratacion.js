@@ -331,7 +331,7 @@ function caCandCard(c, acciones, meta){
     caFila('Documento', c.documento ? esc(c.documento) : ''),
     caFila('Semestre', esc(c.semestre||'—')), caFila('Ciudad', esc(c.ciudad||'—')),
     caFila('Solicitud', meta.solicitud ? esc(meta.solicitud) : ''), caFila('Origen', meta.origen || ''), caFila('Fecha', meta.fecha || ''),
-    caFila('Datos de contacto', contacto),
+    caFila('Datos de contacto', contacto), caFila('Carta de fechas', meta.carta || ''),
     caFila('Perfil', esc(c.perfil||'')), caFila('Habilidades', esc(c.habilidades||'—')), caFila('Disponibilidad', esc(c.disponibilidad||'—')),
     caFila('Idiomas', esc(c.idiomas||'')), caFila('Herramientas', esc(c.herramientas||'')),
     caFila('Formación', f||'—'), caFila('Experiencia', x||'—'), caFila('Cursos y certificaciones', cu), caFila('Logros', esc(c.logros||''))];
@@ -356,6 +356,8 @@ async function caTomar(of, cand){ try{ await caRpc('ca_emp_tomar', { p_token: st
 async function caPintarProcesos(){
   const body = document.getElementById('caEmpBody'); body.innerHTML = '<p class="helptext">Cargando…</p>';
   try{ caEmpProcesos = await caRpc('ca_emp_procesos', { p_token: state.token }); }catch(e){ body.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
+  caCartasEmp = {}; caCartasOk = true;
+  try{ (await caRpc('ca_emp_cartas', { p_token: state.token })).forEach(c=>{ caCartasEmp[c.post] = c; }); }catch(e){ caCartasOk = false; }
   const cerrados = ['rechazada_estudiante','descartada_empresa'];
   const act = caEmpProcesos.filter(p=>!cerrados.includes(p.estado)), cer = caEmpProcesos.filter(p=>cerrados.includes(p.estado));
   const btn = p => {
@@ -364,7 +366,7 @@ async function caPintarProcesos(){
     if(p.estado==='entrevista') a.push(`<button class="primary" onclick="caAccion('${p.id}','seleccionar')">Seleccionar</button>`);
     if(['postulado','entrevista','seleccionado'].includes(p.estado)) a.push(`<button class="danger" onclick="caAccion('${p.id}','descartar')">Descartar</button>`);
     return a.join(' '); };
-  const ficha = (p, abiertos)=> caCandCard(p, abiertos ? btn(p) : '', { solicitud: p.oferta, origen: p.origen==='estudiante'?'Se postuló':'La empresa lo llamó', fecha: caFmt(p.desde), chip: caChip(p.estado) });
+  const ficha = (p, abiertos)=> caCandCard(p, abiertos ? btn(p) : '', { carta: caCartaEmpHtml(p), solicitud: p.oferta, origen: p.origen==='estudiante'?'Se postuló':'La empresa lo llamó', fecha: caFmt(p.desde), chip: caChip(p.estado) });
   body.innerHTML = '<div class="section-bar teal">Procesos</div>' +
     (act.length ? `<p class="helptext" style="margin:4px 0">${act.length} proceso(s) activo(s)</p><div class="ca-fichas">${act.map(p=>ficha(p,true)).join('')}</div>` : '<p class="helptext">No hay procesos activos.</p>') +
     (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="ca-fichas ca-cerrada">${cer.map(p=>ficha(p,false)).join('')}</div>` : '');
@@ -440,6 +442,7 @@ async function caAdmPintar(){
     <div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${caAdmTab===k?'active':''}" onclick="caAdmTab='${k}';caAdmPintar()">${t}</button>`).join('')}</div><div class="card" id="caAdmBody"><p class="helptext">Cargando…</p></div>`);
   showScreen('screen-admin-ca');
   const fn = { ins:'admin_ca_inscripciones', emp:'admin_ca_empresas', ofe:'admin_ca_ofertas', pro:'admin_ca_postulaciones' }[caAdmTab];
+  if(caAdmTab==='pro'){ caCartasAdm = {}; try{ (await caRpc('admin_ca_cartas')).forEach(c=>{ caCartasAdm[c.post] = c; }); }catch(_){} }
   try{ caAdmData[caAdmTab] = await caRpc(fn); }catch(e){ document.getElementById('caAdmBody').innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
   ({ ins:caAdmIns, emp:caAdmEmp, ofe:caAdmOfe, pro:caAdmPro })[caAdmTab]();
   if(caAdmTab==='emp') caAdmSinAcceso();
@@ -553,7 +556,7 @@ function caAdmPro(){
     `<div class="ca-fichas">${L.map(x=>caFicha(esc(x.nombre), caChip(x.estado), [
       caFila('Estudiante', '<b>'+esc(x.nombre)+'</b>'), caFila('Documento', esc(x.documento)), caFila('Programa', esc(x.programa||'—')),
       caFila('Empresa', esc(x.empresa)), caFila('Cargo', esc(x.cargo)),
-      caFila('Origen', x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'), caFila('Fecha', caFmt(x.desde))],
+      caFila('Origen', x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'), caFila('Fecha', caFmt(x.desde)), caFila('Carta de fechas', caCartaAdmHtml(x))],
       (x.estado==='seleccionado'?`<button class="primary" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button> `:'') +
       `<button class="ghost" style="color:var(--danger)" onclick="caAdmEliminar('proceso','${x.id}',${x.estado==='contratado'})">🗑 ${x.estado==='contratado'?'Quitar contratación':'Eliminar'}</button>`)).join('')}</div>`;
 }
