@@ -119,12 +119,14 @@
 <script src="js/carta-assets.js"></script>
 <script src="js/carta.js"></script>
 <script src="js/toast.js"></script>
+<script src="js/sesion.js"></script>
 <script src="js/planilla-template.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>
   initPwToggles();
   goHome = function(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:'', token:null}; goRoleLogin('empresa'); };
   goRoleLogin('empresa');
+  restaurarSesion('empresa');
 </script>
 </body>
 </html>
