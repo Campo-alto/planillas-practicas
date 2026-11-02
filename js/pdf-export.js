@@ -1,427 +1,223 @@
-/* ============================= PDF EXPORT ============================= */
+/* ============================= PDF EXPORT (formato versión 9) =============================
+   Usa la plantilla en blanco oficial (planilla-template.js) y escribe encima los datos.
+   Coordenadas en puntos, medidas desde el borde SUPERIOR de la página (carta horizontal 792x612). */
 function fmtDate(d){
   if(!d) return '';
-  const parts = d.split('-');
+  const parts = String(d).split('-');
   if(parts.length===3) return parts[2]+'/'+parts[1]+'/'+parts[0];
   return d;
 }
 
-function downloadPdf(){
+function _b64ToBytes(b64){
+  const bin = atob(b64); const u = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+
+async function downloadPdf(){
   const rec = state.record;
   if(!rec){ toast('Busca un estudiante primero', true); return; }
-  if(!window.jspdf || !window.jspdf.jsPDF){
+  if(!window.PDFLib || typeof PLANILLA_TEMPLATE_B64==='undefined'){
     toast('No se pudo cargar el generador de PDF. Revisa tu conexión y recarga la página.', true);
-    console.error('window.jspdf no está disponible — el script de jsPDF (CDN) no cargó.');
     return;
   }
-  const { jsPDF } = window.jspdf;
-  const probeDoc = new jsPDF();
-  if(typeof probeDoc.autoTable !== 'function'){
-    toast('No se pudo cargar el módulo de tablas del PDF. Revisa tu conexión y recarga la página.', true);
-    console.error('doc.autoTable no está disponible — el script de jspdf-autotable (CDN) no cargó.');
-    return;
-  }
-  const orange = [232,121,45];
-  const teal = [14,124,134];
-  const deep = [11,61,61];
-  const line = [120,120,120];
-
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
   try{
+    const doc = await PDFDocument.load(_b64ToBytes(PLANILLA_TEMPLATE_B64));
+    const F  = await doc.embedFont(StandardFonts.Helvetica);
+    const FB = await doc.embedFont(StandardFonts.HelveticaBold);
+    const pages = doc.getPages();
+    const H = 612;
+    const ink = rgb(0.05,0.05,0.05);
 
-  // -------- helpers compartidos por todas las páginas (todas horizontales) --------
-  function pageHeader(doc, pageLabel){
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = 28;
-    const boxRight = 130;
-    const logoCellW = 95;
-    doc.setDrawColor(...line); doc.setLineWidth(0.8);
-    doc.rect(margin, 18, pageW-margin*2, 40);
-    doc.line(margin+logoCellW, 18, margin+logoCellW, 58);
-    doc.line(pageW-margin-boxRight, 18, pageW-margin-boxRight, 58);
-    doc.line(pageW-margin-boxRight, 31, pageW-margin, 31);
-    doc.line(pageW-margin-boxRight, 44, pageW-margin, 44);
+    const clean = s => String(s==null?'':s).replace(/\r/g,'').replace(/[^\n\x20-\x7E -ÿ]/g,'');
+    // ancho SIN kerning (el PDF no lo aplica al dibujar; widthOfTextAtSize sí y subestima el ancho)
+    const _cw = new Map();
+    const tw = (t,sz,f)=>{ f=f||F; let sum=0;
+      for(const ch of t){ const k=(f===FB?'b':'n')+ch; let w=_cw.get(k);
+        if(w===undefined){ w=f.widthOfTextAtSize(ch,1000); _cw.set(k,w); } sum+=w; }
+      return sum*sz/1000; };
 
-    try{
-      const logoW = 70, logoH = 28;
-      doc.addImage(CAMPOALTO_LOGO_PNG, 'PNG', margin+(logoCellW-logoW)/2, 24, logoW, logoH);
-    }catch(e){ /* si el logo no carga, se deja el espacio en blanco */ }
+    // texto de una línea, ajustado al ancho de la celda (reduce tamaño hasta 5pt), centrado vertical
+    function cell(pi, text, x0, x1, t0, t1, opt){
+      opt = opt||{};
+      let t = clean(text).replace(/\n/g,' ').trim(); if(!t) return;
+      const f = opt.bold ? FB : F;
+      let sz = opt.size || 7.5;
+      const pad = 2, avail = (x1-x0)-pad*2;
+      while(sz>5 && tw(t,sz,f)>avail) sz -= 0.25;
+      while(tw(t,sz,f)>avail && t.length>1) t = t.slice(0,-1);
+      const w = tw(t,sz,f);
+      const x = opt.align==='left' ? x0+pad : x0+((x1-x0)-w)/2;
+      const yTop = t0 + ((t1-t0)-sz)/2 + sz*0.82;   // línea base
+      pages[pi].drawText(t,{x, y:H-yTop, size:sz, font:f, color:ink});
+    }
 
-    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(20,20,20);
-    doc.text('RECOLECCIÓN DE EVIDENCIAS DE DESEMPEÑO', margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 30, {align:'center'});
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-    doc.text(TITULO_PROGRAMA_PREFIJO+' '+(rec.programa || PROGRAMA).toUpperCase(), margin+logoCellW+(pageW-margin*2-logoCellW-boxRight)/2, 42, {align:'center', maxWidth: pageW-margin*2-logoCellW-boxRight-10});
-
-    doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-    doc.text('VERSIÓN: '+VERSION_FORMATO, pageW-margin-boxRight+6, 27);
-    doc.text('CÓDIGO: '+CODIGO, pageW-margin-boxRight+6, 40);
-    doc.text('PÁGINA: '+pageLabel, pageW-margin-boxRight+6, 53);
-    doc.setTextColor(0,0,0);
-    return 66;
-  }
-  function drawInfoRow(doc, x0, y, w, h, cells){
-    // cells: [{frac, label, value, valueAlign, twoLineLabel}]
-    let x = x0;
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    cells.forEach(c=>{
-      const cw = w * c.frac;
-      doc.rect(x, y, cw, h);
-      if(c.label){
-        doc.setFont('helvetica','bold'); doc.setFontSize(6.6); doc.setTextColor(20,20,20);
-        if(c.twoLineLabel){
-          const parts = c.label.split('\n');
-          doc.text(parts[0], x+cw/2, y+h/2-3, {align:'center'});
-          doc.text(parts[1], x+cw/2, y+h/2+6, {align:'center'});
-        } else {
-          doc.text(c.label, x+4, y+h/2+2.5);
-        }
+    // bloque de texto multilínea con ajuste de palabras; reduce el tamaño hasta que quepa
+    function block(pi, text, x0, x1, t0, t1, maxSize){
+      const raw = clean(text).trim(); if(!raw) return;
+      const pad = 3, avail = (x1-x0)-pad*2, availH = (t1-t0)-pad*2;
+      let sz = maxSize||8, lines;
+      for(;;){
+        lines = [];
+        raw.split('\n').forEach(par=>{
+          const words = par.split(/\s+/); let cur='';
+          words.forEach(w=>{
+            // palabra más larga que la línea: partirla
+            while(tw(w,sz)>avail && w.length>1){
+              let k=w.length-1; while(k>1 && tw(w.slice(0,k),sz)>avail) k--;
+              if(cur){ lines.push(cur); cur=''; }
+              lines.push(w.slice(0,k)); w=w.slice(k);
+            }
+            const test = cur ? cur+' '+w : w;
+            if(tw(test,sz)<=avail) cur=test; else { if(cur) lines.push(cur); cur=w; }
+          });
+          lines.push(cur);
+        });
+        if(lines.length*sz*1.22<=availH || sz<=5) break;
+        sz -= 0.25;
       }
-      if(c.value){
-        doc.setFont('helvetica','normal'); doc.setFontSize(7.3);
-        const vAlign = c.valueAlign || 'left';
-        const vx = vAlign==='center' ? x+cw/2 : x+4;
-        doc.text(String(c.value), vx, y+h/2+2.5, {align: vAlign, maxWidth: Math.max(cw-8, 1)});
+      const lh = sz*1.22; const maxLines = Math.max(1,Math.floor(availH/lh));
+      lines.slice(0,maxLines).forEach((ln,i)=>{
+        pages[pi].drawText(ln,{x:x0+pad, y:H-(t0+pad+sz*0.85+i*lh), size:sz, font:F, color:ink});
+      });
+    }
+
+    // etiqueta en negrita + valor (para los apartados de texto libre)
+    function labeled(pi, label, value, x0, x1, t0, t1, maxSize){
+      pages[pi].drawText(clean(label),{x:x0+3, y:H-(t0+3+6.5*0.85), size:6.5, font:FB, color:ink});
+      block(pi, value, x0, x1, t0+8, t1, maxSize);
+    }
+
+    // firma (PNG/JPG dataURL) ajustada dentro de un recuadro conservando proporción
+    async function sig(pi, dataUrl, x0, x1, t0, t1){
+      if(!dataUrl || typeof dataUrl!=='string' || dataUrl.indexOf('data:image')!==0) return;
+      try{
+        const img = /^data:image\/jpe?g/i.test(dataUrl) ? await doc.embedJpg(dataUrl) : await doc.embedPng(dataUrl);
+        const bw=(x1-x0)-6, bh=(t1-t0)-4;
+        const sc = Math.min(bw/img.width, bh/img.height);
+        const w=img.width*sc, h=img.height*sc;
+        pages[pi].drawImage(img,{x:x0+((x1-x0)-w)/2, y:H-(t0+2+(bh-h)/2+h), width:w, height:h});
+      }catch(e){ console.warn('Firma no válida', e); }
+    }
+
+    // la plantilla trae la versión 9 y el pie fijos; nada de eso se redibuja
+
+    // ---------- tira del estudiante (páginas 2 a 4) ----------
+    function strip(pi){
+      cell(pi, rec.nombre,    170.3, 362.0, 92.6, 103.2, {align:'left'});
+      cell(pi, rec.documento, 413.4, 557.4, 92.6, 103.2, {align:'left'});
+      cell(pi, rec.telefono,  598.5, 741.0, 92.6, 103.2, {align:'left'});
+    }
+
+    // ================= PÁGINA 1: datos generales + notas =================
+    cell(0, rec.periodoAcademico, 154.5, 557.4,  95.3, 106.3, {align:'left'});
+    cell(0, rec.sede,             598.5, 741.0,  95.3, 106.3, {align:'left'});
+    cell(0, rec.programa,         170.3, 741.0, 106.3, 116.6, {align:'left'});
+    cell(0, rec.nombre,           170.3, 362.0, 116.6, 126.9, {align:'left'});
+    cell(0, rec.documento,        413.4, 557.4, 116.6, 126.9, {align:'left'});
+    cell(0, rec.telefono,         598.5, 741.0, 116.6, 126.9, {align:'left'});
+    cell(0, rec.correo,           170.3, 362.0, 126.9, 139.0, {align:'left', size:7});
+    cell(0, rec.modalidad,        413.4, 557.4, 126.9, 139.0, {align:'left'});
+    cell(0, rec.semestre,         598.5, 741.0, 126.9, 139.0, {align:'left'});
+    cell(0, rec.funcionario,      250.4, 477.4, 139.0, 154.8, {align:'left'});
+    cell(0, fmtDate(rec.fechaEnvio)||rec.fechaEnvio, 560.0, 741.0, 139.0, 154.8, {align:'left'});
+
+    const colsX = [570.3,598.5,627.2,655.8,684.5,713.1,741.8];
+    const rowsY = [189.3,273.4,357.5,441.7,525.8];
+    const orden = ['ser','desempeno','producto','conocimiento'];
+    const keys = (typeof COMPETENCIAS!=='undefined' && COMPETENCIAS.length)
+      ? COMPETENCIAS.map(c=>c.key) : orden;
+    keys.slice(0,4).forEach((k,r)=>{
+      const notas = (rec.competencias && rec.competencias[k]) || [];
+      for(let c=0;c<6;c++){
+        const v = notas[c]; if(!v) continue;
+        cell(0, String(v), colsX[c], colsX[c+1], rowsY[r], rowsY[r+1], {size:12, bold:true});
       }
-      x += cw;
     });
-    doc.setTextColor(0,0,0);
-    return y+h;
-  }
-  function studentStrip(doc, y){
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = 28;
-    const w = pageW - margin*2;
-    const h = 16;
 
-    // Fila 1: Periodo académico | valor | Sede | valor
-    y = drawInfoRow(doc, margin, y, w, h, [
-      {frac:0.155, label:'PERIODO ACADÉMICO:'},
-      {frac:0.505, value: rec.periodoAcademico||'', valueAlign:'center'},
-      {frac:0.08, label:'SEDE:'},
-      {frac:0.26, value: rec.sede||'', valueAlign:'left'}
-    ]);
-    // Fila 2: Nombre del estudiante | valor | D. Identidad | valor | Teléfonos | valor
-    y = drawInfoRow(doc, margin, y, w, h, [
-      {frac:0.175, label:'NOMBRE DEL ESTUDIANTE:'},
-      {frac:0.325, value: rec.nombre||'', valueAlign:'center'},
-      {frac:0.10, label:'D. IDENTIDAD:'},
-      {frac:0.14, value: rec.documento||'', valueAlign:'center'},
-      {frac:0.10, label:'TELÉFONOS:'},
-      {frac:0.16, value: rec.telefono||'', valueAlign:'left'}
-    ]);
-    // Fila 3: Correo electrónico | valor | Modalidad | valor | Semestre | valor
-    y = drawInfoRow(doc, margin, y, w, h, [
-      {frac:0.155, label:'CORREO ELECTRÓNICO:'},
-      {frac:0.335, value: rec.correo||'', valueAlign:'center'},
-      {frac:0.10, label:'MODALIDAD:'},
-      {frac:0.22, value: rec.modalidad||'', valueAlign:'center'},
-      {frac:0.09, label:'SEMESTRE:'},
-      {frac:0.10, value: rec.semestre||'', valueAlign:'left'}
-    ]);
-    // Fila 4: Nombre del funcionario | valor | Fecha de envío de las planillas | valor
-    y = drawInfoRow(doc, margin, y, w, h+4, [
-      {frac:0.30, label:'NOMBRE DEL FUNCIONARIO QUE REALIZA EL PROCESO'},
-      {frac:0.40, value: rec.funcionario||'', valueAlign:'center'},
-      {frac:0.14, label:'FECHA DE ENVIO DE LAS\nPLANILLAS', twoLineLabel:true},
-      {frac:0.16, value: rec.fechaEnvio||'', valueAlign:'center'}
-    ]);
-    return y+8;
-  }
-  function sectionBar(doc, title, y, color, note){
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = 28;
-    doc.setFillColor(...(color||orange));
-    doc.rect(margin, y, pageW-margin*2, 16, 'F');
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
-    doc.text(title.toUpperCase(), pageW/2, y+11, {align:'center'});
-    if(note){ doc.setFontSize(6.8); doc.text(note, pageW-margin-6, y+11, {align:'right'}); }
-    doc.setTextColor(0,0,0);
-    return y+16;
-  }
-  function sigImg(doc, dataUrl, x, y, w, h){
-    if(dataUrl){ try{ doc.addImage(dataUrl,'PNG', x+2, y+2, w-4, h-4); }catch(e){} }
-  }
-  function footer(doc){
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 28;
-    const y = pageH - 26;
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    const third = (pageW-margin*2)/3;
-    doc.rect(margin, y, pageW-margin*2, 20);
-    doc.line(margin+third, y, margin+third, y+20);
-    doc.line(margin+third*2, y, margin+third*2, y+20);
-    doc.line(margin, y+10, pageW-margin, y+10);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(20,20,20);
-    doc.text('Elaboró: Analista Planeación y Desarrollo', margin+3, y+7);
-    doc.text('Revisó: Dirección Planeación y Desarrollo', margin+third+3, y+7);
-    doc.text('Aprobó: Vicerrectoría Académica', margin+third*2+3, y+7);
-    doc.text('Fecha: 07 octubre de 2025', margin+3, y+17);
-    doc.text('Fecha: de 2025', margin+third+3, y+17);
-    doc.text('Fecha: de 2025', margin+third*2+3, y+17);
-    doc.setTextColor(0,0,0);
-  }
-
-  const doc = new jsPDF({unit:'pt', format:'a4', orientation:'landscape'});
-
-  // ================= PÁGINA 1 — Competencias transversales =================
-  let y = pageHeader(doc, '1 DE 4');
-  y = studentStrip(doc, y);
-  y = sectionBar(doc, 'Competencias transversales', y, orange, 'Califique de 1 a 5 según desempeño');
-
-  const critRows = COMPETENCIAS.map(c=>{
-    const info = CRITERIOS_PDF[c.key];
-    const notas = rec.competencias[c.key].map(v=>v ? String(v) : '');
-    return [info.titulo, info.niveles[5], info.niveles[4], info.niveles[3], info.niveles[2], info.niveles[1], ...notas];
-  });
-  doc.autoTable({
-    startY: y,
-    head: [['CRITERIO','Excelente (5)','Bueno (4)','Aceptable (3)','Insuficiente (2)','Deficiente (1)','NOTA 1','NOTA 2','NOTA 3','NOTA 4','NOTA 5','NOTA 6']],
-    body: critRows,
-    theme: 'grid',
-    styles:{fontSize:6.3, cellPadding:3, valign:'middle', halign:'left', lineColor:line, lineWidth:0.5},
-    headStyles:{fillColor:orange, textColor:255, fontStyle:'bold', fontSize:6.5, halign:'center'},
-    columnStyles:{
-      0:{cellWidth:95, fontStyle:'bold', fontSize:6.5},
-      1:{cellWidth:115}, 2:{cellWidth:115}, 3:{cellWidth:115}, 4:{cellWidth:115}, 5:{cellWidth:115},
-      6:{cellWidth:16, halign:'center', fontStyle:'bold'},
-      7:{cellWidth:16, halign:'center', fontStyle:'bold'},
-      8:{cellWidth:16, halign:'center', fontStyle:'bold'},
-      9:{cellWidth:16, halign:'center', fontStyle:'bold'},
-      10:{cellWidth:16, halign:'center', fontStyle:'bold'},
-      11:{cellWidth:16, halign:'center', fontStyle:'bold'}
-    },
-    margin:{left:28, right:28},
-    didParseCell: function(data){
-      // Las columnas de nota (6 a 11) van en verde oscuro cuando el mes está sin
-      // calificar todavía (igual que el formato original en blanco), y en blanco
-      // con el número una vez la empresa puso la nota.
-      if(data.section === 'body' && data.column.index >= 6){
-        const hasValue = data.cell.raw !== '' && data.cell.raw != null;
-        data.cell.styles.fillColor = hasValue ? [255,255,255] : deep;
-        data.cell.styles.textColor = hasValue ? [20,20,20] : [255,255,255];
-      }
-    }
-  });
-  footer(doc);
-
-  // ================= PÁGINA 2 — Control de cumplimiento =================
-  doc.addPage('a4','landscape');
-  y = pageHeader(doc, '2 DE 4');
-  y = studentStrip(doc, y);
-  y = sectionBar(doc, 'Control de cumplimiento', y, orange);
-
-  const pageW2 = doc.internal.pageSize.getWidth();
-  const margin = 28;
-  const tableW = pageW2 - margin*2;
-  // Columnas: MES | SITIO DE PRÁCTICAS (+valor) | FECHA INICIO | FECHA FINAL | FIRMA EMPRESA | FIRMA ESTUDIANTE
-  const colMes = 55, colFechaI = 85, colFechaF = 85;
-  const colFirma = (tableW - colMes - colFechaI - colFechaF) / 2 - 130; // se resta 130 para dejarle ese espacio extra a Sitio
-  const colSitio = tableW - colMes - colFechaI - colFechaF - colFirma*2;
-  const xMes = margin, xSitio = xMes+colMes, xFI = xSitio+colSitio, xFF = xFI+colFechaI, xFE = xFF+colFechaF, xFEst = xFE+colFirma;
-  const rowLabelH = 14, rowValueH = 14, rowObsH = 38;
-  const blockH = rowLabelH + rowValueH + rowObsH;
-
-  rec.meses.forEach((m,i)=>{
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    // Contorno general del bloque
-    doc.rect(xMes, y, tableW, blockH);
-    // Divisiones verticales
-    [xSitio, xFI, xFF, xFE, xFEst].forEach(x=> doc.line(x, y, x, y+blockH));
-    // División horizontal bajo la fila de etiquetas (Sitio/Fecha inicio/Fecha final)
-    doc.line(xSitio, y+rowLabelH, xFE, y+rowLabelH);
-    // División horizontal bajo la fila de valores (antes de Observaciones)
-    doc.line(xSitio, y+rowLabelH+rowValueH, xFE, y+rowLabelH+rowValueH);
-
-    doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
-    doc.text('MES N°.'+(i+1), xMes+colMes/2, y+blockH/2+3, {align:'center'});
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
-    doc.text('SITIO DE PRÁCTICAS', xSitio+colSitio/2, y+9.5, {align:'center'});
-    doc.text('FECHA INICIO', xFI+colFechaI/2, y+9.5, {align:'center'});
-    doc.text('FECHA FINAL', xFF+colFechaF/2, y+9.5, {align:'center'});
-
-    doc.setFontSize(7.3);
-    doc.text(m.sitio || '', xSitio+colSitio/2, y+rowLabelH+9.5, {align:'center'});
-    doc.text(fmtDate(m.fechaInicio) || '', xFI+colFechaI/2, y+rowLabelH+9.5, {align:'center'});
-    doc.text(fmtDate(m.fechaFin) || '', xFF+colFechaF/2, y+rowLabelH+9.5, {align:'center'});
-
-    doc.setFontSize(6.6);
-    doc.text('OBSERVACIONES DE LA PRÁCTICA', xSitio+4, y+rowLabelH+rowValueH+10);
-    if(m.observaciones){
-      const obsLines = doc.splitTextToSize(m.observaciones, colSitio+colFechaI+colFechaF-12);
-      doc.setFontSize(6.5);
-      doc.text(obsLines.slice(0,3), xSitio+4, y+rowLabelH+rowValueH+21);
+    // ================= PÁGINA 2: control de cumplimiento mensual =================
+    strip(1);
+    for(let i=0;i<6;i++){
+      const m = (rec.meses && rec.meses[i]) || {};
+      const top = 124.0 + 68.66*i;
+      const vt0 = top+11.4, vt1 = top+23.5;           // fila de valores
+      cell(1, m.sitio,              85.8, 316.9, vt0, vt1, {align:'left'});
+      cell(1, fmtDate(m.fechaInicio), 316.9, 401.3, vt0, vt1);
+      cell(1, fmtDate(m.fechaFin),    401.3, 477.4, vt0, vt1);
+      block(1, m.observaciones, 50.8, 477.4, top+32.5, top+65.3, 7.5);
+      await sig(1, m.firmaEmpresa,    477.4, 598.5, top, top+44.4);
+      await sig(1, m.firmaEstudiante, 598.5, 741.2, top, top+44.4);
     }
 
-    sigImg(doc, m.firmaEmpresa, xFE, y, colFirma, blockH-12);
-    sigImg(doc, m.firmaEstudiante, xFEst, y, colFirma, blockH-12);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
-    doc.text('FIRMA EMPRESA', xFE+colFirma/2, y+blockH-4, {align:'center'});
-    doc.text('FIRMA ESTUDIANTE', xFEst+colFirma/2, y+blockH-4, {align:'center'});
-
-    // Divisor naranja entre meses
-    doc.setDrawColor(...orange); doc.setLineWidth(1.4);
-    doc.line(xMes, y+blockH, xMes+tableW, y+blockH);
-
-    y += blockH + 2;
-  });
-  footer(doc);
-
-  // ================= PÁGINA 3 — Revisión de funciones y actividades (visita 1) =================
-  doc.addPage('a4','landscape');
-  y = pageHeader(doc, '3 DE 4');
-  y = studentStrip(doc, y);
-  y = sectionBar(doc, 'Revisión de funciones y actividades', y, orange);
-
-  const pageW3 = doc.internal.pageSize.getWidth();
-  const pageH3 = doc.internal.pageSize.getHeight();
-  const rf = rec.revisionFunciones;
-  const fechaRf = rf.fecha ? rf.fecha.split('-') : ['','',''];
-
-  const fW3 = pageW3 - margin*2;
-  const fechaColW = 130, sitioColW = 150, areaColW = 200, jefeColW = 200;
-  const supColW = fW3 - fechaColW - sitioColW - areaColW - jefeColW;
-  const xFecha = margin, xSitio3 = xFecha+fechaColW, xArea3 = xSitio3+sitioColW, xJefe3 = xArea3+areaColW, xSup3 = xJefe3+jefeColW;
-
-  doc.setDrawColor(...line); doc.setLineWidth(0.6);
-  doc.rect(margin, y, fW3, 28);
-  [xSitio3, xArea3, xJefe3, xSup3].forEach(x=> doc.line(x, y, x, y+28));
-  doc.line(xFecha, y+14, xSitio3, y+14);
-  const subW = fechaColW/3;
-  doc.line(xFecha+subW, y+14, xFecha+subW, y+28);
-  doc.line(xFecha+subW*2, y+14, xFecha+subW*2, y+28);
-
-  doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
-  doc.text('FECHA DE LA VISITA 1', xFecha+fechaColW/2, y+9, {align:'center'});
-  doc.text('AÑO', xFecha+subW/2, y+21, {align:'center'});
-  doc.text('MES', xFecha+subW+subW/2, y+21, {align:'center'});
-  doc.text('DÍA', xFecha+subW*2+subW/2, y+21, {align:'center'});
-  doc.text('SITIO DE PRACTICAS', xSitio3+sitioColW/2, y+16, {align:'center'});
-  doc.text('AREA DE TRABAJO', xArea3+areaColW/2, y+16, {align:'center'});
-  doc.text('NOMBRE DEL JEFE INMEDIATO', xJefe3+jefeColW/2, y+16, {align:'center'});
-  doc.text('NOMBRE DEL SUPERVISOR', xSup3+supColW/2, y+16, {align:'center'});
-
-  doc.setFontSize(7);
-  doc.text(fechaRf[0]||'', xFecha+subW/2, y+26, {align:'center'});
-  doc.text(fechaRf[1]||'', xFecha+subW+subW/2, y+26, {align:'center'});
-  doc.text(fechaRf[2]||'', xFecha+subW*2+subW/2, y+26, {align:'center'});
-  doc.text((rf.sitio||'')+(rf.modalidadVisita?'  ['+rf.modalidadVisita+']':''), xSitio3+4, y+24);
-  doc.text(rf.area||'', xArea3+4, y+24);
-  doc.text(rf.jefeInmediato||'', xJefe3+4, y+24);
-  doc.text(rf.supervisor||'', xSup3+4, y+24);
-  y += 28;
-
-  const bottomY3 = pageH3 - 54;
-  const bigBoxW = fW3 - supColW;
-  doc.rect(margin, y, bigBoxW, bottomY3-y);
-  doc.rect(margin+bigBoxW, y, supColW, bottomY3-y);
-  const sigRowH3 = (bottomY3-y)/3;
-  doc.line(margin+bigBoxW, y+sigRowH3, margin+bigBoxW+supColW, y+sigRowH3);
-  doc.line(margin+bigBoxW, y+sigRowH3*2, margin+bigBoxW+supColW, y+sigRowH3*2);
-  sigImg(doc, rf.firmaJefe, margin+bigBoxW+2, y+2, supColW-4, sigRowH3-13);
-  sigImg(doc, rf.firmaEstudiante, margin+bigBoxW+2, y+sigRowH3+2, supColW-4, sigRowH3-13);
-  sigImg(doc, rf.firmaSupervisor, margin+bigBoxW+2, y+sigRowH3*2+2, supColW-4, sigRowH3-13);
-  doc.setFont('helvetica','normal'); doc.setFontSize(7);
-  doc.text('FIRMA JEFE INMEDIATO', margin+bigBoxW+supColW/2, y+sigRowH3-4, {align:'center'});
-  doc.text('FIRMA ESTUDIANTE', margin+bigBoxW+supColW/2, y+sigRowH3*2-4, {align:'center'});
-  doc.text('FIRMA SUPERVISOR', margin+bigBoxW+supColW/2, y+sigRowH3*3-4, {align:'center'});
-
-  // Aspectos de la visita, dentro del recuadro grande que antes quedaba en blanco
-  let ty3 = y+12;
-  const bx3 = margin+6, bw3 = bigBoxW-12;
-  function aspectoBlock(label, texto, maxLineas){
-    doc.setFont('helvetica','bold'); doc.setFontSize(7.3);
-    doc.text(label, bx3, ty3);
-    ty3 += 10;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.3);
-    const lines = doc.splitTextToSize(texto || '—', bw3);
-    const shown = lines.slice(0, maxLineas);
-    doc.text(shown, bx3, ty3);
-    ty3 += Math.max(shown.length,1)*9 + 8;
-  }
-  aspectoBlock('NOMBRE DEL TUTOR DE LA PRÁCTICA:', rf.tutor, 1);
-  aspectoBlock('FUNCIONES ASIGNADAS AL ESTUDIANTE:', rf.funcionesAsignadas, 3);
-  aspectoBlock('¿EL ESTUDIANTE ACEPTA LAS FUNCIONES Y SE RELACIONAN CON SU PROGRAMA DE FORMACIÓN?  SI/NO:', rf.aceptacionFunciones, 1);
-  aspectoBlock('OBSERVACIONES DE MEJORA DE LA EMPRESA AL ESTUDIANTE:', rf.observacionesMejora, 3);
-  aspectoBlock('COMPROMISOS QUE SE DAN EN LA REUNIÓN:', rf.compromisos, 3);
-  footer(doc);
-
-  // ================= PÁGINA 4 — Datos de supervisión (visita 2) =================
-  doc.addPage('a4','landscape');
-  y = pageHeader(doc, '4 DE 4');
-  y = studentStrip(doc, y);
-  y = sectionBar(doc, 'Datos de supervisión', y, orange);
-
-  const pageW4 = doc.internal.pageSize.getWidth();
-  const ds = rec.datosSupervision;
-  const fechaDs = ds.fecha ? ds.fecha.split('-') : ['','',''];
-  const fW4 = pageW4 - margin*2;
-  const xSitio4 = margin+fechaColW, xArea4 = xSitio4+sitioColW, xJefe4 = xArea4+areaColW, xSup4 = xJefe4+jefeColW;
-
-  doc.setDrawColor(...line); doc.setLineWidth(0.6);
-  doc.rect(margin, y, fW4, 28);
-  [xSitio4, xArea4, xJefe4, xSup4].forEach(x=> doc.line(x, y, x, y+28));
-  doc.line(margin, y+14, xSitio4, y+14);
-  doc.line(margin+subW, y+14, margin+subW, y+28);
-  doc.line(margin+subW*2, y+14, margin+subW*2, y+28);
-  doc.setFont('helvetica','normal'); doc.setFontSize(6.8);
-  doc.text('FECHA DE LA VISITA 2', margin+fechaColW/2, y+9, {align:'center'});
-  doc.text('AÑO', margin+subW/2, y+21, {align:'center'});
-  doc.text('MES', margin+subW+subW/2, y+21, {align:'center'});
-  doc.text('DÍA', margin+subW*2+subW/2, y+21, {align:'center'});
-  doc.text('SITIO DE PRACTICAS', xSitio4+sitioColW/2, y+16, {align:'center'});
-  doc.text('AREA DE TRABAJO', xArea4+areaColW/2, y+16, {align:'center'});
-  doc.text('NOMBRE DEL JEFE INMEDIATO', xJefe4+jefeColW/2, y+16, {align:'center'});
-  doc.text('NOMBRE DEL SUPERVISOR', xSup4+supColW/2, y+16, {align:'center'});
-  doc.setFontSize(7);
-  doc.text(fechaDs[0]||'', margin+subW/2, y+26, {align:'center'});
-  doc.text(fechaDs[1]||'', margin+subW+subW/2, y+26, {align:'center'});
-  doc.text(fechaDs[2]||'', margin+subW*2+subW/2, y+26, {align:'center'});
-  doc.text((ds.sitio||'')+(ds.modalidadVisita?'  ['+ds.modalidadVisita+']':''), xSitio4+4, y+24);
-  doc.text(ds.area||'', xArea4+4, y+24);
-  doc.text(ds.jefeInmediato||'', xJefe4+4, y+24);
-  doc.text(ds.supervisor||'', xSup4+4, y+24);
-  y += 30;
-
-  const sigColW4 = 140;
-  const textColW4 = fW4 - sigColW4;
-
-  function obsBlock(title, y0, h, preguntas, comentarios, firma, firmaLabel){
-    y0 = sectionBar(doc, title, y0, orange);
-    doc.setDrawColor(...line); doc.setLineWidth(0.6);
-    doc.rect(margin, y0, textColW4, h);
-    doc.rect(margin+textColW4, y0, sigColW4, h);
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.2);
-    let ty = y0+11;
-    preguntas.forEach(p=>{ doc.text(p, margin+4, ty); ty += 12; });
-    doc.text('COMENTARIOS:', margin+4, ty); ty += 10;
-    if(comentarios){
-      const lines = doc.splitTextToSize(comentarios, textColW4-8);
-      doc.text(lines.slice(0, Math.floor((h-(ty-y0)-4)/9)), margin+4, ty);
+    // ================= PÁGINA 3: revisión de funciones y actividades =================
+    strip(2);
+    const rf = rec.revisionFunciones || {};
+    const fp = String(rf.fecha||'').split('-');
+    if(fp.length===3){
+      cell(2, fp[0], 50.0, 103.5, 157.0, 175.7);
+      cell(2, fp[1], 103.5, 138.7, 157.0, 175.7);
+      cell(2, fp[2], 138.7, 170.3, 157.0, 175.7);
     }
-    sigImg(doc, firma, margin+textColW4+2, y0+2, sigColW4-4, h-13);
-    doc.text(firmaLabel, margin+textColW4+sigColW4/2, y0+h-4, {align:'center'});
-    return y0+h;
-  }
+    cell(2, rf.sitio,         170.3, 262.5, 147.8, 175.7, {size:7});
+    cell(2, rf.area,          262.5, 401.3, 147.8, 175.7, {size:7});
+    cell(2, rf.jefeInmediato, 401.3, 557.4, 147.8, 175.7, {size:7});
+    cell(2, rf.supervisor,    557.4, 741.2, 147.8, 175.7, {size:7});
 
-  y = obsBlock('Observaciones del estudiante', y, 74,
-    ['1. ¿CONSIDERA QUE EL LUGAR DE PRÁCTICAS ES EL INDICADO?  SI/NO: '+(ds.obsEstudiante.p1||''),
-     '2. ¿HA RECIBIDO APOYO DE SU JEFE INMEDIATO?  SI/NO: '+(ds.obsEstudiante.p2||'')],
-    ds.obsEstudiante.comentarios, ds.obsEstudiante.firma, 'FIRMA DEL ESTUDIANTE');
+    const L0=50.4, L1=598.5;
+    labeled(2,'MODALIDAD DE LA VISITA:', rf.modalidadVisita, L0, L1, 176.5, 200, 8);
+    labeled(2,'NOMBRE DEL TUTOR DE LA PRÁCTICA:', rf.tutor, L0, L1, 200, 224, 8);
+    labeled(2,'FUNCIONES ASIGNADAS AL ESTUDIANTE:', rf.funcionesAsignadas, L0, L1, 224, 318, 8);
+    labeled(2,'¿EL ESTUDIANTE ACEPTA LAS FUNCIONES Y SE RELACIONAN CON SU PROGRAMA DE FORMACIÓN?  SI/NO:', rf.aceptacionFunciones, L0, L1, 318, 345, 8);
+    labeled(2,'OBSERVACIONES DE MEJORA:', rf.observacionesMejora, L0, L1, 345, 435, 8);
+    labeled(2,'COMPROMISOS:', rf.compromisos, L0, L1, 435, 526.1, 8);
+    await sig(2, rf.firmaJefe,       598.5, 741.2, 175.7, 274);
+    await sig(2, rf.firmaEstudiante, 598.5, 741.2, 284.8, 400);
+    await sig(2, rf.firmaSupervisor, 598.5, 741.2, 411.5, 515);
 
-  y = obsBlock('Observaciones de jefe inmediato', y, 74,
-    ['1. ¿LAS FUNCIONES CUBREN LAS NECESIDADES DEL SERVICIO?  SI/NO: '+(ds.obsJefe.p1||''),
-     '2. ¿LOS CONOCIMIENTOS CUBREN LAS NECESIDADES DEL SERVICIO?  SI/NO: '+(ds.obsJefe.p2||'')],
-    ds.obsJefe.comentarios, ds.obsJefe.firma, 'FIRMA DEL JEFE INMEDIATO');
+    // ================= PÁGINA 4: datos de supervisión =================
+    strip(3);
+    const ds = rec.datosSupervision || {};
+    const dp = String(ds.fecha||'').split('-');
+    if(dp.length===3){
+      cell(3, dp[0], 50.0, 103.5, 134.0, 148.2);
+      cell(3, dp[1], 103.5, 138.7, 134.0, 148.2);
+      cell(3, dp[2], 138.7, 170.3, 134.0, 148.2);
+    }
+    cell(3, ds.sitio,         170.3, 262.5, 124.0, 148.2, {size:7});
+    cell(3, ds.area,          262.5, 401.3, 124.0, 148.2, {size:7});
+    cell(3, ds.jefeInmediato, 401.3, 557.4, 124.0, 148.2, {size:7});
+    cell(3, ds.supervisor,    557.4, 741.2, 124.0, 148.2, {size:7});
 
-  y = obsBlock('Observaciones del supervisor', y, 60, [],
-    ds.obsSupervisor.comentarios, ds.obsSupervisor.firma, 'FIRMA DEL SUPERVISOR');
+    // respuestas SI/NO: se marca con un círculo/negrita junto a la opción elegida
+    function yn(v, xSi, xNo, top, wSi, wNo){
+      const val = String(v||'').trim().toUpperCase();
+      const x = val==='SI' || val==='SÍ' ? xSi : val==='NO' ? xNo : null;
+      if(x==null) return;
+      const w = x===xSi ? wSi : wNo;
+      pages[3].drawEllipse({x:x+w/2, y:H-(top+4.4), xScale:w/2+2, yScale:6, borderColor:rgb(0.8,0.1,0.1), borderWidth:1});
+    }
+    const eo = ds.obsEstudiante||{}, jo = ds.obsJefe||{}, so = ds.obsSupervisor||{};
+    yn(eo.p1, 316.4, 334.1, 166.1, 16.2, 23.6);
+    yn(eo.p2, 313.4, 325.4, 183.7, 10.4, 15.0);
+    yn(jo.p1, 426.4, 438.4, 284.0, 10.4, 14.9);
+    yn(jo.p2, 384.5, 396.6, 301.6, 10.5, 14.9);
 
-  footer(doc);
+    block(3, eo.comentarios, 50.8, 598.5, 205, 270, 8);
+    block(3, jo.comentarios, 50.8, 598.5, 323, 407.7, 8);
+    block(3, so.comentarios, 50.8, 598.5, 424, 525.4, 8);
+    await sig(3, eo.firma, 598.5, 741.2, 194.8, 258);
+    await sig(3, jo.firma, 598.5, 741.2, 312.6, 396);
+    await sig(3, so.firma, 598.5, 655.8, 415.4, 488);
 
-  doc.save('Planilla_'+CODIGO+'_'+(rec.documento||'estudiante')+'.pdf');
-  toast('PDF generado');
-
+    const bytes = await doc.save();
+    const blob = new Blob([bytes], {type:'application/pdf'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Planilla_'+CODIGO+'_'+(rec.documento||'estudiante')+'.pdf';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    toast('PDF generado');
   }catch(e){
     console.error('Error generando el PDF:', e);
     toast('No se pudo generar el PDF: '+e.message+' (revisa la consola)', true);
