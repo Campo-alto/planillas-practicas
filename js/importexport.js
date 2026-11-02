@@ -221,22 +221,25 @@ const IE_DATASETS = {
 };
 
 /* ---------- descargas ---------- */
-function ieDescargarXlsx(nombre, head, rows, hoja){
-  const aoa = [head].concat(rows.map(r=>r.map(ieSafe)));
+function ieDescargarXlsx(nombre, head, rows, hoja, conEncabezado){
+  // conEncabezado=true: añade nombre de la institución, título y fecha sobre la tabla (listados); las plantillas/credenciales van sin él
+  const datos = rows.map(r=>r.map(ieSafe));
+  const aoa = [];
+  if(conEncabezado){
+    aoa.push(['CAMPOALTO']); aoa.push([conEncabezado]); aoa.push(['Generado el ' + new Date().toLocaleString('es-CO') + ' · ' + rows.length + ' registro(s)']); aoa.push([]);
+  }
+  aoa.push(head); datos.forEach(r=>aoa.push(r));
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = head.map((h,i)=>({ wch: Math.min(40, Math.max(String(h).length, ...rows.slice(0,200).map(r=>String(r[i]==null?'':r[i]).length)) + 2) }));
+  const cols = head.map((h,i)=>({ wch: Math.min(40, Math.max(String(h).length, ...rows.slice(0,200).map(r=>String(r[i]==null?'':r[i]).length)) + 2) }));
+  ws['!cols'] = cols;
+  if(conEncabezado && head.length>1){
+    ws['!merges'] = [0,1,2].map(r=>({ s:{r,c:0}, e:{r,c:head.length-1} }));
+  }
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, (hoja||'Datos').slice(0,31));
   XLSX.writeFile(wb, nombre + '-' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 function ieDescargarPdf(titulo, nombre, head, rows){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: head.length > 7 ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
-  doc.setFontSize(14); doc.text('Campoalto · ' + titulo, 40, 40);
-  doc.setFontSize(9); doc.text('Generado el ' + new Date().toLocaleString() + ' · ' + rows.length + ' registro(s)', 40, 56);
-  doc.autoTable({ head: [head], body: rows.map(r=>r.map(c=>c==null?'':String(c))), startY: 68, styles: { fontSize: 7.5, cellPadding: 3 },
-                  headStyles: { fillColor: [11,61,61] }, margin: { left: 40, right: 40 },
-                  didDrawPage: d => { doc.setFontSize(8); doc.text('Página ' + doc.internal.getNumberOfPages(), doc.internal.pageSize.getWidth()-80, doc.internal.pageSize.getHeight()-20); } });
-  doc.save(nombre + '-' + new Date().toISOString().slice(0,10) + '.pdf');
+  return pdfTablaDescargar({ titulo, archivo: nombre, head, rows });   // js/impresion.js: escudo, nombre y tabla centrados
 }
 async function ieExportar(id, formato){
   const ds = IE_DATASETS[id];
@@ -244,8 +247,8 @@ async function ieExportar(id, formato){
     toast('Preparando ' + ds.titulo.toLowerCase() + '…');
     const { head, rows } = await ds.exportar();
     if(!rows.length){ toast('No hay datos para exportar', true); return; }
-    if(formato === 'pdf') ieDescargarPdf(ds.titulo, ds.archivo, head, rows);
-    else ieDescargarXlsx(ds.archivo, head, rows, ds.titulo);
+    if(formato === 'pdf') await ieDescargarPdf(ds.titulo, ds.archivo, head, rows);
+    else ieDescargarXlsx(ds.archivo, head, rows, ds.titulo, ds.titulo);
   }catch(e){ console.error(e); toast('No se pudo exportar: ' + (e.message||e), true); }
 }
 function ieDescargarPlantilla(id){
