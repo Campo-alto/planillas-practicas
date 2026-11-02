@@ -342,3 +342,23 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .pg-ico .icon{width:48px;height:48px;font-size:22px;margin:0;}
 .pg-funciones .role-card:focus-visible{outline:2px solid var(--teal);}
 @media(max-width:560px){ .grupo-grid{grid-template-columns:1fr;} }
+
+/* ================= BARRA DE SESIÓN AL PIE (estudiante, empresa, supervisor) ================= */
+.status-strip.pie{margin:26px 0 0;}
+.status-strip.pie .who{order:2;margin-left:auto;text-align:right;}
+.status-strip.pie .actions{order:1;align-items:center;flex-wrap:wrap;}
+.status-strip.pie .actions .danger{position:relative;margin-left:28px;}
+.status-strip.pie .actions .danger::before{content:'';position:absolute;left:-15px;top:12%;bottom:12%;width:1px;background:#CFE6E4;}
+@media(max-width:640px){ .status-strip.pie{flex-direction:column-reverse;align-items:stretch;} .status-strip.pie .who{margin-left:0;text-align:left;} .status-strip.pie .actions .danger{margin-left:0;} .status-strip.pie .actions .danger::before{display:none;} }
+
+/* ================= TABLAS: formato de celdas unificado (todos los perfiles) ================= */
+.students-list,.cupos-table,.resumen-table{border-collapse:separate!important;border-spacing:0;border:1px solid #D9D3C3;border-radius:10px;overflow:hidden;}
+.students-list th,.students-list td,.cupos-table th,.cupos-table td,.resumen-table th,.resumen-table td{border:0!important;border-right:1px solid #E4DFD1!important;border-bottom:1px solid #E4DFD1!important;padding:10px 12px;vertical-align:middle;text-align:left;}
+.students-list th:last-child,.students-list td:last-child,.cupos-table th:last-child,.cupos-table td:last-child,.resumen-table th:last-child,.resumen-table td:last-child{border-right:0!important;}
+.students-list tbody tr:last-child td,.cupos-table tbody tr:last-child td,.resumen-table tbody tr:last-child td{border-bottom:0!important;}
+.students-list thead th,.resumen-table thead th{background:var(--deep);color:#fff;font-weight:600;font-size:12px;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;border-right:1px solid rgba(255,255,255,.18)!important;}
+.cupos-table thead th{border-right:1px solid rgba(255,255,255,.18)!important;border-bottom:0!important;}
+.students-list tbody tr:nth-child(even) td,.resumen-table tbody tr:nth-child(even) td{background:#FAF8F3;}
+.students-list tbody tr:hover td,.resumen-table tbody tr:hover td{background:#EAF4F5;}
+.resumen-table tr.rowlink.active-month td{background:#DDF0EC!important;}
+.cupos-table .cp-c,.students-list .cp-c,.resumen-table .cp-c{text-align:center;}
