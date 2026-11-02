@@ -38,8 +38,32 @@ function renderEstNotasView(){
     const cells = rec.competencias[c.key].slice(0, mesesActivos).map(v=> v ? (v+' · '+SCORE_LABELS[v]) : '—').map(v=>`<td>${v}</td>`).join('');
     return `<tr><td>${c.name}</td>${cells}</tr>`;
   }).join('');
+  // mes que se muestra en la rúbrica: el último con alguna nota (o el primero)
+  if(estNotasMes === null || estNotasMes >= mesesActivos){
+    estNotasMes = 0;
+    for(let i=0;i<mesesActivos;i++){ if(COMPETENCIAS.some(c=>rec.competencias[c.key][i])) estNotasMes = i; }
+  }
+  const pills = Array.from({length:mesesActivos}, (_,i)=>{
+    const n = COMPETENCIAS.filter(c=>rec.competencias[c.key][i]!=null).length;
+    return `<button type="button" class="tab${i===estNotasMes?' active':''}" onclick="estNotasMes=${i};renderEstNotasView()">${mesLabel(rec,i)} · ${n}/4</button>`;
+  }).join('');
   document.getElementById('estNotasView').innerHTML =
-    `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
+    `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>
+     <div class="subhead" style="margin-top:18px;">Rúbrica de calificación · ${mesLabel(rec,estNotasMes)}</div>
+     <p class="helptext" style="margin-top:-2px;">Así se evalúa cada criterio. Se resalta el nivel que la empresa te asignó este mes.</p>
+     <div class="tabs">${pills}</div>${rubricaLecturaHtml(estNotasMes)}`;
+}
+let estNotasMes = null;
+function rubricaLecturaHtml(i){
+  const rec = state.record;
+  const head = `<tr><th class="rub-crit">Criterio</th>${[5,4,3,2,1].map(n=>`<th class="rub-lvl rub-l${n}"><b>${n}</b> · ${SCORE_LABELS[n]}</th>`).join('')}</tr>`;
+  const rows = COMPETENCIAS.map(c=>{
+    const cur = rec.competencias[c.key][i];
+    const cells = [5,4,3,2,1].map(n=>`<td class="rub-cell rub-ro${cur===n?' sel':''}">${cur===n?'<span class="rub-tu">✔ Tu nota</span>':''}${RUBRICA[c.key][n]}</td>`).join('');
+    return `<tr><th class="rub-crit"><div class="comp-name">${c.name}</div><div class="comp-desc">${c.desc}</div>
+      <div class="rub-res ${cur?'ok':''}">${cur ? 'Nota: '+cur+' · '+SCORE_LABELS[cur] : 'Sin calificar'}</div></th>${cells}</tr>`;
+  }).join('');
+  return `<div class="rub-wrap"><table class="rubrica"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
 }
 async function saveEstudianteMes(){
   const rec = state.record; const i = state.estMonth;
