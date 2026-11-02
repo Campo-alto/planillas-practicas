@@ -351,15 +351,27 @@ async function caPintarProcesos(){
   body.innerHTML = '<div class="section-bar teal">Procesos</div>' + (act.length ? act.map(p=>caCandCard(p, btn(p))).join('') : '<p class="helptext">No hay procesos activos.</p>') +
     (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="cupos-wrap"><table class="cupos-table" style="min-width:420px"><thead><tr><th>Solicitud</th><th>Resultado</th><th>Fecha</th></tr></thead><tbody>${cer.map(p=>`<tr><td>${esc(p.oferta)}</td><td>${caChip(p.estado)}</td><td>${caFmt(p.desde)}</td></tr>`).join('')}</tbody></table></div>` : '');
 }
+let caPlanLista = [], caPlanQ = '';
 async function caPintarPlanillas(){
   const body = document.getElementById('caEmpBody');
   body.innerHTML = '<p class="helptext">Cargando…</p>';
-  try{
-    const L = await caRpc('ca_emp_planillas', { p_token: state.token });
-    body.innerHTML = '<div class="section-bar teal">Planillas de calificaciones de tus aprendices</div><p class="helptext">Se habilitan cuando la institución confirma la contratación del estudiante. Aquí calificas las competencias y diligencias el control mensual, igual que las demás empresas.</p>' +
-      (L.length ? `<div class="cupos-wrap"><table class="cupos-table" style="min-width:700px"><thead><tr><th>N.º de documento</th><th>Nombre</th><th>Programa</th><th>Cargo</th><th>Contratado desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.documento)}</td><td class="cp-prog"><b>${esc(x.nombre)}</b></td><td>${esc(x.programa||'—')}</td><td>${esc(x.cargo||'—')}</td><td>${caFmt(x.desde)}</td><td><button class="primary cp-del" onclick="caAbrirPlanilla('${escapeAttr(x.documento)}')">Abrir planilla</button></td></tr>`).join('')}</tbody></table></div>`
-        : '<p class="helptext">Aún no tienes aprendices contratados. Cuando la institución confirme una contratación, aparecerá aquí con su planilla habilitada.</p>');
-  }catch(e){ body.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; }
+  try{ caPlanLista = await caRpc('ca_emp_planillas', { p_token: state.token }); }
+  catch(e){ body.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
+  caPlanQ = '';
+  body.innerHTML = `<div class="section-bar teal">Planillas de calificaciones de tus aprendices</div><p class="helptext">Se habilitan cuando la institución confirma la contratación del estudiante. Aquí calificas las competencias y diligencias el control mensual, igual que las demás empresas.</p>
+    ${caPlanLista.length ? `<div class="field" style="max-width:420px"><label>Buscar por documento, nombre, programa o cargo</label><input id="caPlanBuscar" type="search" placeholder="Escribe para filtrar…" oninput="caPlanFiltrar(this.value)" autocomplete="off"></div>` : ''}
+    <div id="caPlanTabla"></div>`;
+  caPlanTabla();
+}
+function caPlanFiltrar(v){ caPlanQ = v; caPlanTabla(); }
+function caPlanTabla(){
+  const box = document.getElementById('caPlanTabla'); if(!box) return;
+  const norm = t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const q = norm(caPlanQ).trim();
+  const L = q ? caPlanLista.filter(x=>norm([x.documento,x.nombre,x.programa,x.cargo].join(' ')).includes(q)) : caPlanLista;
+  if(!caPlanLista.length){ box.innerHTML = '<p class="helptext">Aún no tienes aprendices contratados. Cuando la institución confirme una contratación, aparecerá aquí con su planilla habilitada.</p>'; return; }
+  if(!L.length){ box.innerHTML = '<p class="helptext">Ningún aprendiz coincide con la búsqueda.</p>'; return; }
+  box.innerHTML = `<p class="helptext" style="margin:4px 0">${L.length} de ${caPlanLista.length} aprendiz(ces)</p><div class="cupos-wrap"><table class="cupos-table" style="min-width:700px"><thead><tr><th>N.º de documento</th><th>Nombre</th><th>Programa</th><th>Cargo</th><th>Contratado desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.documento)}</td><td class="cp-prog"><b>${esc(x.nombre)}</b></td><td>${esc(x.programa||'—')}</td><td>${esc(x.cargo||'—')}</td><td>${caFmt(x.desde)}</td><td><button class="primary cp-del" onclick="caAbrirPlanilla('${escapeAttr(x.documento)}')">Abrir planilla</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 // abre la planilla reutilizando la pantalla de empresa (el servidor valida que el estudiante sea de esta empresa)
 async function caAbrirPlanilla(doc){
