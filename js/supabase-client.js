@@ -69,8 +69,8 @@ function recordToRow(rec){
     updated_at: new Date().toISOString()
   };
 }
-// El token de sesión de Empresa/Supervisor/Estudiante vive SOLO en memoria
-// (state.token): no se guarda en localStorage, así que cerrar la pestaña lo borra.
+// El token de sesión de Empresa/Supervisor/Estudiante vive en memoria y en sessionStorage
+// (js/sesion.js): sobrevive a recargar la página pero se borra al cerrar la pestaña.
 async function getRecord(doc){
   if(!requireSupabase()) return null;
   try{
@@ -79,13 +79,6 @@ async function getRecord(doc){
       const { data, error } = await sb.from('students').select('*').eq('documento', doc).maybeSingle();
       if(error){ console.error(error); toast('Error consultando: '+error.message, true); return null; }
       return data ? rowToRecord(data) : null;
-    }
-    // Estudiante: primero inicia su sesión por documento (con límite de intentos)
-    if(state.role === 'estudiante' && !state.token){
-      const { data: ses, error: e1 } = await sb.rpc('login_estudiante', { p_documento: doc });
-      if(e1){ console.error(e1); toast(e1.message, true); return null; }
-      if(!ses) return null;
-      state.token = ses.token;
     }
     if(!state.token){ toast('Tu sesión venció. Inicia sesión de nuevo.', true); return null; }
     const { data, error } = await sb.rpc('get_student', { p_token: state.token, p_documento: doc });
