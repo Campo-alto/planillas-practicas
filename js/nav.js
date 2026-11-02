@@ -219,13 +219,16 @@ async function renderAdminList(){
   if(!sb){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No hay conexión con la base de datos. Revisa la consola (F12).</p>'; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const { data, error } = await sb.from('students').select('documento,nombre,programa,sede,semestre,modalidad,competencias,meses,updated_at').order('nombre', {ascending:true});
+    // Las dos consultas salen al mismo tiempo. La lista usa una versión liviana (sin firmas ni datos pesados);
+    // si todavía no se ejecutó el SQL de la etapa 17, usa la consulta completa de antes.
+    const pAsig = sb.rpc('admin_list_asignaciones').then(r=>r, e=>({ data:null, error:e }));
+    let { data, error } = await sb.rpc('admin_students_lista');
+    if(error){ ({ data, error } = await sb.from('students').select('documento,nombre,programa,sede,semestre,modalidad,competencias,meses,updated_at').order('nombre', {ascending:true})); }
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado: '+error.message+'</p>'; return; }
     adminStudentsCache = data || [];
-    // empresa asignada (asignación activa) por documento
     adminEmpresaPorDoc = {};
     try{
-      const r = await sb.rpc('admin_list_asignaciones');
+      const r = await pAsig;
       (r.data||[]).filter(a=>a.estado==='activa').forEach(a=>{ adminEmpresaPorDoc[a.documento] = a.empresa + (a.jornada ? ' ('+a.jornada+')' : ''); });
     }catch(e){ console.warn('No se pudo leer las asignaciones', e); }
     renderAdminListTable();
