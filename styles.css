@@ -222,3 +222,27 @@
 .cupo-low{background:#FCEBD2;color:#9A5A0B;}
 .cupo-0{background:#F6DAD6;color:var(--danger);}
 .cp-del{padding:5px 10px;font-size:12px;}
+
+/* ---- Ficha de datos generales y plantillas mensuales ---- */
+.ficha-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;margin:8px 0 14px;}
+.ficha-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+.ficha-table th{width:17%;background:#F1EEE5;color:var(--deep);text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px;padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle;}
+.ficha-table td{padding:9px 12px;border-top:1px solid var(--line);width:33%;color:var(--ink);word-break:break-word;}
+.ficha-table th+td{border-left:1px solid var(--line);}
+.ficha-table td+th{border-left:1px solid var(--line);}
+.ficha-table tr:first-child th,.ficha-table tr:first-child td{border-top:0;}
+.ficha-table .ok{color:var(--teal-dark);font-weight:700;} .ficha-table .no{color:var(--danger);font-weight:700;}
+.ficha-vacio{color:var(--muted);}
+.ficha-head td{background:var(--deep);color:#fff;padding:12px 14px;width:auto;}
+.ficha-head td+th{border:0;}
+.ficha-nombre{font-weight:700;font-size:15.5px;display:block;}
+.ficha-doc{font-size:12.5px;opacity:.85;}
+.month-pills{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px;}
+.month-pill{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:92px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);cursor:pointer;font:inherit;}
+.month-pill .mp-name{font-weight:700;font-size:13px;} .month-pill .mp-state{font-size:12px;color:var(--muted);}
+.month-pill:hover{border-color:var(--teal);}
+.month-pill.active{background:var(--teal);border-color:var(--teal);color:#fff;} .month-pill.active .mp-state{color:#fff;opacity:.9;}
+.month-pill.locked:not(.active){background:#F1EEE5;}
+.ficha-mes{border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:#FCFBF8;}
+.ficha-mes-title{font-weight:700;color:var(--deep);font-size:15px;margin-bottom:6px;}
+@media(max-width:640px){.ficha-table th,.ficha-table td{display:block;width:auto;border-left:0!important;}.ficha-table th{border-top:1px solid var(--line);padding-bottom:2px;background:#fff;}.ficha-table td{border-top:0;padding-top:0;}}
