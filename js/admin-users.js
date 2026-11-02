@@ -72,44 +72,94 @@ async function adminManage(body){
   if(data && data.error) throw new Error(data.error);
   return data;
 }
+let adminsCache = [];
+function normTxt(t){ return (t||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+// Agrega el campo Documento al formulario y la barra de búsqueda (si el HTML no los trae)
+function asegurarUiAdministradores(){
+  const email = document.getElementById('admEmail');
+  if(email && !document.getElementById('admDocumento')){
+    const row = email.closest('.field-row');
+    const f = document.createElement('div'); f.className = 'field';
+    f.innerHTML = '<label>Documento</label><input type="text" id="admDocumento" inputmode="numeric" autocomplete="off">';
+    row.insertBefore(f, row.firstChild);
+    row.querySelector('#admNombre').closest('.field').querySelector('label').textContent = 'Nombre completo';
+  }
+  const list = document.getElementById('adminsList');
+  if(list && !document.getElementById('admBuscar')){
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;';
+    bar.innerHTML = '<input type="search" id="admBuscar" placeholder="Buscar por documento, nombre o apellido…" style="flex:1;min-width:220px;" oninput="filtrarAdministradores()">'+
+      '<button class="ghost" type="button" onclick="document.getElementById(\'admBuscar\').value=\'\';filtrarAdministradores()">Limpiar</button>';
+    list.insertAdjacentElement('beforebegin', bar);
+  }
+}
 async function renderAdminsList(){
+  asegurarUiAdministradores();
   const el = document.getElementById('adminsList');
   if(!sb){ el.innerHTML = ''; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
     const { data, error } = await sb.rpc('admin_list_administradores');
     if(error){ throw new Error(error.message); }
-    const admins = data || [];
-    if(admins.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No se encontraron administradores.</p>'; return; }
-    const me = (await sb.auth.getUser()).data.user;
-    const rows = admins.map(a=>`<tr>
-      <td>${escapeAttr(a.email)}${me && me.id===a.id ? ' <span style="color:var(--muted);font-size:11.5px;">(tú)</span>' : ''}</td>
-      <td>${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</td>
-      <td style="white-space:nowrap;">
-        <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="changeAdminPassword('${a.id}','${escapeAttr(a.email)}')">Cambiar contraseña</button>
-        ${me && me.id===a.id ? '' : `<button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteAdministrador('${a.id}','${escapeAttr(a.email)}')">Eliminar</button>`}
-      </td>
-    </tr>`).join('');
-    el.innerHTML = `<table class="students-list"><thead><tr><th>Correo</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
-  }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+'</p>'; }
+    adminsCache = data || [];
+    filtrarAdministradores();
+  }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+' (¿ejecutaste el SQL de la etapa 6?)</p>'; }
+}
+async function filtrarAdministradores(){
+  const el = document.getElementById('adminsList');
+  const q = normTxt((document.getElementById('admBuscar')||{}).value).trim();
+  const lista = !q ? adminsCache : adminsCache.filter(a =>
+    normTxt(a.documento).includes(q) || normTxt(a.nombre).includes(q) || normTxt(a.email).includes(q));
+  if(adminsCache.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No se encontraron administradores.</p>'; return; }
+  if(lista.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Ningún administrador coincide con "'+escapeAttr(q)+'".</p>'; return; }
+  const me = (await sb.auth.getUser()).data.user;
+  const rows = lista.map(a=>`<tr>
+    <td>${escapeAttr(a.documento) || '<span style="color:var(--danger)">sin documento</span>'}</td>
+    <td>${escapeAttr(a.nombre) || '<span style="color:var(--muted)">—</span>'}${me && me.id===a.id ? ' <span style="color:var(--muted);font-size:11.5px;">(tú)</span>' : ''}</td>
+    <td>${escapeAttr(a.email)}</td>
+    <td>${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</td>
+    <td style="white-space:nowrap;">
+      <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editarPerfilAdmin('${a.id}')">Editar datos</button>
+      <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="changeAdminPassword('${a.id}','${escapeAttr(a.email)}')">Cambiar contraseña</button>
+      ${me && me.id===a.id ? '' : `<button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteAdministrador('${a.id}','${escapeAttr(a.email)}')">Eliminar</button>`}
+    </td>
+  </tr>`).join('');
+  el.innerHTML = `<p class="helptext" style="margin:0 0 8px;">${lista.length} de ${adminsCache.length} administrador(es)</p>
+    <table class="students-list"><thead><tr><th>Documento</th><th>Nombre</th><th>Correo</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+async function editarPerfilAdmin(id){
+  const a = adminsCache.find(x=>x.id===id); if(!a) return;
+  const doc = prompt('Documento del administrador:', a.documento || '');
+  if(doc === null) return;
+  const nom = prompt('Nombre completo del administrador:', a.nombre || '');
+  if(nom === null) return;
+  const { error } = await sb.rpc('admin_set_admin_profile', { p_user_id: id, p_documento: doc.trim(), p_nombre: nom.trim() });
+  if(error){ toast(error.message, true); return; }
+  toast('Datos actualizados'); renderAdminsList();
 }
 async function saveAdministrador(){
   if(!requireSupabase()) return;
+  asegurarUiAdministradores();
+  const documento = document.getElementById('admDocumento').value.trim();
   const email = document.getElementById('admEmail').value.trim();
   const nombre = document.getElementById('admNombre').value.trim();
   const password = document.getElementById('admPasswordNew').value;
   const msg = document.getElementById('admFormMsg');
-  if(!email || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe correo y contraseña.</span>'; return; }
-  if(password.length < 8){ msg.innerHTML = '<span style="color:var(--danger)">La contraseña debe tener mínimo 8 caracteres.</span>'; return; }
+  const err = t => { msg.innerHTML = '<span style="color:var(--danger)">'+t+'</span>'; };
+  if(!/^[0-9A-Za-z]{5,20}$/.test(documento)) return err('Escribe un documento válido (5 a 20 letras o números).');
+  if(nombre.length < 3) return err('Escribe el nombre completo.');
+  if(!email || !password) return err('Escribe correo y contraseña.');
+  if(password.length < 8) return err('La contraseña debe tener mínimo 8 caracteres.');
+  if(adminsCache.some(a=>a.documento === documento)) return err('Ya existe un administrador con ese documento.');
   msg.innerHTML = '<span style="color:var(--muted)">Creando…</span>';
   try{
-    await adminManage({ action:'create', email, nombre, password });
-    document.getElementById('admEmail').value = '';
-    document.getElementById('admNombre').value = '';
-    document.getElementById('admPasswordNew').value = '';
+    const r = await adminManage({ action:'create', email, nombre, password });
+    const { error } = await sb.rpc('admin_set_admin_profile', { p_user_id: r.id, p_documento: documento, p_nombre: nombre });
+    if(error) throw new Error('Se creó el acceso pero no se guardó el perfil: ' + error.message);
+    ['admDocumento','admEmail','admNombre','admPasswordNew'].forEach(id=>document.getElementById(id).value='');
     msg.innerHTML = '<span style="color:var(--teal-dark)">Administrador creado.</span>';
     renderAdminsList();
-  }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">Error: '+e.message+'</span>'; }
+  }catch(e){ console.error(e); err('Error: '+e.message); renderAdminsList(); }
 }
 async function changeAdminPassword(id, email){
   const p = prompt('Nueva contraseña para '+email+' (mínimo 8 caracteres):');
