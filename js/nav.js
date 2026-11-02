@@ -211,15 +211,23 @@ async function doLookup(){
 
 let adminStudentsCache = [];
 let adminStudentsSoloPendientes = false;
+let adminEmpresaPorDoc = {};
+let adminStudentsBusqueda = '';
 
 async function renderAdminList(){
   const el = document.getElementById('lookupAdminList');
   if(!sb){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No hay conexión con la base de datos. Revisa la consola (F12).</p>'; return; }
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const { data, error } = await sb.from('students').select('documento,nombre,sede,semestre,modalidad,competencias,meses,updated_at').order('nombre', {ascending:true});
+    const { data, error } = await sb.from('students').select('documento,nombre,programa,sede,semestre,modalidad,competencias,meses,updated_at').order('nombre', {ascending:true});
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado: '+error.message+'</p>'; return; }
     adminStudentsCache = data || [];
+    // empresa asignada (asignación activa) por documento
+    adminEmpresaPorDoc = {};
+    try{
+      const r = await sb.rpc('admin_list_asignaciones');
+      (r.data||[]).filter(a=>a.estado==='activa').forEach(a=>{ adminEmpresaPorDoc[a.documento] = a.empresa + (a.jornada ? ' ('+a.jornada+')' : ''); });
+    }catch(e){ console.warn('No se pudo leer las asignaciones', e); }
     renderAdminListTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado (revisa la consola).</p>'; }
 }
@@ -252,32 +260,58 @@ function pendientesPlataforma(s){
   }
   return { pendientes, subidas };
 }
-function renderAdminListTable(){
+function _norm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function adminListaFiltrada(){
+  let list = adminStudentsCache.map(s=>({ s, prog: mesesCalificados(s), plat: pendientesPlataforma(s), empresa: adminEmpresaPorDoc[s.documento] || '' }));
+  if(adminStudentsSoloPendientes) list = list.filter(x => x.prog.count < x.prog.total);
+  const q = _norm(adminStudentsBusqueda).trim();
+  if(q) list = list.filter(x => _norm([x.s.documento, x.s.nombre, x.s.programa, x.empresa].join(' ')).includes(q));
+  return list;
+}
+function textoNotas(prog){ return prog.total===1 ? (prog.count===1?'Nota registrada':'Nota pendiente') : (prog.count+'/'+prog.total+' meses calificados'); }
+function textoPlat(plat){ return plat.pendientes===0 ? (plat.subidas>0 ? 'Al día' : '-') : (plat.pendientes+' sin subir'); }
+function adminListBuscar(v){ adminStudentsBusqueda = v; renderAdminListTable(true); }
+function renderAdminListTable(conservarFoco){
   const el = document.getElementById('lookupAdminList');
   if(!adminStudentsCache || adminStudentsCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay estudiantes registrados.</p>'; return; }
-  const filterBar = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-      <input type="checkbox" ${adminStudentsSoloPendientes?'checked':''} onchange="toggleAdminStudentsFiltro()"> Ver solo estudiantes con notas pendientes
-    </label>
-  </div>`;
-  let list = adminStudentsCache.map(s=>({ s, prog: mesesCalificados(s), plat: pendientesPlataforma(s) }));
-  const totalPendientesPlataforma = list.reduce((sum,x)=>sum+x.plat.pendientes, 0);
+  const all = adminStudentsCache.map(s=>pendientesPlataforma(s));
+  const totalPendientesPlataforma = all.reduce((sum,x)=>sum+x.pendientes, 0);
   const contadorGlobal = `<div class="note-box" style="margin-bottom:12px;${totalPendientesPlataforma===0?'background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;':''}">${totalPendientesPlataforma===0
     ? '✅ No hay notas calificadas pendientes de subir a la plataforma académica.'
     : '📋 <b>'+totalPendientesPlataforma+'</b> nota(s) calificada(s), en total, todavía sin subir a la plataforma académica.'}</div>`;
-  if(adminStudentsSoloPendientes) list = list.filter(x => x.prog.count < x.prog.total);
-  if(list.length===0){ el.innerHTML = contadorGlobal + filterBar + '<p style="color:var(--muted);font-size:13px;">No hay estudiantes con notas pendientes 🎉</p>'; return; }
-  const rows = list.map(({s,prog,plat})=>{
-    const cls = prog.count===0 ? 'no' : (prog.count===prog.total ? 'ok' : '');
-    const notasTxt = prog.total===1 ? (prog.count===1?'Nota registrada':'Nota pendiente') : (prog.count+'/'+prog.total+' meses calificados');
-    const platTxt = plat.pendientes===0 ? (plat.subidas>0 ? '✅ Al día' : '—') : ('📋 '+plat.pendientes+' sin subir');
-    const platCls = plat.pendientes===0 ? (plat.subidas>0?'ok':'') : 'no';
-    return `<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
-      <td>${s.nombre||'(sin nombre)'}</td><td>${s.documento}</td><td>${s.sede||'—'}</td><td>${s.semestre||'—'}</td>
-      <td>${s.modalidad||'—'}</td><td class="${cls}">${notasTxt}</td><td class="${platCls}">${platTxt}</td>
-    </tr>`;
-  }).join('');
-  el.innerHTML = contadorGlobal + filterBar + `<table class="students-list"><thead><tr><th>Nombre</th><th>Documento</th><th>Sede</th><th>Semestre</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const list = adminListaFiltrada();
+  const barra = `<div class="lista-barra">
+    <input type="search" id="adminListBusca" class="lista-busca" placeholder="Buscar por documento, nombre, programa o empresa…" value="${escapeAttr(adminStudentsBusqueda)}" oninput="adminListBuscar(this.value)">
+    <label class="lista-chk"><input type="checkbox" ${adminStudentsSoloPendientes?'checked':''} onchange="toggleAdminStudentsFiltro()"> Solo con notas pendientes</label>
+    <span class="lista-acc"><button class="ghost" onclick="adminListExportar('xlsx')">⬇ Excel</button><button class="ghost" onclick="adminListExportar('pdf')">⬇ PDF</button></span>
+  </div><div class="lista-cuenta">${list.length} de ${adminStudentsCache.length} estudiante(s)</div>`;
+  let tabla;
+  if(list.length===0){ tabla = '<p style="color:var(--muted);font-size:13px;">No hay estudiantes que coincidan con el filtro.</p>'; }
+  else {
+    const rows = list.map(({s,prog,plat,empresa})=>{
+      const cls = prog.count===0 ? 'no' : (prog.count===prog.total ? 'ok' : '');
+      const platTxt = plat.pendientes===0 ? (plat.subidas>0 ? '✅ Al día' : '—') : ('📋 '+plat.pendientes+' sin subir');
+      const platCls = plat.pendientes===0 ? (plat.subidas>0?'ok':'') : 'no';
+      return `<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
+        <td class="cp-prog"><b>${esc(s.nombre||'(sin nombre)')}</b></td><td>${esc(s.documento)}</td>
+        <td>${esc(s.programa||'—')}</td>
+        <td>${empresa ? '<span class="cupo-jor">'+esc(empresa)+'</span>' : '<span style="color:var(--muted)">Sin asignar</span>'}</td>
+        <td>${esc(s.sede||'—')}</td><td class="cp-c">${esc(s.semestre||'—')}</td>
+        <td>${esc(s.modalidad||'—')}</td><td class="${cls}">${textoNotas(prog)}</td><td class="${platCls}">${platTxt}</td>
+      </tr>`;
+    }).join('');
+    tabla = `<div class="cupos-wrap"><table class="cupos-table lista-est"><thead><tr><th>Nombre</th><th>Documento</th><th>Programa</th><th>Empresa asignada</th><th>Sede</th><th class="cp-c">Sem.</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  el.innerHTML = contadorGlobal + barra + tabla;
+  if(conservarFoco){ const i = document.getElementById('adminListBusca'); if(i){ i.focus(); const n=i.value.length; try{ i.setSelectionRange(n,n); }catch(e){} } }
+}
+function adminListExportar(formato){
+  const list = adminListaFiltrada();
+  if(!list.length){ toast('No hay estudiantes para exportar', true); return; }
+  const head = ['Nombre','Documento','Programa','Empresa asignada','Sede','Semestre','Modalidad','Notas','Plataforma académica'];
+  const rows = list.map(({s,prog,plat,empresa})=>[s.nombre||'', s.documento, s.programa||'', empresa||'Sin asignar', s.sede||'', s.semestre||'', s.modalidad||'', textoNotas(prog), textoPlat(plat)]);
+  if(formato==='pdf') pdfTablaDescargar({ titulo:'Estudiantes registrados', archivo:'estudiantes-registrados', head, rows });
+  else ieDescargarXlsx('estudiantes-registrados', head, rows, 'Estudiantes', 'Estudiantes registrados');
 }
 function jumpToAdmin(doc){
   document.getElementById('lookupDoc').value = doc;
