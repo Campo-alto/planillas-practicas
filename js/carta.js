@@ -35,7 +35,7 @@ function cartaEnvolver(font, texto, size, escala, ancho){
 }
 
 /* datos: { fecha:Date, contacto, empresa, direccion, telefono, estudiante, documento, programa,
-            inicio:'YYYY-MM-DD', fin:'YYYY-MM-DD', horario, jornada, requisitos } */
+            inicio:'YYYY-MM-DD', fin:'YYYY-MM-DD', horario, jornada, requisitos, funciones } */
 async function generarCartaPdf(d){
   const { PDFDocument, StandardFonts, rgb, setCharacterSpacing, setWordSpacing } = PDFLib;
   const pdf = await PDFDocument.create();
@@ -139,17 +139,19 @@ async function generarCartaPdf(d){
   // Requisitos (de la empresa; en mayúsculas como el modelo)
   txt(p1, 'Requisitos:', 66, Y(244.47));
   const req = L(String(d.requisitos || '').toUpperCase()).trim();
-  const lineasR = req ? cartaEnvolver(font, req, 10, 1, CARTA.ANCHO_REQ) : [];
+  let lineasR = req ? cartaEnvolver(font, req, 10, 1, CARTA.ANCHO_REQ) : [];
+  const fun = L(String(d.funciones || '').toUpperCase()).trim();
+  if(fun){ lineasR = lineasR.concat(['', 'Funciones a desempeñar:'], cartaEnvolver(font, fun, 10, 1, CARTA.ANCHO_REQ)); }
   let yr = Y(223.5), pag2 = [];
   lineasR.forEach(ln=>{
-    if(yr >= CARTA.Y_MIN_P1){ txt(p1, ln, 66, yr); yr -= CARTA.INTERLINEA_REQ; }
+    if(yr >= CARTA.Y_MIN_P1){ if(ln) txt(p1, ln, 66, yr); yr -= CARTA.INTERLINEA_REQ; }
     else pag2.push(ln);
   });
 
   /* ---------- página 2 ---------- */
   const p2 = nuevaPagina();
   let y2 = 684.5;
-  pag2.forEach(ln=>{ p2.drawText(ln, { x: 66, y: y2, size: 10, font, color: negro }); y2 -= CARTA.INTERLINEA_REQ; });
+  pag2.forEach(ln=>{ if(ln) p2.drawText(ln, { x: 66, y: y2, size: 10, font, color: negro }); y2 -= CARTA.INTERLINEA_REQ; });
   const off = pag2.length ? (684.5 - y2) + 4 : 0;            // el cierre baja si hubo requisitos en la página 2
   const Z = v => v - off;
   txtEspaciado(p2, 'Cualquier tipo de modificación a ésta deberá ser informada por escrito a Campo alto y autorizada de la', 66, Z(684.5), 0.11847, 0.04739);
