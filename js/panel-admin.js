@@ -52,6 +52,7 @@
       <div class="role-grid pg-funciones">${g.funciones.map((f,i)=>`<div class="role-card ${f.clase}" role="button" tabindex="0" onclick="pgAbrirFuncion('${g.id}',${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pgAbrirFuncion('${g.id}',${i})}">
         <div class="icon">${f.icono}</div><h3>${f.titulo}</h3><p>${f.desc}</p></div>`).join('')}</div>`);
     showScreen('screen-admin-grupo');
+    if(g.id==='administracion' && window.rpMostrarTarjeta) window.rpMostrarTarjeta();
   };
   window.pgAbrirFuncion = function(gid, i){
     const g = GRUPOS.find(x=>x.id===gid); if(!g || !g.funciones[i]) return;
