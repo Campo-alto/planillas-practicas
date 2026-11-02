@@ -10,7 +10,7 @@ async function renderReporteVisitas(){
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
     const { data, error } = await sb.from('students')
-      .select('documento,nombre,apellidos,nombres,revision_funciones,datos_supervision')
+      .select('documento,nombre,revision_funciones,datos_supervision')
       .order('nombre', { ascending: true });
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+error.message+'</p>'; return; }
 
@@ -24,8 +24,7 @@ async function renderReporteVisitas(){
           supervisorCorreo: rf.supervisorCorreo || '',
           fecha: rf.fecha,
           documento: s.documento,
-          apellidos: s.apellidos || '',
-          nombres: s.nombres || '',
+          nombre: s.nombre || '',
           modalidadVisita: rf.modalidadVisita || '',
           empresa: rf.sitio || '',
           jefeInmediato: rf.jefeInmediato || '',
@@ -38,8 +37,7 @@ async function renderReporteVisitas(){
           supervisorCorreo: ds.supervisorCorreo || '',
           fecha: ds.fecha,
           documento: s.documento,
-          apellidos: s.apellidos || '',
-          nombres: s.nombres || '',
+          nombre: s.nombre || '',
           modalidadVisita: ds.modalidadVisita || '',
           empresa: ds.sitio || '',
           jefeInmediato: ds.jefeInmediato || '',
@@ -95,26 +93,25 @@ function renderReporteVisitasTable(){
     <td>${fmtDate(r.fecha) || '—'}</td>
     <td>${r.visita}</td>
     <td>${r.documento}</td>
-    <td>${r.apellidos || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
-    <td>${r.nombres || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
+    <td>${r.nombre || '<span style="color:var(--muted);">— sin registrar —</span>'}</td>
     <td>${r.modalidadVisita || '—'}</td>
     <td>${r.empresa || '—'}</td>
     <td>${r.jefeInmediato || '—'}</td>
   </tr>`).join('');
   el.innerHTML = `<p class="helptext" style="margin-top:0;">${rows.length} de ${reporteVisitasCache.length} visita(s).</p>
     <table class="resumen-table"><thead><tr>
-      <th>Supervisor</th><th>Correo supervisor</th><th>Fecha visita</th><th>Visita</th><th>Documento estudiante</th><th>Apellidos</th><th>Nombres</th><th>Modalidad visita</th><th>Empresa</th><th>Jefe inmediato</th>
+      <th>Supervisor</th><th>Correo supervisor</th><th>Fecha visita</th><th>Visita</th><th>Documento estudiante</th><th>Nombre completo</th><th>Modalidad visita</th><th>Empresa</th><th>Jefe inmediato</th>
     </tr></thead><tbody>${trs}</tbody></table>
-    <p class="helptext">Si "Apellidos"/"Nombres" salen vacíos para algún estudiante, edítalos en su ficha (Estudiantes → Datos generales).</p>`;
+    <p class="helptext">Si el nombre sale vacío para algún estudiante, escríbelo en su ficha (Estudiantes → Datos generales).</p>`;
 }
 
 function downloadReporteVisitasXLSX(){
   const rows = filasFiltradas();
   if(!rows || rows.length===0){ toast('No hay datos para descargar con estos filtros', true); return; }
   if(typeof XLSX === 'undefined'){ toast('No se pudo cargar el generador de Excel. Revisa tu conexión y recarga la página.', true); return; }
-  const headers = ['Supervisor','Correo supervisor','Fecha visita','Visita','Documento estudiante','Apellidos','Nombres','Modalidad visita','Empresa','Jefe inmediato'];
+  const headers = ['Supervisor','Correo supervisor','Fecha visita','Visita','Documento estudiante','Nombre completo','Modalidad visita','Empresa','Jefe inmediato'];
   const data = [headers].concat(rows.map(r=>[
-    r.supervisor, r.supervisorCorreo, fmtDate(r.fecha), r.visita, r.documento, r.apellidos, r.nombres, r.modalidadVisita, r.empresa, r.jefeInmediato
+    r.supervisor, r.supervisorCorreo, fmtDate(r.fecha), r.visita, r.documento, r.nombre, r.modalidadVisita, r.empresa, r.jefeInmediato
   ]));
   try{
     const ws = XLSX.utils.aoa_to_sheet(data);
