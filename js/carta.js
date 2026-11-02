@@ -23,6 +23,22 @@ function cartaFechaImpresion(d){
 function cartaLimpiar(t){
   return String(t == null ? '' : t).replace(/[\r\n\t]+/g, ' ').replace(/[^ -~¡-ÿ]/g, '');
 }
+// Respeta mayúsculas/minúsculas tal como se escribieron; si el dato viene TODO en mayúsculas, lo pasa a formato normal
+const CARTA_SIGLAS = ['SAS','IPS','ESE','EPS','SA','LTDA','UCI','AIPI','NIT','CC','II','III','IV','SENA','ARL'];
+const CARTA_MENORES = ['de','del','la','las','el','los','y','e','en','a','al','con','para','por','o','u'];
+function cartaSoloMayus(t){ return /[A-ZÁÉÍÓÚÑ]/.test(t) && !/[a-záéíóúñ]/.test(t); }
+function cartaTitulo(t){
+  t = String(t == null ? '' : t); if(!cartaSoloMayus(t)) return t;
+  return t.toLowerCase().replace(/[a-záéíóúñ0-9]+/g, (w, i)=>{
+    if(CARTA_SIGLAS.includes(w.toUpperCase())) return w.toUpperCase();
+    if(i > 0 && CARTA_MENORES.includes(w)) return w;
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  });
+}
+function cartaOracion(t){
+  t = String(t == null ? '' : t); if(!cartaSoloMayus(t)) return t;
+  return t.toLowerCase().replace(/(^\s*|[.;:\n]\s+)([a-záéíóúñ])/g, (m, a, b)=>a + b.toUpperCase());
+}
 function cartaEnvolver(font, texto, size, escala, ancho){
   const palabras = texto.split(' '), lineas = []; let actual = '';
   palabras.forEach(p=>{
@@ -69,10 +85,10 @@ async function generarCartaPdf(d){
   txt(p1, 'Bogotá,', 352, 689.5);
   txt(p1, impresion.getDate() + ' ' + MESES_ES[impresion.getMonth()] + '     ' + impresion.getFullYear(), 388, 688.5);
   txt(p1, 'Ref:', 69, 669.47);
-  txt(p1, d.documento + '-' + cartaFechaImpresion(impresion), 90, 669.47);
+  txt(p1, d.documento, 90, 669.47);
   txt(p1, 'Señor(a):', 69, 634.47);
-  txt(p1, String(d.contacto || '').toUpperCase(), 69, 618.47, 10, 460);
-  txt(p1, String(d.empresa || '').toUpperCase(), 69, 601.47, 10, 460);
+  txt(p1, cartaTitulo(d.contacto), 69, 618.47, 10, 460);
+  txt(p1, cartaTitulo(d.empresa), 69, 601.47, 10, 460);
   txt(p1, 'Dirección:', 69, 586.47);
   txt(p1, d.direccion, 124, 586.47, 10, 400);
   txt(p1, 'Teléfono:', 69, 569.47);
@@ -80,9 +96,9 @@ async function generarCartaPdf(d){
   txt(p1, 'L.C', 69, 553.47);
 
   // Párrafo principal (justificado)
-  const parrafo = L('CAMPOALTO ACESALUD SAS con NIT. 830.015.970-6, presenta al estudiante ' + String(d.estudiante || '').toUpperCase() +
+  const parrafo = L('Campoalto Acesalud SAS con NIT. 830.015.970-6, presenta al estudiante ' + cartaTitulo(d.estudiante) +
     '  identificado con C.C. No ' + d.documento + ' quien actualmente cursan estudios en nuestra institución en el programa de   ' +
-    String(d.programa || '').toUpperCase() + ', quien inicia prácticas con su empresa en la modalidad de pasantía no remunerada. ');
+    cartaTitulo(d.programa) + ', quien inicia prácticas con su empresa en la modalidad de pasantía no remunerada. ');
   const lineasP = cartaEnvolver(font, parrafo.replace(/ +$/, ''), 10, CARTA.ESCALA_ENVOLVER, CARTA.ANCHO_ENVOLVER);
   let y = 527.47, ultTw = 0, ultTc = 0;
   lineasP.forEach((ln, i)=>{
@@ -125,20 +141,20 @@ async function generarCartaPdf(d){
     while(s > 5 && font.widthOfTextAtSize(t, s) > 76) s -= 0.25;
     p1.drawText(t, { x: cx - font.widthOfTextAtSize(t, s) / 2, y, size: s, font, color: negro });
   };
-  centrado('FECHA DE INICIO', 109.5, Y(338.38), 8);
-  centrado('FECHA DE', 191.0, Y(338.38), 8); centrado('FINALIZACIÓN', 190.88, Y(329.07), 8);
-  centrado('HORARIO', 270.5, Y(338.38), 8);
-  txt(p1, 'JORNADA', 370, Y(341.38), 8);
+  centrado('Fecha de inicio', 109.5, Y(338.38), 8);
+  centrado('Fecha de', 191.0, Y(338.38), 8); centrado('Finalización', 190.88, Y(329.07), 8);
+  centrado('Horario', 270.5, Y(338.38), 8);
+  txt(p1, 'Jornada', 370, Y(341.38), 8);
   centrado(cartaFechaCorta(d.inicio), 109.5, Y(296.4), 8);
   centrado(cartaFechaCorta(d.fin), 191.0, Y(296.4), 8);
-  centrado(String(d.horario || '').toUpperCase(), 270.5, Y(296.4), 8);
-  { const t = L(String(d.jornada || '').toUpperCase()); let s = 8;
+  centrado(cartaTitulo(d.horario), 270.5, Y(296.4), 8);
+  { const t = L(cartaTitulo(d.jornada)); let s = 8;
     while(s > 5 && font.widthOfTextAtSize(t, s) > 180) s -= 0.25;
     p1.drawText(t, { x: 400.0 - font.widthOfTextAtSize(t, s) / 2, y: Y(298.4), size: s, font, color: negro }); }
 
-  // Requisitos (de la empresa; en mayúsculas como el modelo)
+  // Requisitos (de la empresa, respetando mayúsculas y minúsculas)
   txt(p1, 'Requisitos:', 66, Y(244.47));
-  const req = L(String(d.requisitos || '').toUpperCase()).trim();
+  const req = L(cartaOracion(d.requisitos)).trim();
   const lineasR = req ? cartaEnvolver(font, req, 10, 1, CARTA.ANCHO_REQ) : [];
 
   let yr = Y(223.5), pag2 = [];
@@ -157,12 +173,10 @@ async function generarCartaPdf(d){
   txtEspaciado(p2, 'misma forma.', 66, Z(668.9), 0.11847, 0.04739);
   txt(p2, 'Gracias por su atención y colaboración,', 66, Z(637.71));
   txt(p2, 'Cordialmente,', 66, Z(606.52));
-  txt(p2, 'COORDINACIÓN PRÁCTICAS', 66, Z(563.47));
-  txt(p2, 'POLITÉCNICO CAMPOALTO', 66, Z(548.27));
+  txt(p2, 'Coordinación Prácticas', 66, Z(563.47));
+  txt(p2, 'Politécnico Campoalto', 66, Z(548.27));
   txt(p2, 'PBX: 7 44 441 Ext. 1215', 66, Z(533.06));
   txt(p2, 'coordinacionpracticas@campoalto.edu.co', 66, Z(517.85));
-  txt(p2, 'Elaboró:', 66, Z(493.38), 8);
-  txt(p2, 'SANDRA  ORJUELA HUERTAS', 110, Z(493.38), 8);
 
   pdf.setTitle('Carta de presentación ' + d.documento);
   pdf.setAuthor('Politécnico Campoalto');
