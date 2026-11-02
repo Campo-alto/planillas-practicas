@@ -47,7 +47,9 @@ function empMonthEditorHtml(i){
   const m = rec.meses[i];
   const locked = !!m.bloqueado;
   const dis = locked ? 'disabled' : '';
-  const banner = locked ? `<div class="note-box" style="margin-bottom:12px;">🔒 Este mes ya fue guardado y quedó bloqueado. Si necesitas corregir una nota, pide al administrador que lo desbloquee.</div>` : '';
+  const banner = locked ? (m.congelado
+    ? `<div class="note-box" style="margin-bottom:12px;">🔒 Este mes fue calificado por la empresa anterior del estudiante y quedó protegido: no se puede modificar. Solo el administrador puede hacerlo.</div>`
+    : `<div class="note-box" style="margin-bottom:12px;">🔒 Este mes ya fue guardado y quedó bloqueado. Si necesitas corregir una nota, pide al administrador que lo desbloquee.</div>`) : '';
 
   const compRows = COMPETENCIAS.map(c=>{
     const current = rec.competencias[c.key][i];
