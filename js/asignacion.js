@@ -58,7 +58,7 @@ async function renderEmpresasCupos(){
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
     const { data, error } = await sb.from('empresas_practica')
-      .select('*, cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados,fecha_inicio,fecha_fin,horario,dias)')
+      .select('*, cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados,fecha_inicio,fecha_fin,horario,dias,funciones)')
       .order('nombre', { ascending: true });
     if(error) throw error;
     empresasCache = data || [];
@@ -136,10 +136,11 @@ function renderEmpresasListHtml(){
         <td><input type="date" class="cp-in" value="${esc(c.fecha_fin||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_fin',this.value)"></td>
         <td><input type="text" class="cp-in cp-txt" maxlength="60" value="${esc(c.horario||'')}" placeholder="08:00 A 17:00" onchange="actualizarCupoCampo('${c.id}','horario',this.value)"></td>
         <td><input type="text" class="cp-in cp-txt" maxlength="80" value="${esc(c.dias||'')}" placeholder="MIERCOLES" onchange="actualizarCupoCampo('${c.id}','dias',this.value)"></td>
+        <td><textarea class="cp-in cp-fun" rows="2" maxlength="1500" placeholder="Funciones que desempeñará el estudiante…" onchange="actualizarCupoCampo('${c.id}','funciones',this.value)">${esc(c.funciones||'')}</textarea></td>
         <td class="cp-c"><button class="danger cp-del" title="Quitar este cupo" onclick="eliminarCupo('${c.id}')">Quitar</button></td>
       </tr>`;
     }).join('');
-    const tabla = cupos.length ? `<div class="cupos-wrap"><table class="cupos-table"><thead><tr><th>Programa</th><th>Jornada</th><th class="cp-c">Cupos</th><th class="cp-c">Ocupados</th><th class="cp-c">Disponibles</th><th>Inicio</th><th>Fin</th><th>Horario</th><th>Días</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+    const tabla = cupos.length ? `<div class="cupos-wrap"><table class="cupos-table"><thead><tr><th>Programa</th><th>Jornada</th><th class="cp-c">Cupos</th><th class="cp-c">Ocupados</th><th class="cp-c">Disponibles</th><th>Inicio</th><th>Fin</th><th>Horario</th><th>Días</th><th>Funciones del estudiante</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<p style="color:var(--muted);font-size:13px;">Esta empresa todavía no tiene cupos.</p>';
     return `<div class="card" style="${emp.activa?'':'opacity:.65;'}">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
@@ -163,6 +164,7 @@ function renderEmpresasListHtml(){
         <div class="field"><label>Fecha finalización</label><input type="date" id="cupoFin-${emp.id}"></div>
         <div class="field"><label>Horario</label><input type="text" maxlength="60" id="cupoHor-${emp.id}" placeholder="08:00 A 17:00"></div>
         <div class="field"><label>Días (jornada en la carta)</label><input type="text" maxlength="80" id="cupoDia-${emp.id}" placeholder="MIERCOLES"></div>
+        <div class="field" style="grid-column:1 / -1;"><label>Funciones que desempeñará el estudiante (aparecen en la carta y al elegir la vacante)</label><textarea id="cupoFun-${emp.id}" rows="3" maxlength="1500" placeholder="Ej. Apoyo en toma de signos vitales, organización de historias clínicas, atención al usuario…"></textarea></div>
         <div class="field"><button class="primary" onclick="agregarCupo('${emp.id}')">Agregar cupos</button></div>
       </div>` : `<p style="margin:12px 0 0;color:var(--muted);font-size:13px;">Esta categoría no maneja cupos ni fechas de inscripción: solo aplican a prácticas no remuneradas.</p>`}
     </div>`;
@@ -235,7 +237,8 @@ async function agregarCupo(empresaId){
   const ini = document.getElementById('cupoIni-'+empresaId).value || null, fin = document.getElementById('cupoFin-'+empresaId).value || null;
   if(ini && fin && fin < ini){ toast('La fecha de finalización no puede ser anterior a la de inicio', true); return; }
   const { error } = await sb.from('cupos_empresa').insert({ empresa_id: empresaId, programa, jornada, cupos_total, fecha_inicio: ini, fecha_fin: fin,
-    horario: document.getElementById('cupoHor-'+empresaId).value.trim(), dias: document.getElementById('cupoDia-'+empresaId).value.trim() });
+    horario: document.getElementById('cupoHor-'+empresaId).value.trim(), dias: document.getElementById('cupoDia-'+empresaId).value.trim(),
+    funciones: (document.getElementById('cupoFun-'+empresaId)||{value:''}).value.trim() });
   if(error){ toast(error.code==='23505' ? 'Ya existe ese programa y jornada para esta empresa: edita el número de cupos.' : 'Error: '+error.message, true); return; }
   toast('Cupos agregados'); renderEmpresasCupos();
 }
@@ -374,6 +377,7 @@ async function renderAsignacionEstudiante(){
           ${fila('Fechas de la práctica',fechas)}
           ${fila('Horario',esc(a.horario||'—'))}
           ${fila('Días',esc(a.dias||'—'))}
+          ${fila('Funciones a desempeñar','<div style="white-space:pre-wrap;">'+esc(a.funciones||'La empresa aún no ha registrado las funciones.')+'</div>')}
           ${fila('Requisitos de la empresa','<div style="white-space:pre-wrap;">'+esc(a.requisitos||'La empresa no tiene requisitos registrados.')+'</div>')}
         </tbody></table>
         <div class="actions-row" style="justify-content:flex-start;margin-top:12px;">
@@ -407,10 +411,12 @@ async function renderAsignacionEstudiante(){
       <td><b>${esc(c.empresa)}</b>${c.requisitos?'<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--muted);">Ver requisitos</summary>'+esc(c.requisitos)+'</details>':''}</td>
       <td>${esc(c.direccion||'—')}${c.ciudad?'<br><span style="color:var(--muted);font-size:11.5px;">'+esc(c.ciudad)+'</span>':''}</td>
       <td>${esc(c.telefono||'—')}</td>
+      <td>${esc(c.dias||'—')}${c.horario?'<br><span style="color:var(--muted);font-size:11.5px;">'+esc(c.horario)+'</span>':''}</td>
+      <td style="white-space:pre-wrap;text-align:justify;">${esc(c.funciones||'—')}</td>
       <td><b style="color:var(--teal-dark);">${c.disponibles}</b> de ${c.total}</td>
       <td><button class="primary" style="padding:6px 12px;font-size:12.5px;" onclick="tomarCupo('${c.id}', this)">Tomar cupo</button></td>
     </tr>`).join('');
-    el.innerHTML = cab + `<table class="students-list asig-cupos"><thead><tr><th>Empresa</th><th>Dirección</th><th>Teléfono</th><th>Cupos disponibles</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    el.innerHTML = cab + `<table class="students-list asig-cupos"><thead><tr><th>Empresa</th><th>Dirección</th><th>Teléfono</th><th>Días y horario</th><th>Funciones a desempeñar</th><th>Cupos disponibles</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(errMsg(e))+'</p>'; }
 }
 async function tomarCupo(cupoId, btn){
@@ -502,7 +508,7 @@ function datosCarta(rec, a){
   return {
     contacto: a.contacto, empresa: a.empresa, direccion: a.direccion, telefono: a.telefono,
     estudiante: rec.nombre, documento: rec.documento, programa: rec.programa,
-    inicio: a.fecha_inicio, fin: a.fecha_fin, horario: a.horario, jornada: a.dias || a.jornada, requisitos: a.requisitos
+    inicio: a.fecha_inicio, fin: a.fecha_fin, horario: a.horario, jornada: a.dias || a.jornada, requisitos: a.requisitos, funciones: a.funciones
   };
 }
 async function descargarCartaEstudiante(){
