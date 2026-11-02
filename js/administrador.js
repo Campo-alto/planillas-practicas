@@ -40,11 +40,12 @@ function organizarPestanasAdmin(){
   const cards = {
     datos: datos,
     acceso: acceso ? acceso.closest('.card') : null,
-    estado: resumen.closest('.card')
+    estado: resumen.closest('.card'),
+    peligro: document.getElementById('admPeligroCard')
   };
-  // orden: datos → acceso → estado (todas quedan juntas, una tras otra)
+  // orden: datos → acceso → estado → zona de peligro (siempre la última)
   let ref = cards.datos;
-  ['acceso','estado'].forEach(k=>{
+  ['acceso','estado','peligro'].forEach(k=>{
     if(cards[k] && cards[k] !== ref.nextElementSibling){ ref.insertAdjacentElement('afterend', cards[k]); }
     if(cards[k]) ref = cards[k];
   });
@@ -57,7 +58,8 @@ function organizarPestanasAdmin(){
   bar.innerHTML =
     '<button class="tab" id="admTab-datos" onclick="showAdmTab(\'datos\')">Datos generales</button>'+
     '<button class="tab" id="admTab-acceso" onclick="showAdmTab(\'acceso\')">Acceso del estudiante</button>'+
-    '<button class="tab" id="admTab-estado" onclick="showAdmTab(\'estado\')">Estado de la planilla</button>';
+    '<button class="tab" id="admTab-estado" onclick="showAdmTab(\'estado\')">Estado de la planilla</button>'+
+    '<button class="tab tab-peligro" id="admTab-peligro" onclick="showAdmTab(\'peligro\')">⚠ Zona de peligro</button>';
   showAdmTab(admTabActual);
 }
 function showAdmTab(tab){
@@ -67,7 +69,8 @@ function showAdmTab(tab){
   const cards = {
     datos: document.getElementById('admDatosGenerales'),
     acceso: acceso ? acceso.closest('.card') : null,
-    estado: resumen ? resumen.closest('.card') : null
+    estado: resumen ? resumen.closest('.card') : null,
+    peligro: document.getElementById('admPeligroCard')
   };
   Object.keys(cards).forEach(k=>{
     if(cards[k]) cards[k].style.display = (k === tab) ? '' : 'none';
