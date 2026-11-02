@@ -30,7 +30,7 @@ function mesCalificado(rec, i){
   return COMPETENCIAS.every(c => rec.competencias[c.key][i] != null);
 }
 const CODIGO = 'PPS-GAA-F-006';
-const VERSION_FORMATO = '8';
+const VERSION_FORMATO = '9';
 
 // Texto exacto de los 5 niveles de desempeño por criterio, tomado del formato
 // oficial PPS-GAA-F-006, usado para reconstruir el PDF con el mismo formato.
