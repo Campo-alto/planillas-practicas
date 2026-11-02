@@ -14,19 +14,19 @@ function ieStr(v, max){ return String(v==null?'':v).replace(/^'(?=[=+\-@])/, '')
 const IE_DATASETS = {
   estudiantes: {
     titulo: 'Estudiantes', archivo: 'estudiantes',
-    cols: ['Documento','Apellidos','Nombres','Correo','Teléfono','Sede','Semestre','Modalidad','Periodo académico','Funcionario','Programa','Jornada solicitada'],
-    ejemplo: ['1128108664','Pérez Gómez','Ana María','ana@correo.com','3001234567','Sede Norte','3','Prácticas No Remuneradas','2026-2','','','Mañana'],
-    aliases: { documento:'documento', apellidos:'apellidos', nombres:'nombres', correo:'correo', 'correo electronico':'correo', telefono:'telefono', celular:'telefono',
+    cols: ['Documento','Nombre completo','Correo','Teléfono','Sede','Semestre','Modalidad','Periodo académico','Funcionario','Programa','Jornada solicitada'],
+    ejemplo: ['1128108664','Ana María Pérez Gómez','ana@correo.com','3001234567','Sede Norte','3','Prácticas No Remuneradas','2026-2','','','Mañana'],
+    aliases: { documento:'documento', 'nombre completo':'nombre', nombre:'nombre', 'nombres y apellidos':'nombre', 'apellidos y nombres':'nombre', estudiante:'nombre', 'nombre del estudiante':'nombre', apellidos:'apellidos', nombres:'nombres', correo:'correo', 'correo electronico':'correo', telefono:'telefono', celular:'telefono',
                sede:'sede', semestre:'semestre', modalidad:'modalidad', 'periodo academico':'periodo', periodo:'periodo', funcionario:'funcionario',
                'funcionario que procesa':'funcionario', programa:'programa', jornada:'jornada', 'jornada solicitada':'jornada' },
     importable: true,
     async exportar(){
-      const { data, error } = await sb.from('students').select('documento,apellidos,nombres,nombre,correo,telefono,sede,semestre,modalidad,periodo_academico,funcionario,programa,jornada_solicitada').order('apellidos');
+      const { data, error } = await sb.from('students').select('documento,nombre,correo,telefono,sede,semestre,modalidad,periodo_academico,funcionario,programa,jornada_solicitada').order('nombre');
       if(error) throw error;
       const asig = {};
       try{ const r = await sb.rpc('admin_list_asignaciones'); (r.data||[]).forEach(a=>{ if(a.estado==='activa') asig[a.documento] = a.empresa; }); }catch(_){}
       return { head: this.cols.concat(['Empresa asignada']),
-        rows: (data||[]).map(s=>[s.documento, s.apellidos||s.nombre, s.nombres, s.correo, s.telefono, s.sede, s.semestre, s.modalidad, s.periodo_academico, s.funcionario, s.programa, s.jornada_solicitada, asig[s.documento]||'']) };
+        rows: (data||[]).map(s=>[s.documento, s.nombre, s.correo, s.telefono, s.sede, s.semestre, s.modalidad, s.periodo_academico, s.funcionario, s.programa, s.jornada_solicitada, asig[s.documento]||'']) };
     },
     async preparar(filas){
       await loadProgramas();
@@ -37,8 +37,9 @@ const IE_DATASETS = {
         const doc = ieStr(r.documento, 20);
         if(!/^[0-9A-Za-z]{5,20}$/.test(doc)) e.push('documento inválido (5 a 20 letras o números)');
         if(vistos.has(doc)) e.push('documento repetido en el archivo'); vistos.add(doc);
-        const ape = ieStr(r.apellidos), nom = ieStr(r.nombres);
-        if(!ape && !nom) e.push('falta apellidos o nombres');
+        // Se pide el nombre completo; si el archivo es del formato anterior (Apellidos + Nombres) se unen
+        const nombre = ieStr(r.nombre) || nombreCompletoDesde(ieStr(r.apellidos), ieStr(r.nombres));
+        if(nombre.length < 3) e.push('falta el nombre completo');
         let modalidad = ieStr(r.modalidad).replace(/\s*\(.*\)\s*$/, '');
         if(modalidad){
           const m = MODALIDADES.find(x=>ieNorm(x.nombre)===ieNorm(modalidad));
@@ -49,10 +50,10 @@ const IE_DATASETS = {
         let programa = ieStr(r.programa, 250);
         if(programa){ const p = progs.find(x=>ieNorm(x)===ieNorm(programa)); if(!p) e.push('el programa "'+programa+'" no existe en el módulo Programas'); else programa = p; }
         if(e.length) errores.push({ fila: f.n, msg: e.join('; ') });
-        else validas.push({ fila: f.n, doc, ape, nom, correo: ieStr(r.correo), telefono: ieStr(r.telefono,40), sede: ieStr(r.sede,100), semestre: ieStr(r.semestre,40),
+        else validas.push({ fila: f.n, doc, nombre, correo: ieStr(r.correo), telefono: ieStr(r.telefono,40), sede: ieStr(r.sede,100), semestre: ieStr(r.semestre,40),
                             modalidad, periodo: ieStr(r.periodo,40), funcionario: ieStr(r.funcionario,150), programa, jornada });
       });
-      return { validas, errores, resumen: v=>v.doc+' · '+(v.ape+' '+v.nom).trim() };
+      return { validas, errores, resumen: v=>v.doc+' · '+v.nombre };
     },
     async confirmar(validas, opts){
       const { data: ex } = await sb.from('students').select('documento');
@@ -61,7 +62,7 @@ const IE_DATASETS = {
       validas.forEach(v=>{
         if(existentes.has(v.doc)){ if(opts.actualizar) act.push(v); return; }
         const rec = emptyRecord(v.doc);
-        rec.apellidos = v.ape; rec.nombres = v.nom; rec.nombre = nombreCompletoDesde(v.ape, v.nom);
+        rec.nombre = v.nombre;
         rec.correo = v.correo; rec.telefono = v.telefono; rec.sede = v.sede; rec.semestre = v.semestre; rec.modalidad = v.modalidad;
         rec.periodoAcademico = v.periodo; rec.funcionario = v.funcionario; rec.programa = v.programa || PROGRAMA; rec.jornadaSolicitada = v.jornada;
         nuevos.push(recordToRow(rec));
@@ -74,7 +75,7 @@ const IE_DATASETS = {
       }
       for(const v of act){
         const upd = { updated_at: new Date().toISOString() };
-        if(v.ape || v.nom){ upd.apellidos = v.ape; upd.nombres = v.nom; upd.nombre = nombreCompletoDesde(v.ape, v.nom); }
+        if(v.nombre) upd.nombre = v.nombre;
         if(v.correo) upd.correo = v.correo; if(v.telefono) upd.telefono = v.telefono; if(v.sede) upd.sede = v.sede;
         if(v.semestre) upd.semestre = v.semestre; if(v.modalidad) upd.modalidad = v.modalidad; if(v.periodo) upd.periodo_academico = v.periodo;
         if(v.funcionario) upd.funcionario = v.funcionario; if(v.programa) upd.programa = v.programa; if(v.jornada) upd.jornada_solicitada = v.jornada;
@@ -374,7 +375,7 @@ function abrirImportExport(){
       '</div>';
   };
   body.innerHTML =
-    card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Apellidos o Nombres. Modalidad, Programa y Jornada deben escribirse como en la aplicación (revisa la plantilla).') +
+    card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Nombre completo. Modalidad, Programa y Jornada deben escribirse como en la aplicación (revisa la plantilla).') +
     card('empresas','🏢','Una fila por empresa y, si es de prácticas no remuneradas, puedes agregar Programa, Jornada y Cupos (repite la empresa en varias filas para varios cupos). Categorías: ' + CATEGORIAS_EMPRESA.map(c=>c.nombre).join(' · ') + '.') +
     card('supervisores','👤','Crea o actualiza supervisores. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.') +
     card('ca_empresas','🤝','Empresas que reciben aprendices (contrato de aprendizaje). Una fila por empresa; "Verificada SENA" = Sí las deja aprobadas. Se enlazan con el módulo Empresas por NIT o nombre.') +
