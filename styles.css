@@ -246,3 +246,12 @@
 .ficha-mes{border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:#FCFBF8;}
 .ficha-mes-title{font-weight:700;color:var(--deep);font-size:15px;margin-bottom:6px;}
 @media(max-width:640px){.ficha-table th,.ficha-table td{display:block;width:auto;border-left:0!important;}.ficha-table th{border-top:1px solid var(--line);padding-bottom:2px;background:#fff;}.ficha-table td{border-top:0;padding-top:0;}}
+
+/* ---- Listado de estudiantes registrados ---- */
+.lista-barra{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px;}
+.lista-busca{flex:1 1 280px;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;}
+.lista-busca:focus{outline:2px solid var(--teal);border-color:var(--teal);}
+.lista-chk{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
+.lista-acc{display:flex;gap:6px;margin-left:auto;}
+.lista-cuenta{font-size:12.5px;color:var(--muted);margin:2px 0 8px;}
+.lista-est{min-width:1050px;} .lista-est tbody tr{cursor:pointer;}
