@@ -378,3 +378,17 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .rp-op:has(input:checked){border-color:var(--danger);background:#FDF5F3;}
 .rp-op input{margin-top:4px;}
 .rp-op small{color:var(--muted);}
+
+/* ---- Asignación de práctica (vista del estudiante) ---- */
+.asig-ok{background:#E3F3EA;border:1px solid #A9D8BF;color:#1E6B4A;border-radius:8px;padding:10px 14px;font-weight:600;margin-bottom:12px;}
+.asig-tabla{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:14px;}
+.asig-tabla th,.asig-tabla td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top;}
+.asig-tabla tbody th[scope=row]{background:#E6F1F0;color:var(--deep);width:30%;font-weight:600;}
+.asig-tabla td{background:#fff;text-align:justify;}
+.asig-tabla tbody tr:nth-child(even) td{background:#F7FAFA;}
+.asig-tabla tr.asig-titulo th{background:var(--deep);color:#fff;text-transform:uppercase;letter-spacing:.04em;font-size:12.5px;width:auto;}
+.asig-mini th[scope=row]{width:auto;white-space:nowrap;}
+.asig-cupos td,.asig-cupos th{border:1px solid var(--line);}
+.asig-cupos thead th{background:var(--deep);color:#fff;}
+.asig-cupos tbody tr:nth-child(even){background:#F7FAFA;}
+@media(max-width:640px){ .asig-tabla tbody th[scope=row]{width:38%;} .asig-tabla th,.asig-tabla td{padding:8px 10px;} }
