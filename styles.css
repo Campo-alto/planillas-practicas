@@ -394,3 +394,12 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 @media(max-width:640px){ .asig-tabla tbody th[scope=row]{width:38%;} .asig-tabla th,.asig-tabla td{padding:8px 10px;} }
 
 .cp-fun{min-width:220px;width:100%;resize:vertical;font:inherit;font-size:12.5px;}
+
+/* ---- Editor de la rúbrica ---- */
+.rub-ed{margin-bottom:14px;}
+.rub-ed-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--deep,#14403B);}
+.rub-ed-acc{display:flex;gap:6px;}
+.rub-ed-niv{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:6px;}
+.rub-ed-niv textarea{width:100%;font:inherit;font-size:12.5px;resize:vertical;}
+@media(max-width:1100px){ .rub-ed-niv{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:640px){ .rub-ed-niv{grid-template-columns:1fr;} }
