@@ -66,9 +66,20 @@ async function renderEmpresasCupos(){
       const r = await sb.rpc('admin_list_role_accounts');
       accesosCache = (r.data || []).filter(u=>u.role==='empresa');
     }catch(_){ accesosCache = []; }
+    caPorFicha = {};
+    try{
+      const rc = await sb.rpc('admin_ca_empresas');
+      (rc.data || []).forEach(c=>{ if(c.empresa_practica_id) caPorFicha[c.empresa_practica_id] = c; });
+    }catch(_){ caPorFicha = {}; }
     renderEmpresasListHtml();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(e.message)+'</p>'; }
   renderAsignacionesAdmin();
+}
+var caPorFicha = {};
+function caChipFicha(emp){
+  const c = caPorFicha[emp.id]; if(!c) return '';
+  const est = c.estado==='aprobada' ? 'aprobada' : (c.estado==='pendiente' ? 'pendiente de aprobación' : 'rechazada');
+  return '<br><span class="pill" style="background:#EEF3E4;color:#3B5B16;">Contrato de aprendizaje · '+est+' · '+c.ofertas+' solicitud(es) · '+c.contratados+' contratado(s)</span>';
 }
 function renderEmpresasListHtml(){
   const el = document.getElementById('empresasList');
@@ -105,7 +116,7 @@ function renderEmpresasListHtml(){
     return `<div class="card" style="${emp.activa?'':'opacity:.65;'}">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
         <div>
-          <b style="font-size:15px;">${esc(emp.nombre)}</b> <span class="pill" style="background:#E6F1F0;color:var(--deep);">${esc(nombreCategoria(emp.categoria||'practica_no_remunerada'))}</span> ${emp.activa?'':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>'}<br>
+          <b style="font-size:15px;">${esc(emp.nombre)}</b> <span class="pill" style="background:#E6F1F0;color:var(--deep);">${esc(nombreCategoria(emp.categoria||'practica_no_remunerada'))}</span> ${emp.activa?'':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>'}${caChipFicha(emp)}<br>
           <span style="color:var(--muted);font-size:12.5px;">${esc(emp.direccion||'—')}${emp.ciudad?' · '+esc(emp.ciudad):''} · Tel. ${esc(emp.telefono||'—')}${emp.nit?' · NIT '+esc(emp.nit):''}</span>
         </div>
         <div style="white-space:nowrap;">
