@@ -438,7 +438,7 @@ function caAdmEmp(){
   b.innerHTML = caExpBar() + masivo + form + (L.length ? `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Contacto</th><th>Origen</th><th>Estado</th><th>Plataforma SENA y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
     <td class="cp-prog"><b>${esc(x.razon_social)}</b><br><small>NIT ${esc(x.nit)} · ${esc(x.ciudad||'')}</small><br><small>${x.ficha?'🔗 Enlazada con Empresas: '+esc(x.ficha):'Sin enlazar a Empresas (se enlaza al aprobarla)'}</small><br><small>${x.ofertas} solicitud(es) · ${x.contratados} contratado(s)</small></td><td>${esc(x.contacto||'—')}<br><small>${esc(x.email)} ${esc(x.telefono||'')}</small></td><td>${x.origen==='autoregistro'?'Se registró sola':'Creada por la institución'}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="em-s-${x.id}" ${x.sena?'checked':''}> En plataforma SENA</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="em-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
-    <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmEmpEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmEmpEstado('${x.id}','rechazada')">Rechazar</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">No hay empresas registradas.</p>');
+    <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmEmpEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmEmpEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEmpEliminar('${x.id}', ${x.contratados})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">No hay empresas registradas.</p>');
 }
 async function caAdmSinAcceso(){
   const box = caAdmInfo('caSinAcceso'); if(!box) return;
@@ -456,6 +456,11 @@ function caAdmPrecargar(i){
   set('ne-pass', typeof generarClaveLocal==='function' ? generarClaveLocal() : '');
   const d = caAdmInfo('ne-razon').closest('details'); if(d){ d.open = true; d.scrollIntoView({ behavior:'smooth', block:'center' }); }
   toast('Datos cargados: completa el correo si falta y guarda. Anota la contraseña generada.');
+}
+async function caAdmEmpEliminar(id, contratados){
+  if(contratados > 0){ toast('Tiene estudiantes contratados: no se puede eliminar. Usa Rechazar para bloquear su acceso.', true); return; }
+  if(!confirm('¿Eliminar esta empresa del portal de contrato de aprendizaje?\n\nSe borran su acceso, sus solicitudes y los procesos en curso. La ficha en el módulo Empresas se conserva. No se puede deshacer.')) return;
+  try{ await caRpc('admin_ca_eliminar_empresa', { p_id: id }); toast('Empresa eliminada'); caAdmPintar(); }catch(e){ toast(e.message, true); }
 }
 async function caAdmEmpEstado(id, estado){
   try{ await caRpc('admin_ca_empresa_estado', { p_id: id, p_estado: estado, p_sena: caAdmInfo('em-s-'+id).checked, p_obs: caAdmInfo('em-o-'+id).value }); toast('Empresa ' + (estado==='aprobada'?'aprobada':'rechazada')); caAdmPintar(); }catch(e){ toast(e.message, true); }
