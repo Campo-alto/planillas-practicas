@@ -351,9 +351,23 @@ async function caPintarProcesos(){
     if(p.estado==='entrevista') a.push(`<button class="primary" onclick="caAccion('${p.id}','seleccionar')">Seleccionar</button>`);
     if(['postulado','entrevista','seleccionado'].includes(p.estado)) a.push(`<button class="danger" onclick="caAccion('${p.id}','descartar')">Descartar</button>`);
     return `${caChip(p.estado)} <small>${esc(p.oferta)} · ${p.origen==='estudiante'?'se postuló':'llamado por la empresa'}</small><br>${a.join(' ')}`; };
-  body.innerHTML = '<div class="section-bar teal">Procesos</div>' + (act.length ? act.map(p=>caCandCard(p, btn(p))).join('') : '<p class="helptext">No hay procesos activos.</p>') +
-    (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="cupos-wrap"><table class="cupos-table" style="min-width:420px"><thead><tr><th>Solicitud</th><th>Resultado</th><th>Fecha</th></tr></thead><tbody>${cer.map(p=>`<tr><td>${esc(p.oferta)}</td><td>${caChip(p.estado)}</td><td>${caFmt(p.desde)}</td></tr>`).join('')}</tbody></table></div>` : '');
+  const fila = (p, i, abiertos)=>{
+    const vis = !!p.nombre;
+    return `<tr class="ca-fila">
+      <td class="cp-c">${i+1}</td>
+      <td class="cp-prog"><b>${vis?esc(p.nombre):'Candidato '+(i+1)}</b>${vis?`<br><small>✉ ${esc(p.correo||'—')}<br>☎ ${esc(p.telefono||'—')}</small>`:'<br><small class="ca-oculto">Datos de contacto reservados hasta la entrevista</small>'}</td>
+      <td>${esc(p.semestre||'—')}</td><td>${esc(p.ciudad||'—')}</td>
+      <td>${esc(p.oferta)}</td>
+      <td>${p.origen==='estudiante'?'Se postuló':'La empresa lo llamó'}</td>
+      <td>${caChip(p.estado)}</td><td>${caFmt(p.desde)}</td>
+      <td><div class="ca-acc-col">${abiertos ? btn(p) : ''}<button class="ghost cp-del" onclick="caVerPerfil('${p.id}')">Ver hoja de vida</button></div></td></tr>
+      <tr class="ca-perfil" id="caPerfil-${p.id}" style="display:none"><td colspan="9">${caCandCard(p, '')}</td></tr>`; };
+  const cab = '<thead><tr><th>N.º</th><th>Candidato</th><th>Semestre</th><th>Ciudad</th><th>Solicitud</th><th>Origen</th><th>Estado</th><th>Desde</th><th>Acciones</th></tr></thead>';
+  body.innerHTML = '<div class="section-bar teal">Procesos</div>' +
+    (act.length ? `<p class="helptext" style="margin:4px 0">${act.length} proceso(s) activo(s)</p><div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:900px">${cab}<tbody>${act.map((p,i)=>fila(p,i,true)).join('')}</tbody></table></div>` : '<p class="helptext">No hay procesos activos.</p>') +
+    (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="cupos-wrap"><table class="cupos-table ca-tabla ca-cerrados" style="min-width:900px">${cab}<tbody>${cer.map((p,i)=>fila(p,i,false)).join('')}</tbody></table></div>` : '');
 }
+function caVerPerfil(id){ const r = document.getElementById('caPerfil-'+id); if(r) r.style.display = r.style.display==='none' ? '' : 'none'; }
 let caPlanLista = [], caPlanQ = '';
 async function caPintarPlanillas(){
   const body = document.getElementById('caEmpBody');
@@ -535,7 +549,7 @@ function caAdmPro(){
   if(!L.length){ b.innerHTML = '<p class="helptext">Aún no hay postulaciones.</p>'; return; }
   const sel = L.filter(x=>x.estado==='seleccionado').length;
   b.innerHTML = caExpBar() + (sel ? `<div class="note-box" style="margin-bottom:10px">📋 <b>${sel}</b> estudiante(s) seleccionado(s) por la empresa esperan tu confirmación.</div>` : '') +
-    `<div class="cupos-wrap"><table class="cupos-table" style="min-width:860px"><thead><tr><th>Estudiante</th><th>Programa</th><th>Empresa / cargo</th><th>Origen</th><th>Estado</th><th>Desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
+    `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:860px"><thead><tr><th>Estudiante</th><th>Programa</th><th>Empresa / cargo</th><th>Origen</th><th>Estado</th><th>Desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
     <td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>${esc(x.documento)}</small></td><td>${esc(x.programa||'—')}</td><td><b>${esc(x.empresa)}</b><br><small>${esc(x.cargo)}</small></td>
     <td>${x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'}</td><td>${caChip(x.estado)}</td><td>${caFmt(x.desde)}</td>
     <td><div class="ca-acc-col">${x.estado==='seleccionado'?`<button class="primary cp-del" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button>`:''}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('proceso','${x.id}',${x.estado==='contratado'})">🗑 ${x.estado==='contratado'?'Quitar contratación':'Eliminar'}</button></div></td></tr>`).join('')}</tbody></table></div>`;
