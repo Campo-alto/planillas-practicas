@@ -4,12 +4,7 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
     return `
       <div class="section-bar">Datos generales del estudiante</div>
       <div class="field-row">
-        <div class="field"><label>Apellidos</label><input id="${formIdPrefix}-apellidos" value="${escapeAttr(rec.apellidos)}" oninput="updateNombrePreview('${formIdPrefix}')"></div>
-        <div class="field"><label>Nombres</label><input id="${formIdPrefix}-nombres" value="${escapeAttr(rec.nombres)}" oninput="updateNombrePreview('${formIdPrefix}')"></div>
-        <div class="field">
-          <label>Nombre completo (se arma solo)</label>
-          <input id="${formIdPrefix}-nombre-preview" value="${escapeAttr(rec.nombre)}" disabled style="background:#F3F0E8;color:var(--muted);">
-        </div>
+        <div class="field" style="grid-column:1/-1;max-width:640px"><label>Nombre completo del estudiante</label><input id="${formIdPrefix}-nombre" value="${escapeAttr(rec.nombre)}" maxlength="150" placeholder="Ej. Ana María Pérez Gómez"></div>
         <div class="field"><label>Correo</label><input id="${formIdPrefix}-correo" value="${escapeAttr(rec.correo)}"></div>
         <div class="field"><label>Teléfono</label><input id="${formIdPrefix}-telefono" value="${escapeAttr(rec.telefono)}"></div>
         <div class="field"><label>Sede</label><input id="${formIdPrefix}-sede" value="${escapeAttr(rec.sede)}"></div>
