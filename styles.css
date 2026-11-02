@@ -362,3 +362,11 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .students-list tbody tr:hover td,.resumen-table tbody tr:hover td{background:#EAF4F5;}
 .resumen-table tr.rowlink.active-month td{background:#DDF0EC!important;}
 .cupos-table .cp-c,.students-list .cp-c,.resumen-table .cp-c{text-align:center;}
+
+/* ---- Rúbrica en solo lectura (estudiante) ---- */
+.rub-cell.rub-ro{cursor:default;color:#6b6b6b;}
+.rub-cell.rub-ro:hover{background:#fff;}
+.rub-cell.rub-ro.sel{color:var(--ink,#222);font-weight:500;}
+.rub-tu{display:block;font-size:11px;font-weight:700;color:var(--teal-dark,#1F6F66);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+.rub-res{margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;}
+.rub-res.ok{color:var(--teal-dark,#1F6F66);}
