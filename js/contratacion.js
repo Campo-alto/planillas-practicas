@@ -315,14 +315,27 @@ async function caCrearOferta(){
   }catch(e){ caMsg('ofMsg', e.message); }
 }
 
-function caCandCard(c, acciones){
-  const f = (c.formacion||[]).map(x=>`${esc(x.titulo)}${x.institucion?' · '+esc(x.institucion):''}${x.anio?' ('+esc(x.anio)+')':''}`).join('<br>') || '—';
-  const x = (c.experiencia||[]).map(y=>`${esc(y.cargo)}${y.empresa?' · '+esc(y.empresa):''}${y.periodo?' ('+esc(y.periodo)+')':''}${y.descripcion?': '+esc(y.descripcion):''}`).join('<br>') || '—';
-  return `<div class="ca-cand"><div class="ca-cand-head"><b>${c.nombre?esc(c.nombre):'Candidato'}</b> <span class="cupo-jor">Semestre ${esc(c.semestre||'—')}</span> <span class="cupo-jor">${esc(c.ciudad||'—')}</span></div>
-    ${c.nombre?`<div class="ca-contacto">✉ ${esc(c.correo||'—')} · ☎ ${esc(c.telefono||'—')}</div>`:''}
-    <p>${esc(c.perfil||'')}</p><div class="ca-cand-grid"><div><span>Habilidades</span>${esc(c.habilidades||'—')}</div><div><span>Disponibilidad</span>${esc(c.disponibilidad||'—')}</div><div><span>Formación</span>${f}</div><div><span>Experiencia</span>${x}</div>
-      ${c.idiomas?`<div><span>Idiomas</span>${esc(c.idiomas)}</div>`:''}${c.herramientas?`<div><span>Herramientas</span>${esc(c.herramientas)}</div>`:''}${(c.cursos&&c.cursos.length)?`<div><span>Cursos y certificaciones</span>${c.cursos.map(y=>esc(y.titulo)+(y.institucion?' · '+esc(y.institucion):'')+(y.anio?' ('+esc(y.anio)+')':'')).join('<br>')}</div>`:''}${c.logros?`<div><span>Logros</span>${esc(c.logros)}</div>`:''}</div>
-    <div class="ca-acc">${acciones}</div></div>`;
+// Ficha vertical tipo formulario: una fila por dato (etiqueta a la izquierda, valor a la derecha)
+function caFila(t, v){ return (v===undefined || v===null || v==='') ? '' : `<div class="ca-f"><dt>${t}</dt><dd>${v}</dd></div>`; }
+function caFicha(titulo, chip, filas, acciones){
+  return `<div class="ca-form"><div class="ca-form-head"><b>${titulo}</b>${chip||''}</div><dl class="ca-form-body">${filas.join('')}</dl>${acciones?`<div class="ca-acc ca-form-acc">${acciones}</div>`:''}</div>`;
+}
+function caCandCard(c, acciones, meta){
+  meta = meta || {};
+  const f = (c.formacion||[]).map(x=>`${esc(x.titulo)}${x.institucion?' · '+esc(x.institucion):''}${x.anio?' ('+esc(x.anio)+')':''}`).join('<br>');
+  const x = (c.experiencia||[]).map(y=>`${esc(y.cargo)}${y.empresa?' · '+esc(y.empresa):''}${y.periodo?' ('+esc(y.periodo)+')':''}${y.descripcion?': '+esc(y.descripcion):''}`).join('<br>');
+  const cu = (c.cursos||[]).map(y=>esc(y.titulo)+(y.institucion?' · '+esc(y.institucion):'')+(y.anio?' ('+esc(y.anio)+')':'')).join('<br>');
+  const contacto = `✉ ${esc(c.correo||'—')}<br>☎ ${esc(c.telefono||'—')}`;
+  const filas = [
+    caFila('Nombre completo', c.nombre ? '<b>'+esc(c.nombre)+'</b>' : 'Candidato'),
+    caFila('Documento', c.documento ? esc(c.documento) : ''),
+    caFila('Semestre', esc(c.semestre||'—')), caFila('Ciudad', esc(c.ciudad||'—')),
+    caFila('Solicitud', meta.solicitud ? esc(meta.solicitud) : ''), caFila('Origen', meta.origen || ''), caFila('Fecha', meta.fecha || ''),
+    caFila('Datos de contacto', contacto),
+    caFila('Perfil', esc(c.perfil||'')), caFila('Habilidades', esc(c.habilidades||'—')), caFila('Disponibilidad', esc(c.disponibilidad||'—')),
+    caFila('Idiomas', esc(c.idiomas||'')), caFila('Herramientas', esc(c.herramientas||'')),
+    caFila('Formación', f||'—'), caFila('Experiencia', x||'—'), caFila('Cursos y certificaciones', cu), caFila('Logros', esc(c.logros||''))];
+  return caFicha(c.nombre ? esc(c.nombre) : 'Candidato', meta.chip || `<span class="cupo-jor">Semestre ${esc(c.semestre||'—')}</span>`, filas, acciones);
 }
 async function caPintarCandidatos(){
   const body = document.getElementById('caEmpBody');
@@ -334,7 +347,7 @@ async function caPintarCandidatos(){
 async function caCargarCand(){
   const el = document.getElementById('caCandList'); const id = document.getElementById('caOfSel').value; el.innerHTML = '<p class="helptext">Cargando…</p>';
   try{ const list = await caRpc('ca_emp_candidatos', { p_token: state.token, p_oferta: id });
-    if(list.length){ el.innerHTML = `<p class="helptext">${list.length} candidato(s) disponible(s). Ves su perfil sin nombre ni contacto; al llamarlo a entrevista se te muestran sus datos.</p>` + list.map(c=>caCandCard(c, `<button class="primary" onclick="caTomar('${id}','${c.id}')">Llamar a entrevista</button>`)).join(''); return; }
+    if(list.length){ el.innerHTML = `<p class="helptext">${list.length} candidato(s) disponible(s). Ves su nombre, correo, teléfono y hoja de vida.</p>` + list.map(c=>caCandCard(c, `<button class="primary" onclick="caTomar('${id}','${c.id}')">Llamar a entrevista</button>`)).join(''); return; }
     let inf = null; try{ inf = await caRpc('ca_emp_candidatos_info', { p_token: state.token, p_oferta: id }); }catch(_){}
     el.innerHTML = `<div class="note-box"><b>Todavía no hay candidatos para esta solicitud.</b> Un estudiante aparece aquí cuando: se inscribió, la institución lo declaró <b>apto</b>, completó su <b>hoja de vida</b>, es del <b>mismo programa</b> de la solicitud y no está en otro proceso.${inf ? `<br><br>Estudiantes del programa — inscritos: <b>${inf.inscritos}</b> · aptos: <b>${inf.aptos}</b> · con hoja de vida completa: <b>${inf.con_hv}</b> · ya en otro proceso: <b>${inf.en_proceso}</b>.` : ''}<br>Los estudiantes también pueden postularse solos a tu solicitud: esos aparecen en la pestaña <b>Procesos</b>.</div>`;
   }catch(e){ el.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; }
@@ -350,24 +363,12 @@ async function caPintarProcesos(){
     if(p.estado==='postulado') a.push(`<button class="primary" onclick="caAccion('${p.id}','entrevista')">Llamar a entrevista</button>`);
     if(p.estado==='entrevista') a.push(`<button class="primary" onclick="caAccion('${p.id}','seleccionar')">Seleccionar</button>`);
     if(['postulado','entrevista','seleccionado'].includes(p.estado)) a.push(`<button class="danger" onclick="caAccion('${p.id}','descartar')">Descartar</button>`);
-    return `${caChip(p.estado)} <small>${esc(p.oferta)} · ${p.origen==='estudiante'?'se postuló':'llamado por la empresa'}</small><br>${a.join(' ')}`; };
-  const fila = (p, i, abiertos)=>{
-    const vis = !!p.nombre;
-    return `<tr class="ca-fila">
-      <td class="cp-c">${i+1}</td>
-      <td class="cp-prog"><b>${vis?esc(p.nombre):'Candidato '+(i+1)}</b>${vis?`<br><small>✉ ${esc(p.correo||'—')}<br>☎ ${esc(p.telefono||'—')}</small>`:'<br><small class="ca-oculto">Datos de contacto reservados hasta la entrevista</small>'}</td>
-      <td>${esc(p.semestre||'—')}</td><td>${esc(p.ciudad||'—')}</td>
-      <td>${esc(p.oferta)}</td>
-      <td>${p.origen==='estudiante'?'Se postuló':'La empresa lo llamó'}</td>
-      <td>${caChip(p.estado)}</td><td>${caFmt(p.desde)}</td>
-      <td><div class="ca-acc-col">${abiertos ? btn(p) : ''}<button class="ghost cp-del" onclick="caVerPerfil('${p.id}')">Ver hoja de vida</button></div></td></tr>
-      <tr class="ca-perfil" id="caPerfil-${p.id}" style="display:none"><td colspan="9">${caCandCard(p, '')}</td></tr>`; };
-  const cab = '<thead><tr><th>N.º</th><th>Candidato</th><th>Semestre</th><th>Ciudad</th><th>Solicitud</th><th>Origen</th><th>Estado</th><th>Desde</th><th>Acciones</th></tr></thead>';
+    return a.join(' '); };
+  const ficha = (p, abiertos)=> caCandCard(p, abiertos ? btn(p) : '', { solicitud: p.oferta, origen: p.origen==='estudiante'?'Se postuló':'La empresa lo llamó', fecha: caFmt(p.desde), chip: caChip(p.estado) });
   body.innerHTML = '<div class="section-bar teal">Procesos</div>' +
-    (act.length ? `<p class="helptext" style="margin:4px 0">${act.length} proceso(s) activo(s)</p><div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:900px">${cab}<tbody>${act.map((p,i)=>fila(p,i,true)).join('')}</tbody></table></div>` : '<p class="helptext">No hay procesos activos.</p>') +
-    (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="cupos-wrap"><table class="cupos-table ca-tabla ca-cerrados" style="min-width:900px">${cab}<tbody>${cer.map((p,i)=>fila(p,i,false)).join('')}</tbody></table></div>` : '');
+    (act.length ? `<p class="helptext" style="margin:4px 0">${act.length} proceso(s) activo(s)</p><div class="ca-fichas">${act.map(p=>ficha(p,true)).join('')}</div>` : '<p class="helptext">No hay procesos activos.</p>') +
+    (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="ca-fichas ca-cerrada">${cer.map(p=>ficha(p,false)).join('')}</div>` : '');
 }
-function caVerPerfil(id){ const r = document.getElementById('caPerfil-'+id); if(r) r.style.display = r.style.display==='none' ? '' : 'none'; }
 let caPlanLista = [], caPlanQ = '';
 async function caPintarPlanillas(){
   const body = document.getElementById('caEmpBody');
@@ -549,10 +550,12 @@ function caAdmPro(){
   if(!L.length){ b.innerHTML = '<p class="helptext">Aún no hay postulaciones.</p>'; return; }
   const sel = L.filter(x=>x.estado==='seleccionado').length;
   b.innerHTML = caExpBar() + (sel ? `<div class="note-box" style="margin-bottom:10px">📋 <b>${sel}</b> estudiante(s) seleccionado(s) por la empresa esperan tu confirmación.</div>` : '') +
-    `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:860px"><thead><tr><th>Estudiante</th><th>Programa</th><th>Empresa / cargo</th><th>Origen</th><th>Estado</th><th>Desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
-    <td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>${esc(x.documento)}</small></td><td>${esc(x.programa||'—')}</td><td><b>${esc(x.empresa)}</b><br><small>${esc(x.cargo)}</small></td>
-    <td>${x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'}</td><td>${caChip(x.estado)}</td><td>${caFmt(x.desde)}</td>
-    <td><div class="ca-acc-col">${x.estado==='seleccionado'?`<button class="primary cp-del" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button>`:''}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('proceso','${x.id}',${x.estado==='contratado'})">🗑 ${x.estado==='contratado'?'Quitar contratación':'Eliminar'}</button></div></td></tr>`).join('')}</tbody></table></div>`;
+    `<div class="ca-fichas">${L.map(x=>caFicha(esc(x.nombre), caChip(x.estado), [
+      caFila('Estudiante', '<b>'+esc(x.nombre)+'</b>'), caFila('Documento', esc(x.documento)), caFila('Programa', esc(x.programa||'—')),
+      caFila('Empresa', esc(x.empresa)), caFila('Cargo', esc(x.cargo)),
+      caFila('Origen', x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'), caFila('Fecha', caFmt(x.desde))],
+      (x.estado==='seleccionado'?`<button class="primary" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button> `:'') +
+      `<button class="ghost" style="color:var(--danger)" onclick="caAdmEliminar('proceso','${x.id}',${x.estado==='contratado'})">🗑 ${x.estado==='contratado'?'Quitar contratación':'Eliminar'}</button>`)).join('')}</div>`;
 }
 async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de este estudiante? Se cerrará su proceso como contratado.')) return;
   try{ await caRpc('admin_ca_confirmar', { p_post: id }); toast('Contratación confirmada'); caAdmPintar(); }catch(e){ toast(e.message, true); } }
