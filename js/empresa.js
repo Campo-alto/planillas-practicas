@@ -60,7 +60,7 @@ function rubricaHtml(i, dis){
         <select data-comp="${c.key}" class="empCompSelect" style="display:none" ${dis}><option value="">Sin calificar</option>${[5,4,3,2,1].map(n=>`<option value="${n}" ${cur===n?'selected':''}>${n}</option>`).join('')}</select></th>${cells}</tr>`;
   }).join('');
   return `<div class="rub-wrap"><table class="rubrica"><thead>${head}</thead><tbody>${rows}</tbody></table></div>
-    <p class="helptext" style="margin-top:6px;">Haz clic en el nivel que describe el desempeño del estudiante en cada criterio. 5 = Excelente · 1 = Deficiente.</p>`;
+    <p class="helptext" style="margin-top:6px;">Haz clic en el nivel que describe el desempeño del estudiante en cada criterio. 5 = Excelente · 1 = Por desarrollar.</p>`;
 }
 function rubSel(key, n){
   const sel = document.querySelector('.empCompSelect[data-comp="'+key+'"]'); if(sel) sel.value = n==null ? '' : String(n);
