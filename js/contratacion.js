@@ -252,7 +252,7 @@ async function caAbrirPanel(){
   catch(e){ toast(e.message, true); caSalir(); return; }
   caPintarPanel();
 }
-function caSalir(){ if(sb && state.token){ sb.rpc('role_logout', { p_token: state.token }); } if(typeof _ssClear==='function') _ssClear(); state.token = null; state.role = null; state.pendingRole = null; goHome(); }
+function caSalir(){ state.caMode = false; if(sb && state.token){ sb.rpc('role_logout', { p_token: state.token }); } if(typeof _ssClear==='function') _ssClear(); state.token = null; state.role = null; state.pendingRole = null; goHome(); }
 async function caPintarPanel(){
   const e = caEmp.empresa, aprobada = e.estado === 'aprobada';
   const aviso = aprobada ? '' : `<div class="note-box" style="margin-bottom:12px;">${e.estado==='pendiente'?'⏳ Tu empresa está pendiente de aprobación: la institución verifica que aparezca en la plataforma del SENA.':'✖ Tu empresa no fue aprobada.'}${e.observacion?' <b>Observación:</b> '+esc(e.observacion):''}</div>`;
@@ -260,10 +260,11 @@ async function caPintarPanel(){
       <div class="actions"><button class="danger" onclick="caSalir()">Cerrar sesión</button></div></div>${aviso}
     <div class="tabs"><button class="tab ${caEmpTab==='ofertas'?'active':''}" onclick="caEmpIr('ofertas')">Mis solicitudes</button>
       <button class="tab ${caEmpTab==='cand'?'active':''}" onclick="caEmpIr('cand')">Candidatos</button>
-      <button class="tab ${caEmpTab==='proc'?'active':''}" onclick="caEmpIr('proc')">Procesos</button></div>
+      <button class="tab ${caEmpTab==='proc'?'active':''}" onclick="caEmpIr('proc')">Procesos</button>
+      <button class="tab ${caEmpTab==='plan'?'active':''}" onclick="caEmpIr('plan')">Planillas de calificaciones</button></div>
     <div class="card" id="caEmpBody"></div>`);
   showScreen('screen-ca-panel');
-  if(caEmpTab==='ofertas') caPintarOfertas(); else if(caEmpTab==='cand') caPintarCandidatos(); else await caPintarProcesos();
+  if(caEmpTab==='ofertas') caPintarOfertas(); else if(caEmpTab==='cand') caPintarCandidatos(); else if(caEmpTab==='plan') await caPintarPlanillas(); else await caPintarProcesos();
 }
 function caEmpIr(t){ caEmpTab = t; caPintarPanel(); }
 
@@ -326,6 +327,29 @@ async function caPintarProcesos(){
   body.innerHTML = '<div class="section-bar teal">Procesos</div>' + (act.length ? act.map(p=>caCandCard(p, btn(p))).join('') : '<p class="helptext">No hay procesos activos.</p>') +
     (cer.length ? `<div class="subhead" style="margin-top:16px;">Cerrados</div><div class="cupos-wrap"><table class="cupos-table" style="min-width:420px"><thead><tr><th>Solicitud</th><th>Resultado</th><th>Fecha</th></tr></thead><tbody>${cer.map(p=>`<tr><td>${esc(p.oferta)}</td><td>${caChip(p.estado)}</td><td>${caFmt(p.desde)}</td></tr>`).join('')}</tbody></table></div>` : '');
 }
+async function caPintarPlanillas(){
+  const body = document.getElementById('caEmpBody');
+  body.innerHTML = '<p class="helptext">Cargando…</p>';
+  try{
+    const L = await caRpc('ca_emp_planillas', { p_token: state.token });
+    body.innerHTML = '<div class="section-bar teal">Planillas de calificaciones de tus aprendices</div><p class="helptext">Se habilitan cuando la institución confirma la contratación del estudiante. Aquí calificas las competencias y diligencias el control mensual, igual que las demás empresas.</p>' +
+      (L.length ? `<div class="cupos-wrap"><table class="cupos-table" style="min-width:560px"><thead><tr><th>Aprendiz</th><th>Programa</th><th>Cargo</th><th>Contratado desde</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>${esc(x.documento)}</small></td><td>${esc(x.programa||'—')}</td><td>${esc(x.cargo||'—')}</td><td>${caFmt(x.desde)}</td><td><button class="primary cp-del" onclick="caAbrirPlanilla('${escapeAttr(x.documento)}')">Abrir planilla</button></td></tr>`).join('')}</tbody></table></div>`
+        : '<p class="helptext">Aún no tienes aprendices contratados. Cuando la institución confirme una contratación, aparecerá aquí con su planilla habilitada.</p>');
+  }catch(e){ body.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; }
+}
+// abre la planilla reutilizando la pantalla de empresa (el servidor valida que el estudiante sea de esta empresa)
+async function caAbrirPlanilla(doc){
+  state.caMode = true; state.role = 'empresa'; state.pendingRole = 'empresa'; state.documento = doc; state.empMonth = state.empMonth||0;
+  const rec = await getRecord(doc);
+  if(!rec){ state.caMode = false; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca'; toast('No se pudo abrir la planilla de este estudiante', true); return; }
+  state.record = rec; state.isNewRecord = false;
+  renderEmpresa();
+}
+function caVolverPanel(tab){ state.caMode = false; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca'; state.documento = null; state.record = null; caEmpTab = tab || 'plan'; caAbrirPanel(); }
+(function(){
+  if(typeof switchStudent === 'function'){ const _sw = switchStudent; switchStudent = function(role){ if(state.caMode) return caVolverPanel('plan'); return _sw.apply(this, arguments); }; }
+  if(typeof roleLogout === 'function'){ const _rl = roleLogout; roleLogout = function(){ if(state.caMode) return caSalir(); return _rl.apply(this, arguments); }; }
+})();
 async function caAccion(id, a){
   if(a==='descartar' && !confirm('¿Descartar a este candidato? No podrás volver a tomarlo.')) return;
   try{ await caRpc('ca_emp_accion', { p_token: state.token, p_post: id, p_accion: a }); toast('Listo'); caPintarProcesos(); }catch(e){ toast(e.message, true); }
@@ -336,7 +360,8 @@ window.addEventListener('load', async ()=>{
     const s = JSON.parse(sessionStorage.getItem('cai_sesion_v1')||'null');
     if(s && s.role==='empresa_ca' && s.token && document.getElementById('screen-role-login') && document.getElementById('screen-empresa') && !state.token){
       state.token = s.token; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca'; state.currentUserEmail = s.email||'';
-      await caAbrirPanel();
+      if(s.screen==='screen-empresa' && s.documento && s.ca){ state.empMonth = s.empMonth||0; await caAbrirPlanilla(s.documento); if(!state.caMode){ await caAbrirPanel(); } }
+      else await caAbrirPanel();
     }
   }catch(e){}
 });
@@ -363,13 +388,14 @@ async function caAdmPintar(){
   const fn = { ins:'admin_ca_inscripciones', emp:'admin_ca_empresas', ofe:'admin_ca_ofertas', pro:'admin_ca_postulaciones' }[caAdmTab];
   try{ caAdmData[caAdmTab] = await caRpc(fn); }catch(e){ document.getElementById('caAdmBody').innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
   ({ ins:caAdmIns, emp:caAdmEmp, ofe:caAdmOfe, pro:caAdmPro })[caAdmTab]();
+  if(caAdmTab==='emp') caAdmSinAcceso();
 }
 function caExpBar(){ return `<div class="lista-acc" style="margin:0 0 8px;justify-content:flex-end"><button class="ghost" onclick="caAdmExportar('xlsx')">⬇ Excel</button><button class="ghost" onclick="caAdmExportar('pdf')">⬇ PDF</button></div>`; }
 function caAdmExportar(f){
   const L = caAdmData[caAdmTab] || []; if(!L.length){ toast('No hay datos para exportar', true); return; }
   const defs = {
     ins:{ t:'Contrato de aprendizaje - Inscripciones', a:'ca-inscripciones', h:['Documento','Nombre','Programa','Semestre','Estado','Pagos verificados','Hoja de vida','Observación'], r:x=>[x.documento,x.nombre,x.programa,x.semestre,CA_ESTADO_TXT[x.estado],x.pagos?'Sí':'No',x.hv_completa?'Completa':'Pendiente',x.observacion] },
-    emp:{ t:'Contrato de aprendizaje - Empresas', a:'ca-empresas', h:['Razón social','NIT','Contacto','Correo','Teléfono','Ciudad','Origen','Estado','SENA'], r:x=>[x.razon_social,x.nit,x.contacto,x.email,x.telefono,x.ciudad,x.origen,CA_ESTADO_TXT[x.estado],x.sena?'Sí':'No'] },
+    emp:{ t:'Contrato de aprendizaje - Empresas', a:'ca-empresas', h:['Razón social','NIT','Contacto','Correo','Teléfono','Ciudad','Origen','Estado','SENA','Ficha en Empresas','Contratados'], r:x=>[x.razon_social,x.nit,x.contacto,x.email,x.telefono,x.ciudad,x.origen,CA_ESTADO_TXT[x.estado],x.sena?'Sí':'No',x.ficha||'',x.contratados] },
     ofe:{ t:'Contrato de aprendizaje - Solicitudes', a:'ca-solicitudes', h:['Empresa','Cargo','Programa','Cupos','Ciudad','Jornada','Estado','Funciones'], r:x=>[x.empresa,x.cargo,x.programa,x.cupos,x.ciudad,x.jornada,CA_ESTADO_TXT[x.estado],x.funciones] },
     pro:{ t:'Contrato de aprendizaje - Procesos', a:'ca-procesos', h:['Documento','Estudiante','Programa','Empresa','Cargo','Origen','Estado'], r:x=>[x.documento,x.nombre,x.programa,x.empresa,x.cargo,x.origen,CA_ESTADO_TXT[x.estado]] } }[caAdmTab];
   const rows = L.map(defs.r);
@@ -402,10 +428,34 @@ function caAdmEmp(){
     <div class="field"><label>Ciudad</label><input id="ne-ciu" maxlength="80"></div><div class="field"><label>Dirección</label><input id="ne-dir" maxlength="160"></div></div>
     <label class="lista-chk"><input type="checkbox" id="ne-sena"> Verificada en la plataforma del SENA (queda aprobada)</label>
     <div id="neMsg" style="margin:6px 0;font-size:13px;"></div><div class="actions-row"><button class="primary" onclick="caAdmCrearEmpresa()">Guardar empresa</button></div></details>`;
-  b.innerHTML = caExpBar() + form + (L.length ? `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Contacto</th><th>Origen</th><th>Estado</th><th>Plataforma SENA y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
-    <td class="cp-prog"><b>${esc(x.razon_social)}</b><br><small>NIT ${esc(x.nit)} · ${esc(x.ciudad||'')}</small></td><td>${esc(x.contacto||'—')}<br><small>${esc(x.email)} ${esc(x.telefono||'')}</small></td><td>${x.origen==='autoregistro'?'Se registró sola':'Creada por la institución'}</td><td>${caChip(x.estado)}</td>
+  const masivo = `<details class="ca-det"><summary>⇪ Importar / exportar empresas en bloque (Excel)</summary>
+    <p class="helptext">Descarga la plantilla, llénala con todas las empresas y súbela. Si dejas la contraseña vacía en una empresa nueva, se genera y recibes un Excel con las credenciales. Se enlazan solas con el módulo <b>Empresas</b> por NIT o nombre.</p>
+    <div class="actions-row" style="justify-content:flex-start;flex-wrap:wrap"><button class="ghost" onclick="ieDescargarPlantilla('ca_empresas')">📄 Plantilla</button>
+      <button class="ghost" onclick="ieExportar('ca_empresas','xlsx')">⬇ Exportar Excel completo</button><button class="ghost" onclick="caAdmPintar()">↻ Actualizar lista</button></div>
+    <div style="margin-top:10px"><label style="font-size:13px;font-weight:600">Importar desde Excel (.xlsx):</label><br><input type="file" accept=".xlsx,.xls,.csv" onchange="ieLeerArchivo('ca_empresas', this)" style="margin-top:6px"></div>
+    <div id="iePrev-ca_empresas" style="margin-top:10px;font-size:13.5px"></div></details>
+    <div id="caSinAcceso"></div>`;
+  b.innerHTML = caExpBar() + masivo + form + (L.length ? `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Contacto</th><th>Origen</th><th>Estado</th><th>Plataforma SENA y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
+    <td class="cp-prog"><b>${esc(x.razon_social)}</b><br><small>NIT ${esc(x.nit)} · ${esc(x.ciudad||'')}</small><br><small>${x.ficha?'🔗 Enlazada con Empresas: '+esc(x.ficha):'Sin enlazar a Empresas (se enlaza al aprobarla)'}</small><br><small>${x.ofertas} solicitud(es) · ${x.contratados} contratado(s)</small></td><td>${esc(x.contacto||'—')}<br><small>${esc(x.email)} ${esc(x.telefono||'')}</small></td><td>${x.origen==='autoregistro'?'Se registró sola':'Creada por la institución'}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="em-s-${x.id}" ${x.sena?'checked':''}> En plataforma SENA</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="em-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
     <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmEmpEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmEmpEstado('${x.id}','rechazada')">Rechazar</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">No hay empresas registradas.</p>');
+}
+async function caAdmSinAcceso(){
+  const box = caAdmInfo('caSinAcceso'); if(!box) return;
+  try{
+    const L = await caRpc('admin_ca_sin_acceso'); window._caSinAcc = L;
+    if(!L.length){ box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="note-box" style="margin:10px 0"><b>${L.length} empresa(s) del módulo Empresas con categoría "contrato de aprendizaje" aún no tienen acceso al portal:</b>
+      <div class="cupos-wrap"><table class="cupos-table" style="min-width:520px"><tbody>${L.map((x,i)=>`<tr><td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>NIT ${esc(x.nit||'—')} · ${esc(x.ciudad||'')}</small></td><td><button class="primary cp-del" onclick="caAdmPrecargar(${i})">Crear acceso</button></td></tr>`).join('')}</tbody></table></div></div>`;
+  }catch(e){ box.innerHTML = ''; }
+}
+function caAdmPrecargar(i){
+  const x = (window._caSinAcc||[])[i]; if(!x) return;
+  const set = (id,v)=>{ const el = caAdmInfo(id); if(el) el.value = v||''; };
+  set('ne-razon',x.nombre); set('ne-nit',x.nit); set('ne-email',x.correo); set('ne-cont',x.contacto); set('ne-tel',x.telefono); set('ne-ciu',x.ciudad); set('ne-dir',x.direccion);
+  set('ne-pass', typeof generarClaveLocal==='function' ? generarClaveLocal() : '');
+  const d = caAdmInfo('ne-razon').closest('details'); if(d){ d.open = true; d.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  toast('Datos cargados: completa el correo si falta y guarda. Anota la contraseña generada.');
 }
 async function caAdmEmpEstado(id, estado){
   try{ await caRpc('admin_ca_empresa_estado', { p_id: id, p_estado: estado, p_sena: caAdmInfo('em-s-'+id).checked, p_obs: caAdmInfo('em-o-'+id).value }); toast('Empresa ' + (estado==='aprobada'?'aprobada':'rechazada')); caAdmPintar(); }catch(e){ toast(e.message, true); }
