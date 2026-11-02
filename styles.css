@@ -392,3 +392,5 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .asig-cupos thead th{background:var(--deep);color:#fff;}
 .asig-cupos tbody tr:nth-child(even){background:#F7FAFA;}
 @media(max-width:640px){ .asig-tabla tbody th[scope=row]{width:38%;} .asig-tabla th,.asig-tabla td{padding:8px 10px;} }
+
+.cp-fun{min-width:220px;width:100%;resize:vertical;font:inherit;font-size:12.5px;}
