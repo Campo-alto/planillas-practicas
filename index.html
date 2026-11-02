@@ -228,6 +228,11 @@
         <h3>Programas</h3>
         <p>Crear, ver y eliminar los programas / técnicos laborales por área.</p>
       </div>
+      <div class="role-card administrador" onclick="abrirImportExport()">
+        <div class="icon">⇅</div>
+        <h3>Importar / Exportar</h3>
+        <p>Sube estudiantes, empresas y supervisores desde Excel, y descarga listados en Excel o PDF para imprimir.</p>
+      </div>
       <div class="role-card empresa" onclick="goAdminModule('reporte')">
         <div class="icon">📋</div>
         <h3>Reporte de visitas</h3>
@@ -287,6 +292,14 @@
     <div class="card">
       <div id="adminsList"></div>
     </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: IMPORTAR / EXPORTAR -->
+  <div class="screen" id="screen-admin-datos">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Importar y exportar</h2>
+    <p class="helptext">Carga masiva desde Excel y listados para imprimir. Antes de importar verás una vista previa con las filas válidas y los errores; nada se guarda hasta que confirmes.</p>
+    <div id="ieBody"></div>
   </div>
 
   <!-- ADMIN MÓDULO: EMPRESAS (datos, cupos, asignaciones y acceso) -->
@@ -627,6 +640,7 @@
 <script src="js/estudiante-auth.js"></script>
 <script src="js/reporte.js"></script>
 <script src="js/asignacion.js"></script>
+<script src="js/importexport.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>initPwToggles();</script>
