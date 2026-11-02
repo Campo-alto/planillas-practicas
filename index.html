@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -228,6 +229,11 @@
         <h3>Programas</h3>
         <p>Crear, ver y eliminar los programas / técnicos laborales por área.</p>
       </div>
+      <div class="role-card supervisor" onclick="abrirModalidades()">
+        <div class="icon">🗂</div>
+        <h3>Modalidades</h3>
+        <p>Agregar, modificar o eliminar modalidades y definir cuántos meses dura cada una.</p>
+      </div>
       <div class="role-card administrador" onclick="abrirImportExport()">
         <div class="icon">⇅</div>
         <h3>Importar / Exportar</h3>
@@ -292,6 +298,24 @@
     <div class="card">
       <div id="adminsList"></div>
     </div>
+  </div>
+
+  <!-- ADMIN MÓDULO: MODALIDADES -->
+  <div class="screen" id="screen-admin-modalidades">
+    <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
+    <h2 style="margin:12px 0 4px;">Modalidades</h2>
+    <p class="helptext">Los meses definen cuántas notas mensuales tiene la planilla de cada modalidad. Marca "cupos y carta" en las modalidades de práctica no remunerada: solo ellas usan la elección de empresa, las fechas de inscripción y la carta de presentación.</p>
+    <div class="card">
+      <div class="section-bar deep">Nueva modalidad</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre</label><input type="text" id="modNuevoNombre" autocomplete="off"></div>
+        <div class="field"><label>Meses (1 a 12)</label><input type="number" id="modNuevoMeses" min="1" max="12" value="4"></div>
+        <div class="field"><label><input type="checkbox" id="modNuevoPnr"> Usa cupos y carta (práctica no remunerada)</label></div>
+      </div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="agregarModalidad()">Agregar modalidad</button></div>
+      <div id="modMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+    <div class="card"><div id="modalidadesList"></div></div>
   </div>
 
   <!-- ADMIN MÓDULO: IMPORTAR / EXPORTAR -->
@@ -641,6 +665,9 @@
 <script src="js/reporte.js"></script>
 <script src="js/asignacion.js"></script>
 <script src="js/importexport.js"></script>
+<script src="js/modalidades.js"></script>
+<script src="js/carta-assets.js"></script>
+<script src="js/carta.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>initPwToggles();</script>
