@@ -183,3 +183,21 @@
 #screen-admin-login .helptext, #screen-role-login .helptext, #screen-reset-password .helptext, #screen-lookup .helptext {
   text-align:center !important; margin:0 auto 22px !important; line-height:1.45;
 }
+
+/* ===== Login y cambio de contraseña del estudiante: mismo diseño centrado ===== */
+#screen-estudiante-login, #screen-estudiante-cambio { max-width:440px; margin:7vh auto 0; }
+#screen-estudiante-login h2, #screen-estudiante-cambio h2 { text-align:center; font-size:26px; margin:0 0 8px !important; }
+#screen-estudiante-login .helptext, #screen-estudiante-cambio .helptext { text-align:center !important; margin:0 auto 22px !important; line-height:1.45; }
+#screen-estudiante-login .card, #screen-estudiante-cambio .card {
+  max-width:100% !important; margin-left:auto !important; margin-right:auto !important;
+  padding:28px 28px 24px; box-shadow:0 8px 30px rgba(11,61,61,.08);
+}
+#screen-estudiante-login .actions-row, #screen-estudiante-cambio .actions-row { justify-content:stretch !important; margin-top:16px; flex-direction:column; }
+#screen-estudiante-login .actions-row button, #screen-estudiante-cambio .actions-row button { width:100%; padding:12px 16px; }
+#screen-estudiante-login #estLoginMsg, #screen-estudiante-cambio #estCambioMsg { text-align:center; }
+#screen-estudiante-login .card .helptext { margin:14px auto 0 !important; font-size:12.5px; }
+#screen-estudiante-login > .linkbtn { display:block; margin:0 auto 14px; }
+@media (max-width:520px){
+  #screen-estudiante-login, #screen-estudiante-cambio { margin-top:3vh; }
+  #screen-estudiante-login .card, #screen-estudiante-cambio .card { padding:22px 18px 20px; }
+}
