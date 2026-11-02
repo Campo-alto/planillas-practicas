@@ -7,7 +7,7 @@ const COMPETENCIAS = [
   {key:'conocimiento', name:'4. Evaluación de conocimientos', desc:'Aplicación de normativa y confidencialidad'}
 ];
 const PROGRAMA = 'Auxiliar Administrativo en Salud';
-const JORNADAS = ['Mañana','Tarde','Noche','Sábado','Domingo'];
+const JORNADAS = ['Mañana','Tarde','Noche','Sábado','Domingo','Entre semana'];
 const TITULO_PROGRAMA_PREFIJO = 'TÉCNICO LABORAL POR COMPETENCIAS EN';
 const AREAS_PROGRAMA = ['Salud','Administración y Negocios','Estética y Belleza','Mecánica','Sistemas','Educación','Cocina','Confección y Patronaje de Moda'];
 
