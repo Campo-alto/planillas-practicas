@@ -94,22 +94,24 @@ async function mostrarEmpresaAsignada(){
     const hist = data || [];
     const act = hist.find(x => x.estado === 'activa');
     const previas = hist.filter(x => x.estado !== 'activa');
-    const inicio = hist.length ? hist[0].desde : null;
-    let html;
+        let html;
     if(act){
+      const prev0 = previas.length ? previas[previas.length-1] : null;
       html = '🏢 <b>Empresa asignada:</b> '+esc(act.empresa)+' <span style="color:var(--muted)">· Jornada '+esc(act.jornada)+' · '+esc(act.programa)+'</span>'+
+        (prev0 && prev0.meses_restantes!=null ? ' <span style="color:var(--muted)">· por '+textoMeses(prev0.meses_restantes)+' (cambio de empresa)</span>' : '')+
         ' <button class="danger" type="button" style="padding:4px 10px;font-size:12px;margin-left:8px;" onclick="liberarDesdeFicha(\''+act.id+'\')">Inactivar de esta empresa</button>';
     } else {
       html = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">'+(previas.length ? 'inactivo(a) — sin empresa actualmente' : 'aún no tiene empresa asignada')+'</span>';
       if(previas.length){
-        const t = tiempoRestantePractica(inicio, state.record.modalidad);
-        if(t) html += '<div style="margin-top:6px;font-size:13px;">⏳ Tiempo restante de práctica: <b>'+t.dias+' días</b> (hasta el '+t.fin.toLocaleDateString()+'). El estudiante puede elegir una nueva empresa, o puedes asignársela aquí:</div>';
+        const ult = previas[previas.length-1];
+        const m = (ult.meses_restantes !== null && ult.meses_restantes !== undefined) ? ult.meses_restantes : mesesRestantesPractica(state.record);
+        html += '<div style="margin-top:6px;font-size:13px;">⏳ Tiempo a asignar: <b>'+textoMeses(m)+'</b> ('+notasCalificadas(state.record)+' nota(s) calificada(s) al retirarse). El estudiante puede elegir una nueva empresa mientras la ventana esté abierta, o puedes asignársela aquí:</div>';
       }
       html += '<div id="admNuevaEmpresa" style="margin-top:8px;"></div>';
     }
     if(previas.length){
       html += '<details style="margin-top:8px;font-size:13px;"><summary style="cursor:pointer;color:var(--muted);">Historial de empresas ('+previas.length+' anterior'+(previas.length>1?'es':'')+')</summary><ul style="margin:6px 0 0 18px;padding:0;">'+
-        previas.map(p=>'<li>'+esc(p.empresa)+' · '+esc(p.jornada)+' · '+new Date(p.desde).toLocaleDateString()+' → '+(p.hasta?new Date(p.hasta).toLocaleDateString():'—')+(p.motivo?' · <i>'+esc(p.motivo)+'</i>':'')+'</li>').join('')+
+        previas.map(p=>'<li>'+esc(p.empresa)+' · '+esc(p.jornada)+' · '+new Date(p.desde).toLocaleDateString()+' → '+(p.hasta?new Date(p.hasta).toLocaleDateString():'—')+(p.meses_restantes!=null?' · quedaban '+textoMeses(p.meses_restantes):'')+(p.motivo?' · <i>'+esc(p.motivo)+'</i>':'')+'</li>').join('')+
         '</ul></details>';
     }
     box.innerHTML = html;
@@ -123,10 +125,11 @@ async function liberarDesdeFicha(id){
   const motivo = prompt('Motivo del retiro del estudiante de esta empresa (obligatorio):');
   if(motivo === null) return;
   if(motivo.trim().length < 3){ toast('Escribe el motivo del retiro', true); return; }
-  if(!confirm('¿Inactivar al estudiante de esta empresa? El cupo volverá a estar disponible y el estudiante podrá elegir una nueva empresa por el tiempo que le falta.')) return;
-  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id, p_motivo: motivo.trim() });
+  if(!confirm('¿Inactivar al estudiante de esta empresa? Se le asignarán '+textoMeses(mesesRestantesPractica(state.record))+' en la nueva empresa ('+notasCalificadas(state.record)+' nota(s) calificada(s)). El cupo volverá a estar disponible.')) return;
+  const meses = mesesRestantesPractica(state.record);
+  const { error } = await sb.rpc('admin_liberar_asignacion', { p_id: id, p_motivo: motivo.trim(), p_meses: meses });
   if(error){ toast(errMsg(error), true); return; }
-  toast('Estudiante inactivado de la empresa');
+  toast('Estudiante inactivado. Meses a asignar: '+meses);
   mostrarEmpresaAsignada();
 }
 async function cargarOpcionesNuevaEmpresa(){
