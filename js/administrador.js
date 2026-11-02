@@ -87,6 +87,17 @@ async function mostrarEmpresaAsignada(){
     bar.insertAdjacentElement('beforebegin', box);
   }
   if(state.isNewRecord){ box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">— (estudiante aún sin guardar)</span>'; return; }
+  if(/contrato.*aprendizaje/i.test(state.record.modalidad||'')){
+    box.innerHTML = '<span style="color:var(--muted)">Consultando empresa…</span>';
+    try{
+      const { data, error } = await sb.rpc('admin_ca_empresa_estudiante', { p_doc: state.documento });
+      if(error) throw error;
+      box.innerHTML = data
+        ? '🏢 <b>Empresa:</b> '+esc(data.empresa)+' <span style="color:var(--muted)">· '+esc(data.cargo)+' · '+esc(data.jornada||'')+'</span> <span class="pill" style="background:#EEF3E4;color:#3B5B16;">Contrato de aprendizaje · '+({postulado:'postulado',entrevista:'en entrevista',seleccionado:'seleccionado (falta confirmar)',contratado:'contratado'}[data.estado]||esc(data.estado))+'</span>'
+        : '🏢 <b>Empresa:</b> <span style="color:var(--muted)">aún no tiene empresa (contrato de aprendizaje: en proceso de postulación)</span>';
+    }catch(e){ box.innerHTML = '🏢 <b>Empresa:</b> <span style="color:var(--danger)">no se pudo consultar ('+esc(e.message||'')+'). ¿Ejecutaste el SQL 9J?</span>'; }
+    return;
+  }
   if(!esModalidadPNR(state.record.modalidad)){ box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">no aplica — los cupos y la asignación de empresa son solo para Prácticas No Remuneradas.</span>'; return; }
   box.innerHTML = '<span style="color:var(--muted)">Consultando empresa asignada…</span>';
   try{
