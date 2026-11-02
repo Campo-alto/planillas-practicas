@@ -57,20 +57,18 @@ async function renderEmpresasCupos(){
   const el = document.getElementById('empresasList');
   el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
   try{
-    const { data, error } = await sb.from('empresas_practica')
-      .select('*, cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados,fecha_inicio,fecha_fin,horario,dias,funciones)')
-      .order('nombre', { ascending: true });
-    if(error) throw error;
-    empresasCache = data || [];
-    try{
-      const r = await sb.rpc('admin_list_role_accounts');
-      accesosCache = (r.data || []).filter(u=>u.role==='empresa');
-    }catch(_){ accesosCache = []; }
+    const [rEmp, rAcc, rCa] = await Promise.all([
+      sb.from('empresas_practica')
+        .select('*, cupos_empresa(id,programa,jornada,cupos_total,cupos_ocupados,fecha_inicio,fecha_fin,horario,dias,funciones)')
+        .order('nombre', { ascending: true }),
+      sb.rpc('admin_list_role_accounts').then(r=>r, ()=>({ data:null })),
+      sb.rpc('admin_ca_empresas').then(r=>r, ()=>({ data:null }))
+    ]);
+    if(rEmp.error) throw rEmp.error;
+    empresasCache = rEmp.data || [];
+    accesosCache = (rAcc.data || []).filter(u=>u.role==='empresa');
     caPorFicha = {};
-    try{
-      const rc = await sb.rpc('admin_ca_empresas');
-      (rc.data || []).forEach(c=>{ if(c.empresa_practica_id) caPorFicha[c.empresa_practica_id] = c; });
-    }catch(_){ caPorFicha = {}; }
+    (rCa.data || []).forEach(c=>{ if(c.empresa_practica_id) caPorFicha[c.empresa_practica_id] = c; });
     renderEmpresasListHtml();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+esc(e.message)+'</p>'; }
   renderAsignacionesAdmin();
