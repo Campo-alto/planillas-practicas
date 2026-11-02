@@ -34,7 +34,8 @@
       funciones:[
         { icono:'Ad', clase:'administrador', titulo:'Administradores', desc:'Ver y gestionar quién tiene acceso de administrador.', abrir:()=>goAdminModule('administradores') },
         { icono:'📚', clase:'supervisor', titulo:'Programas', desc:'Crear, ver y eliminar los programas / técnicos laborales por área.', abrir:()=>goAdminModule('programas') },
-        { icono:'🗂', clase:'supervisor', titulo:'Modalidades', desc:'Agregar, modificar o eliminar modalidades y definir cuántos meses dura cada una.', abrir:()=>abrirModalidades() }
+        { icono:'🗂', clase:'supervisor', titulo:'Modalidades', desc:'Agregar, modificar o eliminar modalidades y definir cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
+        { icono:'📊', clase:'empresa', titulo:'Rúbrica de calificación', desc:'Crear, modificar, ordenar o eliminar los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
       ] }
   ];
 
