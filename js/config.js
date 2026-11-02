@@ -13,13 +13,14 @@ const AREAS_PROGRAMA = ['Salud','Administración y Negocios','Estética y Bellez
 
 // Modalidades de práctica y cuántos meses (o notas, en el caso de Homologación)
 // le corresponden a cada una. Se usa para mostrar solo los meses que aplican.
-const MODALIDADES = [
-  { nombre: 'Contrato de Aprendizaje', meses: 6 },
-  { nombre: 'Contrato de Aprendizaje Enfermería', meses: 4 },
-  { nombre: 'Prácticas No Remuneradas', meses: 4 },
-  { nombre: 'Práctica No Remunerada Enfermería', meses: 2 },
-  { nombre: 'Validación', meses: 4 },
-  { nombre: 'Homologación', meses: 1 }
+// Modalidades: se cargan de la base de datos (módulo Modalidades); esta lista es solo el respaldo inicial
+let MODALIDADES = [
+  { nombre: 'Contrato de Aprendizaje', meses: 6, es_pnr: false },
+  { nombre: 'Contrato de Aprendizaje Enfermería', meses: 4, es_pnr: false },
+  { nombre: 'Prácticas No Remuneradas', meses: 4, es_pnr: true },
+  { nombre: 'Práctica No Remunerada Enfermería', meses: 2, es_pnr: true },
+  { nombre: 'Validación', meses: 4, es_pnr: false },
+  { nombre: 'Homologación', meses: 1, es_pnr: false }
 ];
 function mesesPorModalidad(modalidad){
   const m = MODALIDADES.find(x=>x.nombre===modalidad);
