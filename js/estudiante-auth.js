@@ -128,9 +128,17 @@ async function guardarClaveEstudiante(){
 }
 async function generarClavesMasivas(){
   if(!confirm('Se crearán contraseñas temporales para TODOS los estudiantes que aún no tienen acceso, y se descargará un Excel con ellas. ¿Continuar?')) return;
-  const { data, error } = await sb.rpc('admin_generar_claves_pendientes');
-  if(error){ console.error(error); toast(error.message, true); return; }
-  if(!data || !data.length){ toast('Todos los estudiantes ya tienen acceso'); return; }
+  // Se generan por lotes para no superar el tiempo límite del servidor
+  let data = [], error = null;
+  toast('Generando claves… no cierres la página');
+  for(let i = 0; i < 400; i++){
+    const r = await sb.rpc('admin_generar_claves_pendientes', { p_limite: 25 });
+    if(r.error){ error = r.error; break; }
+    if(!r.data || !r.data.length) break;
+    data = data.concat(r.data);
+  }
+  if(error){ console.error(error); toast(error.message + (data.length ? ' — se descargarán las ' + data.length + ' claves ya creadas' : ''), true); if(!data.length) return; }
+  if(!data.length){ toast('Todos los estudiantes ya tienen acceso'); return; }
   const rows = data.map(r => ({ Documento: r.documento, Nombre: r.nombre, Usuario: r.documento, 'Contraseña temporal': r.clave }));
   const ws = XLSX.utils.json_to_sheet(rows), wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Accesos');
