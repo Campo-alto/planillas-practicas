@@ -11,14 +11,55 @@ function ieUnsafe(v){ return (typeof v === 'string') ? v.replace(/^'(?=[=+\-@])/
 function ieStr(v, max){ return String(v==null?'':v).replace(/^'(?=[=+\-@])/, '').trim().slice(0, max||200); }
 
 /* ---------- definición de cada conjunto de datos ---------- */
+
+/* ---------- Coincidencia tolerante: el archivo puede venir escrito de muchas formas ---------- */
+const IE_STOP = new Set(['de','en','la','el','y','a','los','las','del','por','para','con','al']);
+// Quita numeración inicial ("2.", "11.") y prefijos como "TL.", "Técnico laboral (por competencias) en"
+function ieClave(t){
+  let x = ieNorm(t), prev;
+  do{ prev = x;
+    x = x.replace(/^\d+\s*/, '').replace(/^(tl|t l|tecnico laboral( por competencias)?|tecnico|programa( de formacion)?)\s+/, '').replace(/^(en|de)\s+/, '').trim();
+  }while(x !== prev);
+  return x;
+}
+function ieTokens(k){ return new Set(k.split(' ').filter(w=>w && !IE_STOP.has(w)).map(w=>w.replace(/(es|s)$/, ''))); }
+function iePrograma(texto, lista){
+  const k = ieClave(texto); if(!k) return null;
+  const items = (lista||[]).map(n=>({ n, k: ieClave(n) }));
+  const ig = items.filter(i=>i.k === k); if(ig.length === 1) return ig[0].n;
+  const cont = items.filter(i=>i.k.length >= 5 && (k.includes(i.k) || i.k.includes(k)));
+  if(cont.length === 1) return cont[0].n;
+  if(cont.length > 1){ cont.sort((a,b)=>b.k.length - a.k.length); if(cont[0].k.length > cont[1].k.length) return cont[0].n; }
+  const tk = ieTokens(k);
+  const pts = items.map(i=>{ const ti = ieTokens(i.k); let inter = 0; tk.forEach(w=>{ if(ti.has(w)) inter++; }); const uni = new Set([...tk, ...ti]).size || 1; return { n: i.n, sc: inter / uni }; }).sort((a,b)=>b.sc - a.sc);
+  if(pts.length && pts[0].sc >= 0.6 && (pts.length === 1 || pts[0].sc - pts[1].sc >= 0.1)) return pts[0].n;
+  return null;
+}
+// Jornada: se reconoce por palabra clave (gana la que aparece primero en el texto)
+function ieJornada(texto){
+  const n = ieNorm(texto); if(!n) return null;
+  const reglas = [['Sábado',/sabad/],['Domingo',/domingo/],['Entre semana',/entre semana|un dia|todo el dia/],['Noche',/noche|nocturn/],['Tarde',/tarde/],['Mañana',/manana/]];
+  let mejor = null, pos = 1e9;
+  reglas.forEach(([v,re])=>{ const m = re.exec(n); if(m && m.index < pos){ pos = m.index; mejor = v; } });
+  return mejor;
+}
+function ieModalidad(texto){
+  const k = ieNorm(String(texto||'').replace(/\s*\(.*\)\s*$/, '')); if(!k) return null;
+  const ms = MODALIDADES.map(m=>({ n: m.nombre, k: ieNorm(m.nombre) }));
+  const ex = ms.find(m=>m.k === k); if(ex) return ex.n;
+  const c = ms.filter(m=>m.k.length >= 4 && (k.includes(m.k) || m.k.includes(k)));
+  return c.length === 1 ? c[0].n : null;
+}
+function ieDocumento(t){ return ieStr(t, 40).replace(/[\s.,\-_]/g, ''); }
+
 const IE_DATASETS = {
   estudiantes: {
     titulo: 'Estudiantes', archivo: 'estudiantes',
     cols: ['Documento','Nombre completo','Correo','Teléfono','Sede','Semestre','Modalidad','Periodo académico','Funcionario','Programa','Jornada solicitada'],
     ejemplo: ['1128108664','Ana María Pérez Gómez','ana@correo.com','3001234567','Sede Norte','3','Prácticas No Remuneradas','2026-2','','','Mañana'],
-    aliases: { documento:'documento', 'nombre completo':'nombre', nombre:'nombre', 'nombres y apellidos':'nombre', 'apellidos y nombres':'nombre', estudiante:'nombre', 'nombre del estudiante':'nombre', apellidos:'apellidos', nombres:'nombres', correo:'correo', 'correo electronico':'correo', telefono:'telefono', celular:'telefono',
+    aliases: { documento:'documento', 'numero de documento':'documento', 'n documento':'documento', 'no documento':'documento', 'documento de identidad':'documento', cedula:'documento', identificacion:'documento', cc:'documento', 'nombre y apellidos':'nombre', 'nombre completo':'nombre', nombre:'nombre', 'nombres y apellidos':'nombre', 'apellidos y nombres':'nombre', estudiante:'nombre', 'nombre del estudiante':'nombre', apellidos:'apellidos', nombres:'nombres', correo:'correo', 'correo electronico':'correo', telefono:'telefono', celular:'telefono',
                sede:'sede', semestre:'semestre', modalidad:'modalidad', 'periodo academico':'periodo', periodo:'periodo', funcionario:'funcionario',
-               'funcionario que procesa':'funcionario', programa:'programa', jornada:'jornada', 'jornada solicitada':'jornada' },
+               'funcionario que procesa':'funcionario', programa:'programa', 'programa de formacion':'programa', 'programa academico':'programa', 'tecnico laboral':'programa', jornada:'jornada', 'jornada solicitada':'jornada', 'jornada de practica':'jornada' },
     importable: true,
     async exportar(){
       const { data, error } = await sb.from('students').select('documento,nombre,correo,telefono,sede,semestre,modalidad,periodo_academico,funcionario,programa,jornada_solicitada').order('nombre');
@@ -31,29 +72,30 @@ const IE_DATASETS = {
     async preparar(filas){
       await loadProgramas();
       const progs = (programasCache||[]).map(p=>p.nombre);
-      const vistos = new Set(), validas = [], errores = [];
+      const vistos = new Set(), validas = [], errores = [], avisos = [];
       filas.forEach(f=>{
-        const r = f.v, e = [];
-        const doc = ieStr(r.documento, 20);
+        const r = f.v, e = [], av = [];
+        const doc = ieDocumento(r.documento);
         if(!/^[0-9A-Za-z]{5,20}$/.test(doc)) e.push('documento inválido (5 a 20 letras o números)');
         if(vistos.has(doc)) e.push('documento repetido en el archivo'); vistos.add(doc);
         // Se pide el nombre completo; si el archivo es del formato anterior (Apellidos + Nombres) se unen
         const nombre = ieStr(r.nombre) || nombreCompletoDesde(ieStr(r.apellidos), ieStr(r.nombres));
         if(nombre.length < 3) e.push('falta el nombre completo');
-        let modalidad = ieStr(r.modalidad).replace(/\s*\(.*\)\s*$/, '');
-        if(modalidad){
-          const m = MODALIDADES.find(x=>ieNorm(x.nombre)===ieNorm(modalidad));
-          if(!m) e.push('modalidad no reconocida ("'+modalidad+'")'); else modalidad = m.nombre;
-        }
+        // Modalidad, jornada y programa se reconocen aunque vengan escritos de otra forma; si no se reconocen NO se rechaza la fila
+        let modalidad = ieStr(r.modalidad);
+        if(modalidad){ const m = ieModalidad(modalidad); if(m) modalidad = m; else { av.push('modalidad no reconocida ("'+modalidad.slice(0,60)+'"): quedó sin modalidad'); modalidad = ''; } }
         let jornada = ieStr(r.jornada);
-        if(jornada){ const j = JORNADAS.find(x=>ieNorm(x)===ieNorm(jornada)); if(!j) e.push('jornada no válida ("'+jornada+'")'); else jornada = j; }
+        if(jornada){ const j = ieJornada(jornada); if(j) jornada = j; else { av.push('jornada no reconocida ("'+jornada.slice(0,60)+'"): quedó sin jornada'); jornada = ''; } }
         let programa = ieStr(r.programa, 250);
-        if(programa){ const p = progs.find(x=>ieNorm(x)===ieNorm(programa)); if(!p) e.push('el programa "'+programa+'" no existe en el módulo Programas'); else programa = p; }
+        if(programa){ const p = iePrograma(programa, progs); if(p) programa = p; else av.push('programa no reconocido ("'+programa.slice(0,70)+'"): se guardó tal como venía; revísalo en Programas o en la ficha'); }
         if(e.length) errores.push({ fila: f.n, msg: e.join('; ') });
-        else validas.push({ fila: f.n, doc, nombre, correo: ieStr(r.correo), telefono: ieStr(r.telefono,40), sede: ieStr(r.sede,100), semestre: ieStr(r.semestre,40),
+        else{
+          validas.push({ fila: f.n, doc, nombre, correo: ieStr(r.correo), telefono: ieStr(r.telefono,40), sede: ieStr(r.sede,100), semestre: ieStr(r.semestre,40),
                             modalidad, periodo: ieStr(r.periodo,40), funcionario: ieStr(r.funcionario,150), programa, jornada });
+          if(av.length) avisos.push({ fila: f.n, msg: av.join('; ') });
+        }
       });
-      return { validas, errores, resumen: v=>v.doc+' · '+v.nombre };
+      return { validas, errores, avisos, resumen: v=>v.doc+' · '+v.nombre };
     },
     async confirmar(validas, opts){
       const { data: ex } = await sb.from('students').select('documento');
@@ -121,8 +163,8 @@ const IE_DATASETS = {
         const hayCupo = programa || jornada || ieStr(r.cupos) !== '';
         if(hayCupo){
           if(cat && cat.id !== 'practica_no_remunerada') e.push('solo las empresas de prácticas no remuneradas manejan cupos');
-          const p = progs.find(x=>ieNorm(x)===ieNorm(programa)); if(!p) e.push('programa de cupos no existe'); else programa = p;
-          const j = JORNADAS.find(x=>ieNorm(x)===ieNorm(jornada)); if(!j) e.push('jornada de cupos no válida'); else jornada = j;
+          const p = iePrograma(programa, progs); if(!p) e.push('programa de cupos no reconocido ("'+programa.slice(0,60)+'")'); else programa = p;
+          const j = ieJornada(jornada); if(!j) e.push('jornada de cupos no reconocida ("'+jornada.slice(0,60)+'")'); else jornada = j;
           cupos = parseInt(ieStr(r.cupos), 10);
           if(isNaN(cupos) || cupos < 0 || cupos > 500) e.push('cupos debe ser un número entre 0 y 500');
         }
@@ -331,13 +373,16 @@ async function ieLeerArchivo(id, input){
     const errHtml = res.errores.length
       ? '<details open style="margin:8px 0;"><summary style="color:var(--danger);cursor:pointer;"><b>' + res.errores.length + ' fila(s) con error (no se importarán)</b></summary><ul style="margin:6px 0 0 18px;font-size:12.5px;">' +
         res.errores.slice(0,50).map(e=>'<li>Fila ' + e.fila + ': ' + esc(e.msg) + '</li>').join('') + (res.errores.length>50?'<li>… y ' + (res.errores.length-50) + ' más</li>':'') + '</ul></details>' : '';
+    const avHtml = (res.avisos && res.avisos.length)
+      ? '<details style="margin:8px 0;"><summary style="color:#8A5A00;cursor:pointer;"><b>' + res.avisos.length + ' fila(s) con advertencias (se importarán igual)</b></summary><ul style="margin:6px 0 0 18px;font-size:12.5px;">' +
+        res.avisos.slice(0,50).map(e=>'<li>Fila ' + e.fila + ': ' + esc(e.msg) + '</li>').join('') + (res.avisos.length>50?'<li>… y ' + (res.avisos.length-50) + ' más</li>':'') + '</ul></details>' : '';
     const okHtml = res.validas.length
       ? '<p style="margin:8px 0;color:var(--teal-dark);"><b>' + res.validas.length + ' fila(s) listas para importar.</b></p><ul style="margin:0 0 8px 18px;font-size:12.5px;color:var(--muted);">' +
         res.validas.slice(0,5).map(v=>'<li>' + esc(res.resumen(v)) + '</li>').join('') + (res.validas.length>5?'<li>… y ' + (res.validas.length-5) + ' más</li>':'') + '</ul>' +
         '<label style="font-size:13px;display:block;margin-bottom:8px;"><input type="checkbox" id="ieActualizar-' + id + '" checked> Actualizar los que ya existen (si no, se omiten)</label>' +
         '<button class="primary" onclick="ieConfirmar(\'' + id + '\')">Importar ' + res.validas.length + ' fila(s)</button>'
       : '<p style="color:var(--danger);">No hay filas válidas para importar.</p>';
-    box.innerHTML = errHtml + okHtml;
+    box.innerHTML = errHtml + avHtml + okHtml;
   }catch(e){ console.error(e); box.innerHTML = '<p style="color:var(--danger);">' + esc(e.message||e) + '</p>'; }
   input.value = '';
 }
@@ -375,7 +420,7 @@ function abrirImportExport(){
       '</div>';
   };
   body.innerHTML =
-    card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Nombre completo. Modalidad, Programa y Jornada deben escribirse como en la aplicación (revisa la plantilla).') +
+    card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Nombre completo. Modalidad, Programa y Jornada se reconocen aunque vengan escritos distinto (con numeración, "TL.", mayúsculas, textos largos…); si alguno no se reconoce, la fila se importa igual y te avisa.') +
     card('empresas','🏢','Una fila por empresa y, si es de prácticas no remuneradas, puedes agregar Programa, Jornada y Cupos (repite la empresa en varias filas para varios cupos). Categorías: ' + CATEGORIAS_EMPRESA.map(c=>c.nombre).join(' · ') + '.') +
     card('supervisores','👤','Crea o actualiza supervisores. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.') +
     card('ca_empresas','🤝','Empresas que reciben aprendices (contrato de aprendizaje). Una fila por empresa; "Verificada SENA" = Sí las deja aprobadas. Se enlazan con el módulo Empresas por NIT o nombre.') +
