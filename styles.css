@@ -403,3 +403,19 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .rub-ed-niv textarea{width:100%;font:inherit;font-size:12.5px;resize:vertical;}
 @media(max-width:1100px){ .rub-ed-niv{grid-template-columns:repeat(2,1fr);} }
 @media(max-width:640px){ .rub-ed-niv{grid-template-columns:1fr;} }
+
+/* ---- Contrato de aprendizaje: tablas de procesos ---- */
+table.ca-tabla{border-collapse:collapse;width:100%;font-size:13px;}
+table.ca-tabla th,table.ca-tabla td{border:1px solid var(--line);padding:9px 11px;vertical-align:middle;text-align:left;}
+table.ca-tabla thead th{background:var(--deep,#14403B);color:#fff;font-weight:600;text-transform:uppercase;letter-spacing:.03em;font-size:11.5px;white-space:nowrap;}
+table.ca-tabla tbody tr.ca-fila:nth-of-type(4n+1) td{background:#fff;}
+table.ca-tabla tbody tr.ca-fila:nth-of-type(4n+3) td{background:#F1F7F6;}
+table.ca-tabla tbody tr.ca-fila:hover td{background:#E3F0EE;}
+table.ca-tabla tr.ca-perfil td{background:#FAFCFB;padding:6px 12px;}
+table.ca-tabla tr.ca-perfil .ca-cand{margin:4px 0;border-style:dashed;}
+table.ca-tabla td.cp-c{text-align:center;font-weight:600;color:var(--deep,#14403B);}
+table.ca-tabla .ca-oculto{color:var(--muted);font-style:italic;}
+table.ca-tabla .ca-acc-col{display:flex;flex-direction:column;gap:5px;min-width:140px;}
+table.ca-tabla.ca-cerrados thead th{background:#6B7B79;}
+table.ca-tabla.ca-cerrados td{color:#5b6866;}
+.ca-chip.ca-ok{background:#DDF1E6;color:#17613D;} .ca-chip.ca-low{background:#FFF1D1;color:#8A5A00;} .ca-chip.ca-no{background:#F8DCD8;color:#9B2C22;}
