@@ -434,3 +434,12 @@ table.ca-tabla.ca-cerrados td{color:#5b6866;}
 .ca-oculto{color:var(--muted);font-style:italic;}
 .ca-cerrada .ca-form-head{background:#6B7B79;}
 @media(max-width:560px){ .ca-fichas{grid-template-columns:1fr;} .ca-f{grid-template-columns:110px 1fr;} }
+
+/* ---- Carta de fechas ---- */
+.ca-carta{display:flex;flex-direction:column;gap:8px;font-size:13px;}
+.ca-carta p{margin:0;}
+.ca-carta-fila{display:flex;flex-direction:column;gap:3px;}
+.ca-carta-fila>span{font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600;}
+.ca-carta-fechas{display:flex;gap:10px;flex-wrap:wrap;align-items:end;}
+.ca-carta-fechas label{display:flex;flex-direction:column;font-size:12px;gap:2px;}
+.ca-carta-acc{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
