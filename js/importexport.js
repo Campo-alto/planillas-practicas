@@ -209,6 +209,56 @@ const IE_DATASETS = {
     }
   },
 
+  ca_empresas: {
+    titulo: 'Empresas de contrato de aprendizaje', archivo: 'empresas-contrato-aprendizaje',
+    cols: ['Razón social','NIT','Correo de acceso','Contraseña','Contacto','Teléfono','Dirección','Ciudad','Sitio web','Verificada SENA'],
+    ejemplo: ['Empresa Ejemplo S.A.S.','900123456-7','talento@ejemplo.com','','María Pérez','3001234567','Cra 10 # 20-30','Bogotá','https://ejemplo.com','Sí'],
+    aliases: { 'razon social':'razon', empresa:'razon', nombre:'razon', nit:'nit', 'correo de acceso':'correo', correo:'correo', email:'correo', 'correo electronico':'correo',
+               contrasena:'password', clave:'password', contacto:'contacto', telefono:'telefono', direccion:'direccion', ciudad:'ciudad', 'sitio web':'sitio', web:'sitio',
+               'verificada sena':'sena', sena:'sena', 'verificada en sena':'sena' },
+    importable: true,
+    async exportar(){
+      const { data, error } = await sb.rpc('admin_ca_empresas');
+      if(error) throw error;
+      return { head: ['Razón social','NIT','Correo de acceso','Contacto','Teléfono','Dirección','Ciudad','Sitio web','Verificada SENA','Estado','Ficha en Empresas','Solicitudes','Contratados'],
+        rows: (data||[]).map(x=>[x.razon_social,x.nit,x.email,x.contacto,x.telefono,x.direccion,x.ciudad,x.sitio_web,x.sena?'Sí':'No',x.estado,x.ficha||'',x.ofertas,x.contratados]) };
+    },
+    async preparar(filas){
+      const emails = new Set(), nits = new Set(), validas = [], errores = [];
+      filas.forEach(f=>{
+        const r = f.v, e = [];
+        const razon = ieStr(r.razon,160); if(razon.length < 3) e.push('falta la razón social');
+        const nit = ieStr(r.nit,20); if(nit.replace(/\D/g,'').length < 5) e.push('NIT inválido');
+        const correo = ieStr(r.correo,150).toLowerCase(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) e.push('correo de acceso inválido');
+        if(emails.has(correo)) e.push('correo repetido en el archivo'); emails.add(correo);
+        const nk = nit.replace(/\D/g,'').slice(0,9); if(nk && nits.has(nk)) e.push('NIT repetido en el archivo'); nits.add(nk);
+        const pw = ieStr(r.password,72); if(pw && pw.length < 8) e.push('la contraseña debe tener mínimo 8 caracteres (o déjala vacía para generarla)');
+        const sena = /^(si|sí|s|x|1|true|verdadero|yes)$/i.test(ieStr(r.sena,20));
+        if(e.length) errores.push({ fila: f.n, msg: e.join('; ') });
+        else validas.push({ fila: f.n, razon, nit, correo, pw, sena, contacto: ieStr(r.contacto,120), telefono: ieStr(r.telefono,40), direccion: ieStr(r.direccion,160), ciudad: ieStr(r.ciudad,80), sitio: ieStr(r.sitio,160) });
+      });
+      return { validas, errores, resumen: v=>v.razon+' · NIT '+v.nit+' · '+v.correo+(v.sena?' · SENA ✔':'') };
+    },
+    async confirmar(validas, opts){
+      const { data: ex } = await sb.rpc('admin_ca_empresas');
+      const existentes = new Set((ex||[]).map(u=>(u.email||'').toLowerCase()));
+      const fallos = [], cred = []; let creadas = 0, actualizadas = 0;
+      for(const v of validas){
+        const esNueva = !existentes.has(v.correo);
+        if(!esNueva && !opts.actualizar) continue;
+        const pw = v.pw || (esNueva ? generarClaveLocal() : null);
+        const { error } = await sb.rpc('admin_ca_guardar_empresa', { p_email: v.correo, p_password: pw, p_razon: v.razon, p_nit: v.nit, p_contacto: v.contacto,
+          p_telefono: v.telefono, p_direccion: v.direccion, p_ciudad: v.ciudad, p_sitio: v.sitio, p_sena: v.sena });
+        if(error){ fallos.push('Fila '+v.fila+' ('+v.razon+'): '+error.message); continue; }
+        if(esNueva) creadas++; else actualizadas++;
+        if(pw) cred.push([v.razon, v.correo, pw]);
+      }
+      if(cred.length) ieDescargarXlsx('credenciales-empresas-contrato-aprendizaje', ['Empresa','Correo','Contraseña'], cred, 'Credenciales');
+      return { texto: creadas+' empresa(s) creada(s), '+actualizadas+' actualizada(s). Las empresas se enlazan solas con el módulo Empresas (por NIT o nombre) y, si no existían allí, se crean con categoría "contrato de aprendizaje".',
+               fallos, extra: cred.length ? 'Se descargó un Excel con las contraseñas: entrégalas y guárdalo en un lugar seguro; no se vuelven a mostrar.' : '' };
+    }
+  },
+
   asignaciones: {
     titulo: 'Asignaciones de práctica', archivo: 'asignaciones-practica', importable: false,
     async exportar(){
@@ -327,6 +377,7 @@ function abrirImportExport(){
     card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Apellidos o Nombres. Modalidad, Programa y Jornada deben escribirse como en la aplicación (revisa la plantilla).') +
     card('empresas','🏢','Una fila por empresa y, si es de prácticas no remuneradas, puedes agregar Programa, Jornada y Cupos (repite la empresa en varias filas para varios cupos). Categorías: ' + CATEGORIAS_EMPRESA.map(c=>c.nombre).join(' · ') + '.') +
     card('supervisores','👤','Crea o actualiza supervisores. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.') +
+    card('ca_empresas','🤝','Empresas que reciben aprendices (contrato de aprendizaje). Una fila por empresa; "Verificada SENA" = Sí las deja aprobadas. Se enlazan con el módulo Empresas por NIT o nombre.') +
     card('asignaciones','📋','Lista de estudiantes con la empresa a la que fueron asignados.');
   showScreen('screen-admin-datos');
 }
