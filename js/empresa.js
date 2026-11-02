@@ -18,28 +18,27 @@ function mesLabel(rec, i){
 function renderEmpOverview(){
   const rec = state.record;
   const mesesActivos = mesesPorModalidad(rec.modalidad);
-  const rows = rec.meses.slice(0, mesesActivos).map((m,i)=>{
-    const scores = COMPETENCIAS.map(c=>rec.competencias[c.key][i]);
-    const nCalificadas = scores.filter(s=>s!=null).length;
-    const notasTxt = nCalificadas===0 ? 'Sin calificar' : (nCalificadas+'/4 competencias');
-    const notasCls = nCalificadas===4 ? 'ok' : (nCalificadas>0 ? '' : 'no');
-    const firmaTxt = m.firmaEmpresa ? 'Firmado' : 'Pendiente';
-    const firmaCls = m.firmaEmpresa ? 'ok' : 'no';
-    const estado = m.bloqueado ? '🔒 Bloqueado' : 'Editable';
-    const isOpen = i === state.empMonth;
-    const mainRow = `<tr class="rowlink${isOpen?' active-month':''}" onclick="empGoToMonth(${i})">
-      <td>${mesLabel(rec,i)}${isOpen ? ' ▾' : ''}</td>
-      <td>${m.sitio || '—'}</td>
-      <td class="${notasCls}">${notasTxt}</td>
-      <td class="${firmaCls}">${firmaTxt}</td>
-      <td>${estado}</td>
-    </tr>`;
-    const expandRow = isOpen ? `<tr><td class="expand-cell" colspan="5">${empMonthEditorHtml(i)}</td></tr>` : '';
-    return mainRow + expandRow;
+  const pills = rec.meses.slice(0, mesesActivos).map((m,i)=>{
+    const n = COMPETENCIAS.filter(c=>rec.competencias[c.key][i]!=null).length;
+    const icon = m.bloqueado ? '🔒' : (n===4 ? '✅' : (n>0 ? '◐' : '○'));
+    return `<button type="button" class="month-pill${i===state.empMonth?' active':''}${m.bloqueado?' locked':''}" onclick="empGoToMonth(${i})"><span class="mp-name">${mesLabel(rec,i)}</span><span class="mp-state">${icon} ${n}/4</span></button>`;
   }).join('');
+  const i = state.empMonth, m = rec.meses[i];
+  const scores = COMPETENCIAS.map(c=>rec.competencias[c.key][i]);
+  const nCal = scores.filter(x=>x!=null).length;
+  const resumen = `<table class="ficha-table"><tbody>
+      <tr><th>Sitio de prácticas</th><td>${m.sitio ? escapeHtmlFicha(m.sitio) : '<span class="ficha-vacio">—</span>'}</td><th>Estado</th><td>${m.bloqueado ? (m.congelado ? '🔒 Protegido (empresa anterior)' : '🔒 Bloqueado') : 'Editable'}</td></tr>
+      <tr><th>Fecha inicio</th><td>${fmtDate(m.fechaInicio)||'<span class="ficha-vacio">—</span>'}</td><th>Fecha final</th><td>${fmtDate(m.fechaFin)||'<span class="ficha-vacio">—</span>'}</td></tr>
+      <tr><th>Competencias calificadas</th><td>${nCal}/4</td><th>Firma empresa</th><td class="${m.firmaEmpresa?'ok':'no'}">${m.firmaEmpresa?'Firmado':'Pendiente'}</td></tr>
+    </tbody></table>`;
   const modalidadNote = rec.modalidad ? `<p class="helptext" style="margin-top:-4px;">Modalidad: <b>${rec.modalidad}</b> — ${mesesActivos===1?'1 nota':mesesActivos+' meses'}.</p>` : '<p class="helptext" style="margin-top:-4px;color:var(--danger);">El administrador todavía no asignó una modalidad a este estudiante — se muestran 6 meses por defecto.</p>';
   document.getElementById('empOverview').innerHTML = modalidadNote +
-    `<table class="resumen-table"><thead><tr><th>${mesesActivos===1?'Nota':'Mes'}</th><th>Sitio</th><th>Notas</th><th>Firma</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<div class="month-pills">${pills}</div>
+     <div class="ficha-mes">
+       <div class="ficha-mes-title">Plantilla · ${mesLabel(rec,i)}</div>
+       <div class="ficha-wrap">${resumen}</div>
+       ${empMonthEditorHtml(i)}
+     </div>`;
 }
 
 function empMonthEditorHtml(i){
