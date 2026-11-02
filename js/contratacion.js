@@ -47,12 +47,15 @@ let caEst = null, caHv = { formacion:[], experiencia:[] }, caHvEditando = false;
     if(bar && document.getElementById('estCaCard') && !document.getElementById('estTab-ca')){
       const b = document.createElement('button'); b.className = 'tab'; b.id = 'estTab-ca'; b.textContent = 'Contrato de aprendizaje';
       b.onclick = ()=>showEstTab('ca'); bar.appendChild(b);
-      showEstTab(estTabActual);
     }
+    // "Asignación de práctica no remunerada" solo aplica a Prácticas No Remuneradas: en otras modalidades se oculta
+    if(rec && estNoPNR(rec)){ const t = document.getElementById('estTab-asig'); if(t) t.remove(); if(estTabActual==='asig') estTabActual = _ca_modalidad(rec.modalidad) ? 'ca' : 'datos'; }
+    showEstTab(estTabActual);
   };
   const _show = showEstTab;
-  showEstTab = function(tab){ _show(tab); if(tab === 'ca') caCargarEstudiante(); };
+  showEstTab = function(tab){ if(tab === 'asig' && state.record && estNoPNR(state.record)) tab = _ca_modalidad(state.record.modalidad) ? 'ca' : 'datos'; _show(tab); if(tab === 'ca') caCargarEstudiante(); };
 })();
+function estNoPNR(rec){ return !!(rec && rec.modalidad && typeof esModalidadPNR==='function' && !esModalidadPNR(rec.modalidad)); }
 function _ca_modalidad(m){ return /contrato.*aprendizaje/i.test(m||''); }
 
 async function caCargarEstudiante(){
