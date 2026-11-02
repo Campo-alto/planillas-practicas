@@ -1,6 +1,6 @@
 /* ===== CARTA DE FECHAS · CONTRATO DE APRENDIZAJE =====
    Se solicita después de la entrevista (cuando la empresa selecciona al estudiante).
-   Etapa lectiva: la define la institución. Etapa productiva: la define la institución o la empresa.
+   Las cuatro fechas (etapa lectiva y productiva) las define solo la institución.
    Usa pdf-lib (PDFLib) y los helpers de carta.js. */
 const CARTA_FECHAS_FIRMA = ['Yaneth Gomez', 'Coordinadora de Prácticas', 'Campoalto Acesalud S.A.S', 'PBX 7441441 Ext. 1224.', 'gestionpracticas@campoalto.edu.co'];
 
@@ -85,33 +85,23 @@ function caCartaEmpHtml(p){
   if(!caCartasOk) return '<span class="ca-oculto">Función no disponible todavía (falta ejecutar el SQL de la etapa 16).</span>';
   const c = caCartasEmp[p.id];
   if(!c) return `<div class="ca-carta"><p>Ya seleccionaste a este estudiante. Solicita la carta de fechas del contrato.</p><button class="primary" onclick="caCartaSolicitar('${p.id}')">Solicitar carta de fechas</button></div>`;
-  const porInst = c.prod_por === 'institucion';
   return `<div class="ca-carta">
     <div class="ca-carta-fila"><span>Etapa lectiva</span><b>${c.lectiva_ini ? caF(c.lectiva_ini)+' a '+caF(c.lectiva_fin) : 'Pendiente: la define la institución'}</b></div>
-    <div class="ca-carta-fila"><span>Etapa productiva</span>${porInst
-      ? `<b>${caF(c.prod_ini)} a ${caF(c.prod_fin)}</b> <small>(definida por la institución)</small>`
-      : `<div class="ca-carta-fechas"><label>Inicio <input type="date" id="caPi-${p.id}" value="${esc(c.prod_ini||'')}"></label><label>Fin <input type="date" id="caPf-${p.id}" value="${esc(c.prod_fin||'')}"></label>
-         <button class="ghost" onclick="caCartaGuardarEmp('${p.id}')">Guardar fechas</button></div>
-         <small>Puedes escribirlas tú o dejar que la institución las defina.</small>`}</div>
-    <div class="ca-carta-acc">${c.lista ? `<button class="primary" onclick="caCartaDescargar('${p.id}', false)">📄 Descargar carta (PDF)</button>` : '<small class="ca-oculto">La carta se podrá descargar cuando estén las 4 fechas.</small>'}</div></div>`;
+    <div class="ca-carta-fila"><span>Etapa productiva</span><b>${c.prod_ini ? caF(c.prod_ini)+' a '+caF(c.prod_fin) : 'Pendiente: la define la institución'}</b></div>
+    <div class="ca-carta-acc">${c.lista ? `<button class="primary" onclick="caCartaDescargar('${p.id}', false)">📄 Descargar carta (PDF)</button>` : '<small class="ca-oculto">Las fechas las define la institución; la carta se podrá descargar cuando estén las 4.</small>'}</div></div>`;
 }
 function caCartaAdmHtml(x){
   if(!['seleccionado','contratado'].includes(x.estado)) return '';
   const c = caCartasAdm[x.id] || {};
-  const estado = !caCartasAdm[x.id] ? 'La empresa aún no la ha solicitado' : (c.lista ? 'Lista para descargar' : 'Solicitada: faltan fechas');
+  const estado = !caCartasAdm[x.id] ? 'La empresa aún no la ha solicitado' : (c.lista ? 'Lista para descargar' : 'Solicitada: faltan fechas por definir');
   const inp = (id, v) => `<input type="date" id="${id}-${x.id}" value="${esc(v||'')}">`;
   return `<div class="ca-carta"><div class="ca-carta-fila"><span>Estado</span><b>${estado}</b></div>
-    <div class="ca-carta-fila"><span>Etapa lectiva (la define la institución)</span><div class="ca-carta-fechas"><label>Inicio ${inp('caLi', c.lectiva_ini)}</label><label>Fin ${inp('caLf', c.lectiva_fin)}</label></div></div>
-    <div class="ca-carta-fila"><span>Etapa productiva ${c.prod_por==='empresa' ? '<small>(la escribió la empresa)</small>' : '<small>(opcional: también la puede dar la empresa)</small>'}</span><div class="ca-carta-fechas"><label>Inicio ${inp('caPi', c.prod_ini)}</label><label>Fin ${inp('caPf', c.prod_fin)}</label></div></div>
+    <div class="ca-carta-fila"><span>Etapa lectiva</span><div class="ca-carta-fechas"><label>Inicio ${inp('caLi', c.lectiva_ini)}</label><label>Fin ${inp('caLf', c.lectiva_fin)}</label></div></div>
+    <div class="ca-carta-fila"><span>Etapa productiva</span><div class="ca-carta-fechas"><label>Inicio ${inp('caPi', c.prod_ini)}</label><label>Fin ${inp('caPf', c.prod_fin)}</label></div></div>
     <div class="ca-carta-acc"><button class="primary" onclick="caCartaGuardarAdm('${x.id}')">Guardar fechas</button>${c.lista ? ` <button class="ghost" onclick="caCartaDescargar('${x.id}', true)">📄 Descargar carta (PDF)</button>` : ''}</div></div>`;
 }
 async function caCartaSolicitar(id){
-  try{ await caRpc('ca_emp_carta_solicitar', { p_token: state.token, p_post: id }); toast('Carta solicitada. La institución definirá las fechas de la etapa lectiva.'); caPintarProcesos(); }catch(e){ toast(e.message, true); }
-}
-async function caCartaGuardarEmp(id){
-  const ini = document.getElementById('caPi-'+id).value || null, fin = document.getElementById('caPf-'+id).value || null;
-  if(!ini || !fin){ toast('Escribe las dos fechas de la etapa productiva', true); return; }
-  try{ await caRpc('ca_emp_carta_fechas', { p_token: state.token, p_post: id, p_ini: ini, p_fin: fin }); toast('Fechas guardadas'); caPintarProcesos(); }catch(e){ toast(e.message, true); }
+  try{ await caRpc('ca_emp_carta_solicitar', { p_token: state.token, p_post: id }); toast('Carta solicitada. La institución definirá las fechas.'); caPintarProcesos(); }catch(e){ toast(e.message, true); }
 }
 async function caCartaGuardarAdm(id){
   const g = k => document.getElementById(k+'-'+id).value || null;
