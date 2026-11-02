@@ -280,8 +280,8 @@ function renderAdminListTable(conservarFoco){
     ? '✅ No hay notas calificadas pendientes de subir a la plataforma académica.'
     : '📋 <b>'+totalPendientesPlataforma+'</b> nota(s) calificada(s), en total, todavía sin subir a la plataforma académica.'}</div>`;
   const list = adminListaFiltrada();
+  const arriba = `<div class="lista-top"><button class="ghost" onclick="generarClavesMasivas()">🔑 Generar claves para estudiantes sin acceso (Excel)</button><input type="search" id="adminListBusca" class="lista-busca" placeholder="🔎 Buscar por documento, nombre, programa o empresa…" value="${escapeAttr(adminStudentsBusqueda)}" oninput="adminListBuscar(this.value)"></div>`;
   const barra = `<div class="lista-barra">
-    <input type="search" id="adminListBusca" class="lista-busca" placeholder="Buscar por documento, nombre, programa o empresa…" value="${escapeAttr(adminStudentsBusqueda)}" oninput="adminListBuscar(this.value)">
     <label class="lista-chk"><input type="checkbox" ${adminStudentsSoloPendientes?'checked':''} onchange="toggleAdminStudentsFiltro()"> Solo con notas pendientes</label>
     <span class="lista-acc"><button class="ghost" onclick="adminListExportar('xlsx')">⬇ Excel</button><button class="ghost" onclick="adminListExportar('pdf')">⬇ PDF</button></span>
   </div><div class="lista-cuenta">${list.length} de ${adminStudentsCache.length} estudiante(s)</div>`;
@@ -302,7 +302,7 @@ function renderAdminListTable(conservarFoco){
     }).join('');
     tabla = `<div class="cupos-wrap"><table class="cupos-table lista-est"><thead><tr><th>Nombre</th><th>Documento</th><th>Programa</th><th>Empresa asignada</th><th>Sede</th><th class="cp-c">Sem.</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
-  el.innerHTML = contadorGlobal + barra + tabla;
+  el.innerHTML = arriba + contadorGlobal + barra + tabla;
   if(conservarFoco){ const i = document.getElementById('adminListBusca'); if(i){ i.focus(); const n=i.value.length; try{ i.setSelectionRange(n,n); }catch(e){} } }
 }
 function adminListExportar(formato){
