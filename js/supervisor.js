@@ -1,228 +1,110 @@
-<!DOCTYPE html>
-<!-- VERSION-EMPRESAS-UNIFICADO -->
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Campoalto · Planillas de Prácticas · Supervisor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div class="app">
+/* ============================= SUPERVISOR ============================= */
+function setCardLocked(cardId, locked){
+  const card = document.getElementById(cardId);
+  if(!card) return;
+  card.querySelectorAll('input, select, textarea, button').forEach(el=>{ el.disabled = locked; });
+}
 
-  <div class="topbar">
-    <div class="brand">
-      <div class="dot"></div>
-      <div class="brand-text">
-        <div class="b1">Campoalto</div>
-        <div class="b2">Planillas de Prácticas · PPS-GAA-F-006</div>
-      </div>
-    </div>
-    <div class="topbar-actions" id="topbarActions"></div>
-  </div>
+function renderSupervisor(){
+  showScreen('screen-supervisor');
+  document.getElementById('supDocLabel').textContent = state.documento;
+  document.getElementById('supDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'sup');
+  document.getElementById('supPlanillaView').innerHTML = resumenPlanillaHtml(state.record, false);
 
-  <!-- EMPRESA / SUPERVISOR LOGIN -->
-  <div class="screen" id="screen-role-login">
-    <h2 id="roleLoginTitle" style="margin:12px 0 4px;"></h2>
-    <p class="helptext" id="roleLoginHelp"></p>
-    <div class="card" style="max-width:420px;">
-      <div class="field-row" style="grid-template-columns:1fr;">
-        <div class="field"><label>Correo</label><input type="email" id="roleEmail" autocomplete="username"></div>
-        <div class="field"><label>Contraseña</label>
-          <div class="pw-wrap">
-            <input type="password" id="rolePassword" autocomplete="current-password">
-            <button type="button" class="pw-toggle" data-target="rolePassword" aria-label="Mostrar contraseña"></button>
-          </div>
-        </div>
-      </div>
-      <div class="actions-row" style="justify-content:flex-start;">
-        <button class="primary" onclick="doRoleLogin()">Iniciar sesión</button>
-      </div>
-      <div id="roleLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
-      <button class="linkbtn" style="margin-top:10px;padding:0;" onclick="toggleForgotRoleHelp()">¿Olvidaste tu contraseña?</button>
-      <div id="forgotRoleHelp" style="display:none;margin-top:10px;font-size:13px;background:#FBF3E7;border:1px solid #EFD9B5;border-radius:8px;padding:10px 12px;color:#7A5B21;">
-        Este usuario no tiene recuperación automática por correo. Escríbele al Administrador de tu institución con tu correo (<span id="forgotRoleEmailShown">el que usas para entrar</span>) y pídele que te asigne una contraseña nueva desde su panel — puede hacerlo en cualquier momento.
-      </div>
-    </div>
-  </div>
+  const rf = state.record.revisionFunciones;
+  document.getElementById('rf-lock-banner').innerHTML = rf.bloqueado
+    ? '<div class="note-box">🔒 Esta visita ya fue guardada y quedó bloqueada. Si necesitas corregir algo, pide al administrador que la desbloquee.</div>' : '';
+  document.getElementById('rf-fecha').value = rf.fecha || '';
+  document.getElementById('rf-modalidad-visita').value = rf.modalidadVisita || '';
+  document.getElementById('rf-sitio').value = rf.sitio || '';
+  document.getElementById('rf-area').value = rf.area || '';
+  document.getElementById('rf-jefe').value = rf.jefeInmediato || '';
+  document.getElementById('rf-tutor').value = rf.tutor || '';
+  document.getElementById('rf-funciones').value = rf.funcionesAsignadas || '';
+  document.querySelectorAll('input[name="rfAceptacion"]').forEach(r=>{ r.checked = r.value === rf.aceptacionFunciones; });
+  document.getElementById('rf-observaciones-mejora').value = rf.observacionesMejora || '';
+  document.getElementById('rf-compromisos').value = rf.compromisos || '';
+  setTimeout(()=>{
+    initSigPad('sig-rf-jefe', rf.firmaJefe, rf.bloqueado);
+    initSigPad('sig-rf-estudiante', rf.firmaEstudiante, rf.bloqueado);
+    initSigPad('sig-rf-supervisor', rf.firmaSupervisor, rf.bloqueado);
+  }, 30);
+  setCardLocked('rf-card', rf.bloqueado);
+  // El nombre/correo del supervisor viene de la cuenta con la que inició sesión —
+  // se muestra siempre, aunque el resto de la tarjeta esté bloqueada.
+  document.getElementById('rf-supervisor').value = state.currentUserNombre || rf.supervisor || '';
+  document.getElementById('rf-supervisor').disabled = true;
+  document.getElementById('rf-supervisor-correo').value = state.currentUserEmail || rf.supervisorCorreo || '';
+  document.getElementById('rf-supervisor-correo').disabled = true;
 
-  <!-- LOOKUP -->
-  <div class="screen" id="screen-lookup">
-    <h2 id="lookupTitle" style="margin:12px 0 4px;"></h2>
-    <p class="helptext" id="lookupHelp"></p>
-    <div class="card">
-      <div class="lookup-form">
-        <div class="field">
-          <label>Número de documento del estudiante</label>
-          <input type="text" id="lookupDoc" inputmode="numeric" placeholder="Ej. 1128108664">
-        </div>
-        <button class="primary" onclick="doLookup()">Buscar</button>
-      </div>
-      <div id="lookupMsg" style="margin-top:12px;font-size:13.5px;"></div>
-    </div>
-    <div class="card" id="lookupAdminListCard" style="display:none;">
-      <div class="section-bar deep">Estudiantes registrados</div>
-      <div class="actions-row" style="justify-content:flex-start;margin-bottom:8px;"><button class="ghost" onclick="generarClavesMasivas()">🔑 Generar claves para estudiantes sin acceso (Excel)</button></div>
-      <div id="lookupAdminList"></div>
-    </div>
-  </div>
-
-  <!-- SUPERVISOR -->
-  <div class="screen" id="screen-supervisor">
-    <div class="status-strip">
-      <div class="who">Editando como <b>Supervisor institucional</b> · Documento <b id="supDocLabel"></b></div>
-      <div class="actions">
-        <button class="ghost" onclick="switchStudent('supervisor')">Cambiar estudiante</button>
-        <button class="danger" onclick="roleLogout()">Cerrar sesión</button>
-      </div>
-    </div>
-
-    <div class="card" id="supDatosGenerales"></div>
-
-    <div class="card">
-      <div class="section-bar deep">Planilla del estudiante — solo lectura</div>
-      <p class="helptext" style="margin-top:-4px;">Puedes revisar toda la planilla. Solo puedes diligenciar las secciones de Visita 1 y Visita 2, más abajo.</p>
-      <div id="supPlanillaView"></div>
-    </div>
-
-    <div class="card" id="rf-card">
-      <div class="section-bar deep">Revisión de funciones y actividades — visita 1</div>
-      <div id="rf-lock-banner"></div>
-      <div class="field-row">
-        <div class="field"><label>Fecha de la visita</label><input type="date" id="rf-fecha"></div>
-        <div class="field"><label>Modalidad de la visita</label>
-          <select id="rf-modalidad-visita">
-            <option value="">Selecciona…</option>
-            <option value="Presencial">Presencial</option>
-            <option value="Virtual">Virtual</option>
-          </select>
-        </div>
-        <div class="field"><label>Sitio de prácticas</label><input type="text" id="rf-sitio"></div>
-        <div class="field"><label>Área de trabajo</label><input type="text" id="rf-area"></div>
-        <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="rf-jefe"></div>
-        <div class="field"><label>Nombre del supervisor</label><input type="text" id="rf-supervisor" disabled style="background:#F3F0E8;color:var(--muted);"></div>
-        <div class="field"><label>Correo del supervisor</label><input type="text" id="rf-supervisor-correo" disabled style="background:#F3F0E8;color:var(--muted);"></div>
-      </div>
-
-      <div class="subhead" style="margin-top:6px;">Aspectos de la visita</div>
-      <div class="field-row">
-        <div class="field"><label>Nombre del tutor de la práctica</label><input type="text" id="rf-tutor"></div>
-      </div>
-      <div class="field"><label>Funciones asignadas al estudiante</label><textarea id="rf-funciones"></textarea></div>
-      <div class="field">
-        <label>¿El estudiante acepta las funciones delegadas y se relacionan con su programa de formación?</label>
-        <div class="yesno">
-          <label><input type="radio" name="rfAceptacion" value="SI"> Sí</label>
-          <label><input type="radio" name="rfAceptacion" value="NO"> No</label>
-        </div>
-      </div>
-      <div class="field"><label>Observaciones de mejora de la empresa al estudiante</label><textarea id="rf-observaciones-mejora"></textarea></div>
-      <div class="field"><label>Compromisos que se dan en la reunión</label><textarea id="rf-compromisos"></textarea></div>
-
-      <div class="field-row">
-        <div class="sig-wrap" style="grid-column:1/-1;"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
-        <div class="sig-wrap"><label>Firma jefe inmediato</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-jefe"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-jefe-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-jefe')">Borrar</button></div></div>
-        <div class="sig-wrap"><label>Firma estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-estudiante')">Borrar</button></div></div>
-        <div class="sig-wrap"><label>Firma supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-rf-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-rf-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-rf-supervisor')">Borrar</button></div></div>
-      </div>
-      <div class="actions-row"><button class="primary" id="rfSaveBtn" onclick="saveRevisionFunciones()">Guardar visita 1</button></div>
-    </div>
-
-    <div class="card" id="ds-card">
-      <div class="section-bar deep">Datos de supervisión — visita 2</div>
-      <div id="ds-lock-banner"></div>
-      <div class="field-row">
-        <div class="field"><label>Fecha de la visita</label><input type="date" id="ds-fecha"></div>
-        <div class="field"><label>Modalidad de la visita</label>
-          <select id="ds-modalidad-visita">
-            <option value="">Selecciona…</option>
-            <option value="Presencial">Presencial</option>
-            <option value="Virtual">Virtual</option>
-          </select>
-        </div>
-        <div class="field"><label>Sitio de prácticas</label><input type="text" id="ds-sitio"></div>
-        <div class="field"><label>Área de trabajo</label><input type="text" id="ds-area"></div>
-        <div class="field"><label>Nombre del jefe inmediato</label><input type="text" id="ds-jefe"></div>
-        <div class="field"><label>Nombre del supervisor</label><input type="text" id="ds-supervisor" disabled style="background:#F3F0E8;color:var(--muted);"></div>
-        <div class="field"><label>Correo del supervisor</label><input type="text" id="ds-supervisor-correo" disabled style="background:#F3F0E8;color:var(--muted);"></div>
-      </div>
-
-      <div class="subhead">Observaciones del estudiante</div>
-      <p class="helptext" style="margin-top:-4px;">El estudiante responde y firma en el momento de la visita.</p>
-      <div class="field-row">
-        <div class="field"><label>¿El lugar de prácticas es el indicado para su programa?</label>
-          <div class="yesno"><label><input type="radio" name="estP1" value="SI"> Sí</label><label><input type="radio" name="estP1" value="NO"> No</label></div></div>
-        <div class="field"><label>¿Ha recibido apoyo de su jefe inmediato en su formación?</label>
-          <div class="yesno"><label><input type="radio" name="estP2" value="SI"> Sí</label><label><input type="radio" name="estP2" value="NO"> No</label></div></div>
-      </div>
-      <div class="field"><label>Comentarios</label><textarea id="ds-estComentarios"></textarea></div>
-      <div class="sig-wrap"><label>Firma del estudiante</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-estudiante"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-estudiante-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-estudiante')">Borrar</button></div></div>
-
-      <div class="subhead">Observaciones del jefe inmediato</div>
-      <div class="field-row">
-        <div class="field"><label>¿Las funciones del estudiante cubren las necesidades del servicio?</label>
-          <div class="yesno"><label><input type="radio" name="jefeP1" value="SI"> Sí</label><label><input type="radio" name="jefeP1" value="NO"> No</label></div></div>
-        <div class="field"><label>¿Sus conocimientos cubren las necesidades del servicio?</label>
-          <div class="yesno"><label><input type="radio" name="jefeP2" value="SI"> Sí</label><label><input type="radio" name="jefeP2" value="NO"> No</label></div></div>
-      </div>
-      <div class="field"><label>Comentarios</label><textarea id="ds-jefeComentarios"></textarea></div>
-      <div class="sig-wrap"><label>Firma del jefe inmediato</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-jefe"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-jefe-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-jefe')">Borrar</button></div></div>
-
-      <div class="subhead">Observaciones del supervisor</div>
-      <div class="field"><label>Comentarios</label><textarea id="ds-supComentarios"></textarea></div>
-      <div class="sig-wrap"><label>Firma del supervisor</label><div class="sig-box"><canvas class="sigpad" id="sig-ds-supervisor"></canvas></div><div class="sig-actions"><span class="sig-status" id="sig-ds-supervisor-status">Sin firmar</span><button class="ghost" onclick="clearSig('sig-ds-supervisor')">Borrar</button></div></div>
-
-      <div class="actions-row">
-        <button class="ghost" onclick="downloadPdf()">Descargar PDF</button>
-        <button class="primary" id="dsSaveBtn" onclick="saveDatosSupervision()">Guardar visita 2</button>
-      </div>
-    </div>
-  </div>
-
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="js/config.js"></script>
-<script src="js/supabase-client.js"></script>
-<script src="js/password-toggle.js"></script>
-<script src="js/signature-pad.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/admin-users.js"></script>
-<script src="js/programas.js"></script>
-<script src="js/datos-generales.js"></script>
-<script src="js/empresa.js"></script>
-<script src="js/estudiante.js"></script>
-<script src="js/supervisor.js"></script>
-<script src="js/administrador.js"></script>
-<script src="js/estudiante-auth.js"></script>
-<script src="js/reporte.js"></script>
-<script src="js/asignacion.js"></script>
-<script src="js/importexport.js"></script>
-<script src="js/modalidades.js"></script>
-<script src="js/rubrica.js"></script>
-<script src="js/carta-assets.js"></script>
-<script src="js/carta.js"></script>
-<script src="js/toast.js"></script>
-<script src="js/sesion.js"></script>
-<script src="js/pie-sesion.js"></script>
-<script src="js/planilla-template.js"></script>
-<script src="js/pdf-export.js"></script>
-<script>
-  initPwToggles();
-  goHome = function(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:'', token:null}; goRoleLogin('supervisor'); };
-  goRoleLogin('supervisor');
-  restaurarSesion('supervisor');
-</script>
-</body>
-</html>
+  const ds = state.record.datosSupervision;
+  document.getElementById('ds-lock-banner').innerHTML = ds.bloqueado
+    ? '<div class="note-box">🔒 Esta visita ya fue guardada y quedó bloqueada. Si necesitas corregir algo, pide al administrador que la desbloquee.</div>' : '';
+  document.getElementById('ds-fecha').value = ds.fecha || '';
+  document.getElementById('ds-modalidad-visita').value = ds.modalidadVisita || '';
+  document.getElementById('ds-sitio').value = ds.sitio || '';
+  document.getElementById('ds-area').value = ds.area || '';
+  document.getElementById('ds-jefe').value = ds.jefeInmediato || '';
+  document.querySelectorAll('input[name="estP1"]').forEach(r=>{ r.checked = r.value === ds.obsEstudiante.p1; });
+  document.querySelectorAll('input[name="estP2"]').forEach(r=>{ r.checked = r.value === ds.obsEstudiante.p2; });
+  document.getElementById('ds-estComentarios').value = ds.obsEstudiante.comentarios || '';
+  document.querySelectorAll('input[name="jefeP1"]').forEach(r=>{ r.checked = r.value === ds.obsJefe.p1; });
+  document.querySelectorAll('input[name="jefeP2"]').forEach(r=>{ r.checked = r.value === ds.obsJefe.p2; });
+  document.getElementById('ds-jefeComentarios').value = ds.obsJefe.comentarios || '';
+  document.getElementById('ds-supComentarios').value = ds.obsSupervisor.comentarios || '';
+  setTimeout(()=>{
+    initSigPad('sig-ds-estudiante', ds.obsEstudiante.firma, ds.bloqueado);
+    initSigPad('sig-ds-jefe', ds.obsJefe.firma, ds.bloqueado);
+    initSigPad('sig-ds-supervisor', ds.obsSupervisor.firma, ds.bloqueado);
+  }, 30);
+  setCardLocked('ds-card', ds.bloqueado);
+  document.getElementById('ds-supervisor').value = state.currentUserNombre || ds.supervisor || '';
+  document.getElementById('ds-supervisor').disabled = true;
+  document.getElementById('ds-supervisor-correo').value = state.currentUserEmail || ds.supervisorCorreo || '';
+  document.getElementById('ds-supervisor-correo').disabled = true;
+}
+async function saveRevisionFunciones(){
+  const rec = state.record; const rf = rec.revisionFunciones;
+  if(rf.bloqueado){ toast('Esta visita está bloqueada. Pide al administrador que la desbloquee.', true); return; }
+  rf.fecha = document.getElementById('rf-fecha').value;
+  rf.modalidadVisita = document.getElementById('rf-modalidad-visita').value;
+  rf.sitio = val('rf-sitio'); rf.area = val('rf-area'); rf.jefeInmediato = val('rf-jefe');
+  rf.supervisor = state.currentUserNombre || rf.supervisor || '';
+  rf.supervisorCorreo = state.currentUserEmail || rf.supervisorCorreo || '';
+  rf.tutor = val('rf-tutor');
+  rf.funcionesAsignadas = document.getElementById('rf-funciones').value.trim();
+  const rfAcept = document.querySelector('input[name="rfAceptacion"]:checked');
+  rf.aceptacionFunciones = rfAcept ? rfAcept.value : '';
+  rf.observacionesMejora = document.getElementById('rf-observaciones-mejora').value.trim();
+  rf.compromisos = document.getElementById('rf-compromisos').value.trim();
+  const sj = sigDataUrl('sig-rf-jefe'); if(sj) rf.firmaJefe = sj;
+  const se = sigDataUrl('sig-rf-estudiante'); if(se) rf.firmaEstudiante = se;
+  const ss = sigDataUrl('sig-rf-supervisor'); if(ss) rf.firmaSupervisor = ss;
+  rf.bloqueado = true;
+  await saveRecord(rec);
+  toast('Visita 1 guardada y bloqueada. El administrador puede desbloquearla si hace falta corregir algo.');
+  renderSupervisor();
+}
+async function saveDatosSupervision(){
+  const rec = state.record; const ds = rec.datosSupervision;
+  if(ds.bloqueado){ toast('Esta visita está bloqueada. Pide al administrador que la desbloquee.', true); return; }
+  ds.fecha = document.getElementById('ds-fecha').value;
+  ds.modalidadVisita = document.getElementById('ds-modalidad-visita').value;
+  ds.sitio = val('ds-sitio'); ds.area = val('ds-area'); ds.jefeInmediato = val('ds-jefe');
+  ds.supervisor = state.currentUserNombre || ds.supervisor || '';
+  ds.supervisorCorreo = state.currentUserEmail || ds.supervisorCorreo || '';
+  const ep1 = document.querySelector('input[name="estP1"]:checked'); const ep2 = document.querySelector('input[name="estP2"]:checked');
+  ds.obsEstudiante.p1 = ep1 ? ep1.value : ''; ds.obsEstudiante.p2 = ep2 ? ep2.value : '';
+  ds.obsEstudiante.comentarios = document.getElementById('ds-estComentarios').value.trim();
+  const jp1 = document.querySelector('input[name="jefeP1"]:checked'); const jp2 = document.querySelector('input[name="jefeP2"]:checked');
+  ds.obsJefe.p1 = jp1 ? jp1.value : ''; ds.obsJefe.p2 = jp2 ? jp2.value : '';
+  ds.obsJefe.comentarios = document.getElementById('ds-jefeComentarios').value.trim();
+  ds.obsSupervisor.comentarios = document.getElementById('ds-supComentarios').value.trim();
+  const se = sigDataUrl('sig-ds-estudiante'); if(se) ds.obsEstudiante.firma = se;
+  const sj = sigDataUrl('sig-ds-jefe'); if(sj) ds.obsJefe.firma = sj;
+  const ss = sigDataUrl('sig-ds-supervisor'); if(ss) ds.obsSupervisor.firma = ss;
+  ds.bloqueado = true;
+  await saveRecord(rec);
+  toast('Visita 2 guardada y bloqueada. El administrador puede desbloquearla si hace falta corregir algo.');
+  renderSupervisor();
+}
