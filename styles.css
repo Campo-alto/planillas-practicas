@@ -201,3 +201,24 @@
   #screen-estudiante-login, #screen-estudiante-cambio { margin-top:3vh; }
   #screen-estudiante-login .card, #screen-estudiante-cambio .card { padding:22px 18px 20px; }
 }
+
+/* ---- Tabla de cupos por empresa ---- */
+.cupos-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);margin:10px 0;background:#fff;}
+.cupos-table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px;}
+.cupos-table thead th{background:var(--deep);color:#fff;font-weight:600;text-align:left;padding:10px 10px;font-size:12px;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;}
+.cupos-table tbody td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle;}
+.cupos-table tbody tr:nth-child(even){background:#FAF8F3;}
+.cupos-table tbody tr:hover{background:#EAF4F5;}
+.cupos-table .cp-c{text-align:center;}
+.cupos-table .cp-prog{min-width:170px;color:var(--deep);}
+.cupos-table .cp-in{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff;width:100%;box-sizing:border-box;margin:0;}
+.cupos-table input[type=date].cp-in{min-width:128px;}
+.cupos-table .cp-num{width:68px;text-align:center;}
+.cupos-table .cp-txt{min-width:112px;}
+.cupos-table .cp-in:focus{outline:2px solid var(--teal);border-color:var(--teal);}
+.cupo-jor{display:inline-block;padding:2px 10px;border-radius:999px;background:#E3F1F2;color:var(--teal-dark);font-weight:600;font-size:12px;}
+.cupo-chip{display:inline-block;min-width:28px;padding:3px 9px;border-radius:999px;font-weight:700;font-size:13px;}
+.cupo-ok{background:#DDF1E4;color:#1B6B3A;}
+.cupo-low{background:#FCEBD2;color:#9A5A0B;}
+.cupo-0{background:#F6DAD6;color:var(--danger);}
+.cp-del{padding:5px 10px;font-size:12px;}
