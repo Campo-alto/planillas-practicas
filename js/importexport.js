@@ -88,17 +88,17 @@ const IE_DATASETS = {
 
   empresas: {
     titulo: 'Empresas', archivo: 'empresas',
-    cols: ['Nombre','Categoría','NIT','Dirección','Ciudad','Teléfono','Correo','Contacto','Programa','Jornada','Cupos'],
-    ejemplo: ['Clínica Ejemplo S.A.S.','Prácticas no remuneradas','900123456','Calle 1 # 2-3','Bogotá','6011234567','contacto@clinica.com','María López','','Mañana','2'],
+    cols: ['Nombre','Categoría','NIT','Dirección','Ciudad','Teléfono','Correo','Contacto','Requisitos','Programa','Jornada','Cupos'],
+    ejemplo: ['Clínica Ejemplo S.A.S.','Prácticas no remuneradas','900123456','Calle 1 # 2-3','Bogotá','6011234567','contacto@clinica.com','María López','Uniforme blanco, hoja de vida formato Campoalto','','Mañana','2'],
     aliases: { nombre:'nombre', empresa:'nombre', 'nombre de la empresa':'nombre', categoria:'categoria', nit:'nit', direccion:'direccion', ciudad:'ciudad', telefono:'telefono',
-               correo:'correo', contacto:'contacto', 'persona de contacto':'contacto', programa:'programa', jornada:'jornada', cupos:'cupos' },
+               correo:'correo', contacto:'contacto', 'persona de contacto':'contacto', requisitos:'requisitos', programa:'programa', jornada:'jornada', cupos:'cupos' },
     importable: true,
     async exportar(){
       const { data, error } = await sb.from('empresas_practica').select('*, cupos_empresa(programa,jornada,cupos_total,cupos_ocupados)').order('nombre');
       if(error) throw error;
       const rows = [];
       (data||[]).forEach(e=>{
-        const base = [e.nombre, nombreCategoria(e.categoria||'practica_no_remunerada'), e.nit, e.direccion, e.ciudad, e.telefono, e.correo, e.contacto];
+        const base = [e.nombre, nombreCategoria(e.categoria||'practica_no_remunerada'), e.nit, e.direccion, e.ciudad, e.telefono, e.correo, e.contacto, e.requisitos];
         const cs = e.cupos_empresa||[];
         if(!cs.length) rows.push(base.concat(['','','',e.activa?'Sí':'No','']));
         cs.forEach(c=>rows.push(base.concat([c.programa, c.jornada, c.cupos_total, e.activa?'Sí':'No', c.cupos_ocupados])));
@@ -127,7 +127,7 @@ const IE_DATASETS = {
         }
         if(e.length) errores.push({ fila: f.n, msg: e.join('; ') });
         else validas.push({ fila: f.n, nombre, categoria: cat.id, nit: ieStr(r.nit,40), direccion: ieStr(r.direccion,250), ciudad: ieStr(r.ciudad,100),
-                            telefono: ieStr(r.telefono,40), correo: ieStr(r.correo,150), contacto: ieStr(r.contacto,150),
+                            telefono: ieStr(r.telefono,40), correo: ieStr(r.correo,150), contacto: ieStr(r.contacto,150), requisitos: ieStr(r.requisitos,1500),
                             cupo: hayCupo ? { programa, jornada, total: cupos } : null });
       });
       return { validas, errores, resumen: v=>v.nombre+' · '+nombreCategoria(v.categoria)+(v.cupo?' · '+v.cupo.programa+' / '+v.cupo.jornada+': '+v.cupo.total:'') };
@@ -139,7 +139,7 @@ const IE_DATASETS = {
       for(const v of validas){
         try{
           let emp = (v.nit && lista.find(x=>x.nit && x.nit===v.nit)) || lista.find(x=>ieNorm(x.nombre)===ieNorm(v.nombre));
-          const datos = { nombre: v.nombre, categoria: v.categoria, nit: v.nit, direccion: v.direccion, ciudad: v.ciudad, telefono: v.telefono, correo: v.correo, contacto: v.contacto };
+          const datos = { nombre: v.nombre, categoria: v.categoria, nit: v.nit, direccion: v.direccion, ciudad: v.ciudad, telefono: v.telefono, correo: v.correo, contacto: v.contacto, requisitos: v.requisitos };
           if(emp){
             if(opts.actualizar){
               const upd = {}; Object.keys(datos).forEach(k=>{ if(datos[k]) upd[k] = datos[k]; });
