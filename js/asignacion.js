@@ -86,19 +86,21 @@ function renderEmpresasListHtml(){
     const cupos = (emp.cupos_empresa||[]).slice().sort((a,b)=> a.programa.localeCompare(b.programa) || a.jornada.localeCompare(b.jornada));
     const rows = cupos.map(c=>{
       const disp = c.cupos_total - c.cupos_ocupados;
+      const cls = disp<=0 ? 'cupo-chip cupo-0' : (disp<=1 ? 'cupo-chip cupo-low' : 'cupo-chip cupo-ok');
       return `<tr>
-        <td>${esc(c.programa)}</td><td>${esc(c.jornada)}</td>
-        <td><input type="number" min="${c.cupos_ocupados}" max="500" value="${c.cupos_total}" style="width:70px;" onchange="actualizarCupoTotal('${c.id}', this.value)"></td>
-        <td>${c.cupos_ocupados}</td>
-        <td><b style="color:${disp>0?'var(--teal-dark)':'var(--danger)'};">${disp}</b></td>
-        <td><input type="date" value="${esc(c.fecha_inicio||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_inicio',this.value)"></td>
-        <td><input type="date" value="${esc(c.fecha_fin||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_fin',this.value)"></td>
-        <td><input type="text" maxlength="60" value="${esc(c.horario||'')}" placeholder="08:00 A 17:00" style="width:110px;" onchange="actualizarCupoCampo('${c.id}','horario',this.value)"></td>
-        <td><input type="text" maxlength="80" value="${esc(c.dias||'')}" placeholder="MIERCOLES" style="width:110px;" onchange="actualizarCupoCampo('${c.id}','dias',this.value)"></td>
-        <td><button class="danger" style="padding:4px 8px;font-size:12px;" onclick="eliminarCupo('${c.id}')">Quitar</button></td>
+        <td class="cp-prog"><b>${esc(c.programa)}</b></td>
+        <td><span class="cupo-jor">${esc(c.jornada)}</span></td>
+        <td class="cp-c"><input type="number" min="${c.cupos_ocupados}" max="500" value="${c.cupos_total}" class="cp-in cp-num" onchange="actualizarCupoTotal('${c.id}', this.value)"></td>
+        <td class="cp-c">${c.cupos_ocupados}</td>
+        <td class="cp-c"><span class="${cls}">${disp}</span></td>
+        <td><input type="date" class="cp-in" value="${esc(c.fecha_inicio||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_inicio',this.value)"></td>
+        <td><input type="date" class="cp-in" value="${esc(c.fecha_fin||'')}" onchange="actualizarCupoCampo('${c.id}','fecha_fin',this.value)"></td>
+        <td><input type="text" class="cp-in cp-txt" maxlength="60" value="${esc(c.horario||'')}" placeholder="08:00 A 17:00" onchange="actualizarCupoCampo('${c.id}','horario',this.value)"></td>
+        <td><input type="text" class="cp-in cp-txt" maxlength="80" value="${esc(c.dias||'')}" placeholder="MIERCOLES" onchange="actualizarCupoCampo('${c.id}','dias',this.value)"></td>
+        <td class="cp-c"><button class="danger cp-del" title="Quitar este cupo" onclick="eliminarCupo('${c.id}')">Quitar</button></td>
       </tr>`;
     }).join('');
-    const tabla = cupos.length ? `<table class="students-list"><thead><tr><th>Programa</th><th>Jornada</th><th>Cupos</th><th>Ocupados</th><th>Disponibles</th><th>Inicio</th><th>Fin</th><th>Horario</th><th>Días</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+    const tabla = cupos.length ? `<div class="cupos-wrap"><table class="cupos-table"><thead><tr><th>Programa</th><th>Jornada</th><th class="cp-c">Cupos</th><th class="cp-c">Ocupados</th><th class="cp-c">Disponibles</th><th>Inicio</th><th>Fin</th><th>Horario</th><th>Días</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<p style="color:var(--muted);font-size:13px;">Esta empresa todavía no tiene cupos.</p>';
     return `<div class="card" style="${emp.activa?'':'opacity:.65;'}">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
