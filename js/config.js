@@ -1,5 +1,5 @@
 /* ============================= STATE ============================= */
-const SCORE_LABELS = {5:'Excelente',4:'Bueno',3:'Aceptable',2:'Insuficiente',1:'Deficiente'};
+const SCORE_LABELS = {5:'Excelente',4:'Bueno',3:'Aceptable',2:'En desarrollo',1:'Por desarrollar'};
 const COMPETENCIAS = [
   {key:'ser', name:'1. Evaluación del ser', desc:'Puntualidad, presentación, habilidades sociales y trabajo en equipo'},
   {key:'desempeno', name:'2. Evaluación de desempeño', desc:'Ejecución técnica y operativa del programa'},
