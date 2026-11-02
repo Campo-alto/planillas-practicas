@@ -274,3 +274,23 @@
 .ca-acc-col{display:flex;flex-direction:column;gap:6px;min-width:104px;}
 .ca-tabla thead th:last-child{position:sticky;right:0;background:var(--deep);}
 .ca-tabla tbody td:last-child{position:sticky;right:0;background:#fff;box-shadow:-8px 0 8px -8px rgba(0,0,0,.18);}
+
+/* ---- Selector de días (solicitudes de aprendices) ---- */
+.ca-dias{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.ca-dia{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-size:13.5px;user-select:none;}
+.ca-dia:has(input:checked){background:var(--teal-dark,#1F6F66);border-color:var(--teal-dark,#1F6F66);color:#fff;}
+.ca-dia input{accent-color:#fff;margin:0;}
+
+/* ---- Rúbrica de calificación (empresa) ---- */
+.rub-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;}
+table.rubrica{width:100%;min-width:680px;border-collapse:collapse;font-size:12.5px;table-layout:fixed;}
+table.rubrica th,table.rubrica td{border:1px solid var(--line);padding:8px 9px;vertical-align:top;text-align:left;}
+table.rubrica thead th{background:var(--deep,#14403B);color:#fff;font-weight:600;text-align:center;}
+table.rubrica th.rub-crit{width:19%;background:#F6F3EA;color:inherit;}
+table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-align:left;}
+.rub-cell{cursor:pointer;background:#fff;}
+.rub-cell:hover{background:#F3F8F7;}
+.rub-cell.sel{background:#DDF0EC;box-shadow:inset 0 0 0 2px var(--teal-dark,#1F6F66);}
+.rub-lab{display:flex;gap:7px;align-items:flex-start;cursor:pointer;line-height:1.35;}
+.rub-lab input{margin-top:2px;flex:none;}
+.rub-clear{font-size:11.5px;margin-top:6px;padding:0;}
