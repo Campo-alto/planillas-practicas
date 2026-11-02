@@ -18,7 +18,28 @@ function showEmpresasTab(tab){
   if(tab==='acceso') renderAccesosEmpresa();
 }
 
+const CATEGORIAS_EMPRESA = [
+  { id:'practica_no_remunerada', nombre:'Prácticas no remuneradas', corto:'Prácticas no remuneradas' },
+  { id:'contrato_aprendizaje', nombre:'Contrato de aprendizaje', corto:'Contrato de aprendizaje' },
+  { id:'reconocimiento_aprendizajes_previos', nombre:'Reconocimiento de aprendizajes previos', corto:'Aprendizajes previos' },
+  { id:'reconocimiento_lugar_practica', nombre:'Reconocimiento de lugar de prácticas', corto:'Lugar de prácticas' }
+];
+let filtroCategoriaEmpresa = 'todas';
+function nombreCategoria(id){ const c = CATEGORIAS_EMPRESA.find(x=>x.id===id); return c ? c.nombre : id; }
+function esModalidadPNR(m){ return /no remunerada/i.test(m||''); }
+// Agrega el selector de categoría al formulario si el HTML no lo trae
+function asegurarCampoCategoria(){
+  if(document.getElementById('empCategoria')) return;
+  const nom = document.getElementById('empNombre'); if(!nom) return;
+  const f = document.createElement('div'); f.className = 'field';
+  f.innerHTML = '<label>Categoría de la empresa</label><select id="empCategoria">'+
+    CATEGORIAS_EMPRESA.map(c=>'<option value="'+c.id+'">'+c.nombre+'</option>').join('')+'</select>';
+  nom.closest('.field').insertAdjacentElement('afterend', f);
+}
+function setFiltroCategoria(id){ filtroCategoriaEmpresa = id; renderEmpresasListHtml(); }
+
 async function renderEmpresasCupos(){
+  asegurarCampoCategoria();
   if(!requireSupabase()) return;
   await loadProgramas();
   const el = document.getElementById('empresasList');
@@ -40,9 +61,16 @@ async function renderEmpresasCupos(){
 function renderEmpresasListHtml(){
   const el = document.getElementById('empresasList');
   if(empresasCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay empresas registradas.</p>'; return; }
+  const cuentaCat = id => empresasCache.filter(e=>(e.categoria||'practica_no_remunerada')===id).length;
+  const filtros = '<div class="tabs" style="margin-bottom:12px;">'+
+    '<button class="tab '+(filtroCategoriaEmpresa==='todas'?'active':'')+'" onclick="setFiltroCategoria(\'todas\')">Todas ('+empresasCache.length+')</button>'+
+    CATEGORIAS_EMPRESA.map(c=>'<button class="tab '+(filtroCategoriaEmpresa===c.id?'active':'')+'" onclick="setFiltroCategoria(\''+c.id+'\')">'+c.corto+' ('+cuentaCat(c.id)+')</button>').join('')+'</div>';
+  const visibles = filtroCategoriaEmpresa==='todas' ? empresasCache : empresasCache.filter(e=>(e.categoria||'practica_no_remunerada')===filtroCategoriaEmpresa);
+  if(visibles.length===0){ el.innerHTML = filtros + '<p style="color:var(--muted);font-size:13px;">No hay empresas en esta categoría.</p>'; return; }
   const progOpts = (programasCache||[]).map(p=>`<option value="${esc(p.nombre)}">${esc(p.nombre)}</option>`).join('');
   const jorOpts = JORNADAS.map(j=>`<option value="${j}">${j}</option>`).join('');
-  el.innerHTML = empresasCache.map(emp=>{
+  el.innerHTML = filtros + visibles.map(emp=>{
+    const esPNR = (emp.categoria||'practica_no_remunerada')==='practica_no_remunerada';
     const cupos = (emp.cupos_empresa||[]).slice().sort((a,b)=> a.programa.localeCompare(b.programa) || a.jornada.localeCompare(b.jornada));
     const rows = cupos.map(c=>{
       const disp = c.cupos_total - c.cupos_ocupados;
@@ -59,7 +87,7 @@ function renderEmpresasListHtml(){
     return `<div class="card" style="${emp.activa?'':'opacity:.65;'}">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
         <div>
-          <b style="font-size:15px;">${esc(emp.nombre)}</b> ${emp.activa?'':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>'}<br>
+          <b style="font-size:15px;">${esc(emp.nombre)}</b> <span class="pill" style="background:#E6F1F0;color:var(--deep);">${esc(nombreCategoria(emp.categoria||'practica_no_remunerada'))}</span> ${emp.activa?'':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>'}<br>
           <span style="color:var(--muted);font-size:12.5px;">${esc(emp.direccion||'—')}${emp.ciudad?' · '+esc(emp.ciudad):''} · Tel. ${esc(emp.telefono||'—')}${emp.nit?' · NIT '+esc(emp.nit):''}</span>
         </div>
         <div style="white-space:nowrap;">
@@ -69,19 +97,20 @@ function renderEmpresasListHtml(){
           <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="eliminarEmpresa('${emp.id}')">Eliminar</button>
         </div>
       </div>
-      <div style="margin-top:12px;">${tabla}</div>
+      ${esPNR ? `<div style="margin-top:12px;">${tabla}</div>
       <div class="field-row" style="margin-top:10px;align-items:end;">
         <div class="field"><label>Programa</label><select id="cupoProg-${emp.id}">${progOpts}</select></div>
         <div class="field"><label>Jornada</label><select id="cupoJor-${emp.id}">${jorOpts}</select></div>
         <div class="field"><label>Cupos</label><input type="number" min="0" max="500" id="cupoNum-${emp.id}" value="1"></div>
         <div class="field"><button class="primary" onclick="agregarCupo('${emp.id}')">Agregar cupos</button></div>
-      </div>
+      </div>` : `<p style="margin:12px 0 0;color:var(--muted);font-size:13px;">Esta categoría no maneja cupos ni fechas de inscripción: solo aplican a prácticas no remuneradas.</p>`}
     </div>`;
   }).join('');
 }
 function limpiarFormEmpresa(){
   editingEmpresaId = null;
   ['empNombre','empNit','empDireccion','empCiudad','empTelefono','empCorreo','empContacto'].forEach(id=>document.getElementById(id).value='');
+  const cs = document.getElementById('empCategoria'); if(cs) cs.value = 'practica_no_remunerada';
   document.getElementById('empSaveBtn').textContent = 'Guardar empresa';
   document.getElementById('empCancelBtn').style.display = 'none';
   document.getElementById('empresaMsg').innerHTML = '';
@@ -96,6 +125,7 @@ function editarEmpresa(id){
   document.getElementById('empTelefono').value = e.telefono||'';
   document.getElementById('empCorreo').value = e.correo||'';
   document.getElementById('empContacto').value = e.contacto||'';
+  asegurarCampoCategoria(); document.getElementById('empCategoria').value = e.categoria || 'practica_no_remunerada';
   document.getElementById('empSaveBtn').textContent = 'Actualizar empresa';
   document.getElementById('empCancelBtn').style.display = '';
   document.getElementById('empresaMsg').innerHTML = '<span style="color:var(--muted)">Editando '+esc(e.nombre)+'.</span>';
@@ -106,7 +136,8 @@ async function guardarEmpresa(){
   const msg = document.getElementById('empresaMsg');
   const row = {
     nombre: val('empNombre'), nit: val('empNit'), direccion: val('empDireccion'), ciudad: val('empCiudad'),
-    telefono: val('empTelefono'), correo: val('empCorreo'), contacto: val('empContacto')
+    telefono: val('empTelefono'), correo: val('empCorreo'), contacto: val('empContacto'),
+    categoria: (document.getElementById('empCategoria')||{}).value || 'practica_no_remunerada'
   };
   if(row.nombre.length < 2){ msg.innerHTML = '<span style="color:var(--danger)">Escribe el nombre de la empresa.</span>'; return; }
   try{
@@ -216,7 +247,7 @@ async function renderVentanaAdmin(){
   if(error){ box.innerHTML = '<div class="section-bar deep">Fechas de apertura y cierre</div><p style="color:var(--danger);font-size:13px;">'+esc(errMsg(error))+' (¿ejecutaste el SQL de ventana?)</p>'; return; }
   const estado = data.abierta ? '<b style="color:var(--teal-dark)">🟢 Abierta ahora</b>'
     : (!data.abre || !data.cierra ? '<b style="color:var(--danger)">🔴 Cerrada (sin fechas configuradas)</b>' : '<b style="color:var(--danger)">🔴 Cerrada ahora</b>');
-  box.innerHTML = '<div class="section-bar deep">Fechas de apertura y cierre para que los estudiantes elijan su sitio de práctica</div>'+
+  box.innerHTML = '<div class="section-bar deep">Fechas de apertura y cierre (solo prácticas no remuneradas) para que los estudiantes elijan su sitio de práctica</div>'+
     '<p style="margin:0 0 10px;font-size:14px;">'+estado+'. Fuera de estas fechas los estudiantes no pueden tomar cupos (tú sí puedes asignarlos desde la ficha).</p>'+
     '<div class="field-row">'+
       '<div class="field"><label>Apertura</label><input type="datetime-local" id="ventAbre" value="'+isoALocalInput(data.abre)+'"></div>'+
@@ -249,6 +280,10 @@ async function renderAsignacionEstudiante(){
   try{
     const { data, error } = await sb.rpc('mis_cupos', { p_token: state.token });
     if(error) throw error;
+    if(data.aplica === false){
+      el.innerHTML = '<div class="note-box">La elección de sitio de práctica por cupos aplica solo a estudiantes de <b>Prácticas No Remuneradas</b>. Tu modalidad ('+esc(data.modalidad||'sin definir')+') no usa este proceso.</div>';
+      return;
+    }
     const a = data.asignacion;
     if(a){
       el.innerHTML = `<div class="note-box" style="background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">✅ Ya tienes tu práctica asignada.</div>
