@@ -87,6 +87,7 @@ async function mostrarEmpresaAsignada(){
     bar.insertAdjacentElement('beforebegin', box);
   }
   if(state.isNewRecord){ box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">— (estudiante aún sin guardar)</span>'; return; }
+  if(!esModalidadPNR(state.record.modalidad)){ box.innerHTML = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">no aplica — los cupos y la asignación de empresa son solo para Prácticas No Remuneradas.</span>'; return; }
   box.innerHTML = '<span style="color:var(--muted)">Consultando empresa asignada…</span>';
   try{
     const { data, error } = await sb.rpc('admin_historial_estudiante', { p_documento: state.documento });
