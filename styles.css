@@ -370,3 +370,11 @@ table.rubrica thead th.rub-crit{background:var(--deep,#14403B);color:#fff;text-a
 .rub-tu{display:block;font-size:11px;font-weight:700;color:var(--teal-dark,#1F6F66);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
 .rub-res{margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;}
 .rub-res.ok{color:var(--teal-dark,#1F6F66);}
+
+/* ---- Reiniciar plataforma ---- */
+.rp-card{border-color:#E4C3BE;}
+.rp-card:hover{border-color:var(--danger);}
+.rp-op{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin:8px 0;cursor:pointer;background:#fff;}
+.rp-op:has(input:checked){border-color:var(--danger);background:#FDF5F3;}
+.rp-op input{margin-top:4px;}
+.rp-op small{color:var(--muted);}
