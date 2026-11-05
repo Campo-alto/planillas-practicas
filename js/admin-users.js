@@ -8,17 +8,19 @@ async function renderRoleAccounts(){
     const { data, error } = await sb.rpc('admin_list_role_accounts');
     if(error){ throw new Error(error.message); }
     roleAccountsCache = (data || []).filter(u=>u.role === state.adminModuleRole);
+    if(typeof inhabCargar === 'function') await inhabCargar();
     renderRoleAccountsTable();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+'</p>'; }
 }
 function renderRoleAccountsTable(){
   const el = document.getElementById('roleAccountsList');
   if(roleAccountsCache.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay usuarios creados en este módulo.</p>'; return; }
-  const rows = roleAccountsCache.map(u=>`<tr>
-    <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}</td>
+  const rows = roleAccountsCache.map(u=>`<tr${typeof inhabEsta==='function' && inhabEsta('cuenta', u.id) ? ' class="inhab-row"' : ''}>
+    <td>${u.nombre ? u.nombre+'<br><span style="color:var(--muted);font-size:11.5px;">'+u.email+'</span>' : u.email}${typeof inhabBadge==='function' ? inhabBadge('cuenta', u.id) : ''}</td>
     <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
     <td style="white-space:nowrap;">
       <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editRoleAccount('${escapeAttr(u.email)}', '${escapeAttr(u.nombre||'')}')">Editar</button>
+      ${typeof inhabBoton==='function' ? inhabBoton('cuenta', u.id, u.nombre||u.email, u.role) : ''}
       <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button>
     </td>
   </tr>`).join('');
@@ -109,6 +111,7 @@ async function renderAdminsList(){
     const { data, error } = await sb.rpc('admin_list_administradores');
     if(error){ throw new Error(error.message); }
     adminsCache = data || [];
+    if(typeof inhabCargar === 'function') await inhabCargar();
     filtrarAdministradores();
   }catch(e){ console.error(e); el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar: '+e.message+' (¿ejecutaste el SQL de la etapa 6?)</p>'; }
 }
@@ -120,15 +123,16 @@ async function filtrarAdministradores(){
   if(adminsCache.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No se encontraron administradores.</p>'; return; }
   if(lista.length === 0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Ningún administrador coincide con "'+escapeAttr(q)+'".</p>'; return; }
   const me = (await sb.auth.getUser()).data.user;
-  const rows = lista.map(a=>`<tr>
+  const rows = lista.map(a=>`<tr${typeof inhabEsta==='function' && inhabEsta('personal', a.id) ? ' class="inhab-row"' : ''}>
     <td>${escapeAttr(a.documento) || '<span style="color:var(--danger)">sin documento</span>'}</td>
-    <td>${escapeAttr(a.nombre) || '<span style="color:var(--muted)">—</span>'}${me && me.id===a.id ? ' <span style="color:var(--muted);font-size:11.5px;">(tú)</span>' : ''}</td>
+    <td>${escapeAttr(a.nombre) || '<span style="color:var(--muted)">—</span>'}${me && me.id===a.id ? ' <span style="color:var(--muted);font-size:11.5px;">(tú)</span>' : ''}${typeof inhabBadge==='function' ? inhabBadge('personal', a.id) : ''}</td>
     <td>${escapeAttr(a.email)}</td>
     ${a.rol === undefined ? '' : '<td>'+selectorRolHtml(a, me)+'</td>'}
     <td>${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</td>
     <td style="white-space:nowrap;">
       <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editarPerfilAdmin('${a.id}')">Editar datos</button>
       <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="changeAdminPassword('${a.id}','${escapeAttr(a.email)}')">Cambiar contraseña</button>
+      ${me && me.id===a.id || typeof inhabBoton!=='function' ? '' : inhabBoton('personal', a.id, a.nombre||a.email)}
       ${me && me.id===a.id ? '' : `<button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteAdministrador('${a.id}','${escapeAttr(a.email)}')">Eliminar</button>`}
     </td>
   </tr>`).join('');
