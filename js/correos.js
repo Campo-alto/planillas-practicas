@@ -187,6 +187,7 @@ async function abrirCorreos(){
       <label class="cor-op"><input type="checkbox" id="corRec" ${corCfg.recordatorio_activo ? 'checked' : ''}> Recordar a las empresas las calificaciones pendientes, cada
         <input type="number" id="corDias" min="1" max="60" value="${corCfg.recordatorio_dias}" style="width:70px;display:inline-block;"> día(s)</label>
       <div class="field" style="max-width:340px;"><label>Nombre del remitente</label><input id="corNom" maxlength="80" value="${esc(corCfg.remitente_nombre)}"></div>
+      <div class="field" style="max-width:340px;"><label>Correo del encargado de solicitudes de acceso</label><input id="corEnc" type="email" maxlength="160" placeholder="Recibe un aviso por cada solicitud nueva" value="${esc(corCfg.correo_encargado || '')}"></div>
       <div class="actions-row" style="justify-content:flex-start;flex-wrap:wrap;">
         <button class="primary" onclick="corGuardar()">Guardar configuración</button>
         <button class="ghost" onclick="corPrueba()">✉ Enviar correo de prueba</button>
@@ -208,7 +209,10 @@ async function corGuardar(){
     p_habilitado: document.getElementById('corHab').checked, p_aviso_asignacion: document.getElementById('corAviso').checked,
     p_recordatorio_activo: document.getElementById('corRec').checked, p_recordatorio_dias: parseInt(document.getElementById('corDias').value, 10) || 7,
     p_remitente: document.getElementById('corNom').value });
-  msg.innerHTML = error ? '<span style="color:var(--danger)">' + esc(error.message) + '</span>' : '<span style="color:var(--teal-dark)">Configuración guardada.</span>';
+  let err2 = null;
+  if(!error){ const r2 = await sb.rpc('admin_correos_encargado_set', { p_correo: (document.getElementById('corEnc') || {}).value || '' }); err2 = r2.error; }
+  const e = error || err2;
+  msg.innerHTML = e ? '<span style="color:var(--danger)">' + esc(e.message) + '</span>' : '<span style="color:var(--teal-dark)">Configuración guardada.</span>';
 }
 async function corPrueba(){
   const msg = document.getElementById('corCfgMsg');
