@@ -69,13 +69,19 @@ function rubricaAsegurar(rec){
 })();
 
 rubricaAplicar(RUBRICA_OFICIAL);
-async function rubricaCargar(){
-  if(typeof sb === 'undefined' || !sb) return;
-  try{
-    const { data, error } = await sb.rpc('rubrica_get');
-    if(error || !Array.isArray(data) || !data.length) return;   // sin SQL de la etapa 13: queda la rúbrica oficial
-    rubricaAplicar(data);
-  }catch(e){ console.error(e); }
+let rubricaDatos = null;      // copia de la rúbrica leída de la base (para abrir el editor sin volver a consultar)
+let rubricaPromesa = null;
+function rubricaCargar(){
+  if(typeof sb === 'undefined' || !sb) return Promise.resolve();
+  rubricaPromesa = (async ()=>{
+    try{
+      const { data, error } = await sb.rpc('rubrica_get');
+      if(error || !Array.isArray(data) || !data.length) return;   // sin SQL de la etapa 13: queda la rúbrica oficial
+      rubricaDatos = data.map(c=>Object.assign({}, c));
+      rubricaAplicar(data);
+    }catch(e){ console.error(e); }
+  })();
+  return rubricaPromesa;
 }
 rubricaCargar();
 
@@ -94,7 +100,10 @@ async function abrirRubricas(){
   if(!requireSupabase()) return;
   const el = rubPantalla(); if(!el) return;
   el.innerHTML = '<p style="color:var(--muted)">Cargando…</p>'; showScreen('screen-admin-rubrica');
-  const { data, error } = await sb.rpc('rubrica_get');
+  // Usa la rúbrica que ya se descargó al abrir la página (sin esperar otra consulta). Solo consulta de nuevo si aún no hay copia.
+  try{ if(rubricaPromesa) await rubricaPromesa; }catch(_){}
+  let data = rubricaDatos, error = null;
+  if(!data){ ({ data, error } = await sb.rpc('rubrica_get')); }
   if(error){ el.innerHTML = '<button class="linkbtn" onclick="showScreen(\'screen-admin-hub\')">← Volver al panel</button><p style="color:var(--danger)">No se pudo cargar la rúbrica: '+esc(error.message)+' (¿ejecutaste el SQL de la etapa 13?)</p>'; return; }
   rubEdit = (data && data.length ? data : RUBRICA_OFICIAL).map(c=>Object.assign({}, c));
   rubPintar();
@@ -158,6 +167,6 @@ async function rubGuardar(){
   }
   const { error } = await sb.rpc('admin_rubrica_guardar', { p_data: rubEdit });
   if(error){ msg.innerHTML = '<span style="color:var(--danger)">No se pudo guardar: '+esc(error.message)+'</span>'; return; }
-  rubricaAplicar(rubEdit); toast('Rúbrica guardada');
+  rubricaAplicar(rubEdit); rubricaDatos = rubEdit.map(c=>Object.assign({}, c)); toast('Rúbrica guardada');
   msg.innerHTML = '<span style="color:var(--teal-dark)">Rúbrica guardada. Ya se ve en las planillas.</span>';
 }
