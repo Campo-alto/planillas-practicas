@@ -210,7 +210,7 @@
       <div class="role-card administrador" onclick="goRole('administrador')">
         <div class="icon">🎓</div>
         <h3>Estudiantes</h3>
-        <p>Buscar, registrar y ver el estado de cada planilla de práctica.</p>
+        <p>Ver, crear y gestionar a cada estudiante y el estado de su planilla.</p>
       </div>
       <div class="role-card supervisor" onclick="goAdminModule('supervisor')">
         <div class="icon">S</div>
@@ -619,7 +619,7 @@
     <div class="status-strip">
       <div class="who">Editando como <b>Administrador</b> · Documento <b id="admDocLabel"></b></div>
       <div class="actions">
-        <button class="ghost" onclick="switchStudent('administrador')">Buscar / crear otro estudiante</button>
+        <button class="ghost" onclick="switchStudent('administrador')">Volver a la lista de estudiantes</button>
         <button class="danger" onclick="adminLogout()">Cerrar sesión</button>
       </div>
     </div>
@@ -660,6 +660,7 @@
 <script src="js/admin-users.js"></script>
 <script src="js/programas.js"></script>
 <script src="js/datos-generales.js"></script>
+<script src="js/crear-estudiante.js"></script>
 <script src="js/empresa.js"></script>
 <script src="js/estudiante.js"></script>
 <script src="js/supervisor-panel.js"></script>
