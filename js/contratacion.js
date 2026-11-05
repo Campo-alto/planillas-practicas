@@ -434,9 +434,13 @@ window.addEventListener('load', async ()=>{
   }
 })();
 let caAdmTab = 'ins', caAdmData = {};
-async function caAbrirAdmin(){ caAdmTab = 'ins'; await caAdmPintar(); }
+// Cada pestaña pertenece a una función con su permiso (roles-permisos-etapa18.sql)
+const CA_TAB_PERMISO = { ins:'est_contrato', emp:'emp_ca', ofe:'emp_solicitudes', pro:'est_contrato' };
+function caTabPermitida(k){ return typeof puede !== 'function' || puede(CA_TAB_PERMISO[k]); }
+async function caAbrirAdmin(){ caAdmTab = ['ins','pro','emp','ofe'].find(caTabPermitida) || 'ins'; await caAdmPintar(); }
 async function caAdmPintar(){
-  const tabs = [['ins','Inscripciones'],['emp','Empresas'],['ofe','Solicitudes'],['pro','Procesos']];
+  const tabs = [['ins','Inscripciones'],['emp','Empresas'],['ofe','Solicitudes'],['pro','Procesos']].filter(([k])=>caTabPermitida(k));
+  if(!caTabPermitida(caAdmTab) && tabs.length) caAdmTab = tabs[0][0];
   caScreen('screen-admin-ca', `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <h2 style="margin:12px 0 4px;">Contrato de aprendizaje</h2><p class="helptext">Tres fases: estudiante → empresa → institución. Aquí validas pagos, empresas (plataforma SENA), funciones del programa y confirmas la contratación.</p>
     <div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${caAdmTab===k?'active':''}" onclick="caAdmTab='${k}';caAdmPintar()">${t}</button>`).join('')}</div><div class="card" id="caAdmBody"><p class="helptext">Cargando…</p></div>`);
