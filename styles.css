@@ -494,3 +494,9 @@ a.home-modal-go:hover,a.home-modal-go:focus-visible{background:var(--deep);outli
 .brand .brand-logo{height:40px;width:auto;display:block;flex:none;}
 .brand .brand-sub{font-size:12.5px;color:var(--muted);letter-spacing:.02em;line-height:1.25;max-width:230px;padding-left:14px;border-left:2px solid var(--line);}
 @media (max-width:520px){.brand .brand-logo{height:32px;}.brand .brand-sub{font-size:11px;max-width:150px;padding-left:10px;}}
+
+/* Aviso de tratamiento de datos personales */
+.dp-box{max-width:440px;}
+.dp-texto{margin:8px 0;font-size:14.5px;color:#33413f;line-height:1.5;}
+.dp-texto a{color:var(--teal-dark,#1F6F66);font-weight:700;text-decoration:underline;}
+.dp-nota{margin:10px 0 0;font-size:12.5px;color:var(--muted);line-height:1.45;}
