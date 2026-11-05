@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Campoalto · Planillas de Prácticas</title>
+<title>Campoalto · Asignación de prácticas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -21,22 +21,19 @@
 <div class="app">
 
   <div class="topbar">
-    <div class="brand">
-      <div class="dot"></div>
-      <div class="brand-text">
-        <div class="b1">Campoalto</div>
-        <div class="b2">Planillas de Prácticas · PPS-GAA-F-006</div>
-      </div>
-    </div>
+    <a class="brand" href="index.html" title="Ir a la página principal">
+      <img class="brand-logo" src="img/logo-campoalto.png" alt="Campoalto" width="150" height="39">
+      <span class="brand-sub">Educación para el Trabajo y el Desarrollo Humano</span>
+    </a>
     <div class="topbar-actions" id="topbarActions"></div>
-    <a class="admin-link" href="administrador.html" title="Ingreso para administradores"><span aria-hidden="true">🔐</span> Administrador</a>
+    <span class="admin-wrap"><button type="button" class="admin-info" aria-label="¿Cómo ingresa el administrador?" title="¿Cómo ingresa el administrador?" onclick="homeInfo('administrador')">ⓘ</button><a class="admin-link" href="administrador.html" title="Ingreso para administradores"><span aria-hidden="true">🔐</span> Administrador</a></span>
   </div>
 
   <!-- HOME -->
   <div class="screen active" id="screen-home">
     <div class="hero">
       <h1>Asignación de prácticas</h1>
-      <p>Elige cómo vas a ingresar. Cada perfil entra con su propio acceso y solo ve lo que le corresponde.</p>
+      <p class="home-lead">Elige cómo vas a ingresar. Cada perfil entra con su propio acceso y solo ve lo que le corresponde.</p>
     </div>
     <div class="role-grid home-roles">
       <div class="role-card estudiante" role="link" tabindex="0" onclick="location.href='estudiante.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='estudiante.html'}">
@@ -44,21 +41,23 @@
         <h3>Estudiante</h3>
         <p>Ingresa con tu documento para revisar tu planilla, responder las observaciones y firmar cada mes.</p>
         <span class="home-go">Ingresar como estudiante →</span>
+        <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('estudiante')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
       </div>
       <div class="role-card empresa" role="link" tabindex="0" onclick="location.href='empresa.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='empresa.html'}">
         <div class="icon">E</div>
         <h3>Empresa · Jefe inmediato</h3>
         <p>Ingresa con el usuario que te dio el administrador para calificar el mes, firmar y gestionar tus aprendices.</p>
         <span class="home-go">Ingresar como empresa →</span>
+        <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('empresa')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
       </div>
       <div class="role-card supervisor" role="link" tabindex="0" onclick="location.href='supervisor.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='supervisor.html'}">
         <div class="icon">S</div>
         <h3>Supervisor institucional</h3>
         <p>Ingresa con tu usuario para registrar la visita de seguimiento a cada practicante.</p>
         <span class="home-go">Ingresar como supervisor →</span>
+        <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('supervisor')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
       </div>
     </div>
-    <div class="note-box">El estudiante entra con su número de documento y su clave. Empresa y supervisor entran con el correo y la contraseña que les entregó la institución. ¿Eres administrador? Usa el botón de arriba a la derecha.</div>
   </div>
 
   <!-- ADMIN LOGIN -->
@@ -681,5 +680,39 @@
 <script src="js/planilla-template.js"></script>
 <script src="js/pdf-export.js"></script>
 <script>initPwToggles();</script>
+
+<div class="home-modal" id="homeModal" role="dialog" aria-modal="true" aria-labelledby="homeModalTitulo" hidden onclick="if(event.target===this)homeInfoCerrar()">
+  <div class="home-modal-box">
+    <div class="home-modal-head"><span class="home-modal-ico" id="homeModalIco"></span><h3 id="homeModalTitulo"></h3></div>
+    <div id="homeModalCuerpo"></div>
+    <div class="home-modal-acc"><a class="primary home-modal-go" id="homeModalIr" href="#">Ingresar →</a><button type="button" class="ghost" onclick="homeInfoCerrar()">Cerrar</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  var INFO = {
+    estudiante:{ico:'A',titulo:'Ingreso del estudiante',href:'estudiante.html',cuerpo:'<ul><li><b>Usuario:</b> tu número de documento.</li><li><b>Contraseña:</b> la que te entregó el administrador. Si es tu primer ingreso, el sistema te pedirá cambiarla.</li><li>¿La olvidaste? Pídele al administrador que te asigne una nueva.</li></ul>'},
+    empresa:{ico:'E',titulo:'Ingreso de la empresa',href:'empresa.html',cuerpo:'<ul><li><b>Usuario:</b> el correo registrado por la institución.</li><li><b>Contraseña:</b> la que te entregó la institución.</li><li>Sirve para jefes inmediatos de práctica y empresas de contrato de aprendizaje.</li></ul>'},
+    supervisor:{ico:'S',titulo:'Ingreso del supervisor institucional',href:'supervisor.html',cuerpo:'<ul><li><b>Usuario:</b> el correo registrado por la institución.</li><li><b>Contraseña:</b> la que te entregó el administrador.</li></ul>'},
+    administrador:{ico:'Ad',titulo:'Ingreso del administrador',href:'administrador.html',cuerpo:'<ul><li><b>Usuario:</b> tu correo de administrador.</li><li><b>Contraseña:</b> la que definiste al crear tu cuenta.</li><li>Desde ahí creas los accesos de empresas y supervisores y gestionas a los estudiantes.</li></ul>'}
+  };
+  var ultimo = null;
+  window.homeInfo = function(rol){
+    var d = INFO[rol]; if(!d) return;
+    ultimo = document.activeElement;
+    document.getElementById('homeModalIco').textContent = d.ico;
+    document.getElementById('homeModalTitulo').textContent = d.titulo;
+    document.getElementById('homeModalCuerpo').innerHTML = d.cuerpo;
+    document.getElementById('homeModalIr').href = d.href;
+    var m = document.getElementById('homeModal'); m.hidden = false;
+    document.getElementById('homeModalIr').focus();
+  };
+  window.homeInfoCerrar = function(){
+    document.getElementById('homeModal').hidden = true;
+    if(ultimo && ultimo.focus){ try{ ultimo.focus(); }catch(e){} }
+  };
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !document.getElementById('homeModal').hidden) homeInfoCerrar(); });
+})();
+</script>
 </body>
 </html>
