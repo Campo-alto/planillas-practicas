@@ -1,6 +1,6 @@
 /* ============================= PANEL DEL ADMINISTRADOR POR ÁREAS =============================
    El panel principal muestra 4 tarjetas grandes (Estudiantes, Empresas, Supervisores, Administración).
-   Al dar clic en una se abre una pantalla con las funciones de esa área; cada función de la tarjeta también es un enlace directo.
+   Cada función de la tarjeta es un enlace directo: un solo clic la abre (no hay pantalla intermedia).
    No cambia ninguna función: solo organiza los accesos. Se carga al final de administrador.html. */
 (function(){
   const run = (fn)=>()=>{ try{ fn(); }catch(e){ console.error(e); toast('No se pudo abrir esta opción: ' + e.message, true); } };
@@ -46,15 +46,6 @@
     el.innerHTML = html; return el;
   }
 
-  window.pgAbrirGrupo = function(id){
-    const g = GRUPOS.find(x=>x.id===id); if(!g) return;
-    pantalla('screen-admin-grupo', `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
-      <div class="pg-titulo"><span class="pg-ico role-card ${g.clase}"><span class="icon">${g.icono}</span></span><div><h2>${g.titulo}</h2><p class="helptext" style="margin:2px 0 0">${g.desc}</p></div></div>
-      <div class="role-grid pg-funciones">${g.funciones.map((f,i)=>`<div class="role-card ${f.clase}" role="button" tabindex="0" onclick="pgAbrirFuncion('${g.id}',${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pgAbrirFuncion('${g.id}',${i})}">
-        <div class="icon">${f.icono}</div><h3>${f.titulo}</h3><p>${f.desc}</p></div>`).join('')}</div>`);
-    showScreen('screen-admin-grupo');
-    if(g.id==='administracion' && window.rpMostrarTarjeta) window.rpMostrarTarjeta();
-  };
   window.pgAbrirFuncion = function(gid, i){
     const g = GRUPOS.find(x=>x.id===gid); if(!g || !g.funciones[i]) return;
     run(g.funciones[i].abrir)();
@@ -65,11 +56,13 @@
     const grid = hub.querySelector('.role-grid'); if(!grid) return;
     const help = hub.querySelector('.helptext'); if(help) help.textContent = 'Elige un área para ver sus funciones.';
     const nuevo = document.createElement('div'); nuevo.className = 'grupo-grid';
-    nuevo.innerHTML = GRUPOS.map(g=>`<div class="grupo-card ${g.clase}" role="button" tabindex="0" onclick="pgAbrirGrupo('${g.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pgAbrirGrupo('${g.id}')}">
+    nuevo.innerHTML = GRUPOS.map(g=>`<div class="grupo-card ${g.clase}">
         <div class="grupo-head"><span class="grupo-ico">${g.icono}</span><div><h3>${g.titulo}</h3><p>${g.desc}</p></div></div>
-        <div class="grupo-chips">${g.funciones.map((f,i)=>`<button type="button" class="grupo-chip" title="Abrir ${f.titulo}" onclick="event.stopPropagation();pgAbrirFuncion('${g.id}',${i})" onkeydown="event.stopPropagation()">${f.titulo}</button>`).join('')}</div>
-        <div class="grupo-abrir">Abrir ${g.titulo.toLowerCase()} →</div></div>`).join('');
+        <div class="grupo-chips" id="grupoChips-${g.id}">${g.funciones.map((f,i)=>`<button type="button" class="grupo-chip" title="Abrir ${f.titulo}" onclick="pgAbrirFuncion('${g.id}',${i})">${f.titulo}</button>`).join('')}</div></div>`).join('');
     grid.replaceWith(nuevo);
   }
   construirHub();
+  // Cada vez que se muestra el panel, se revisa si el servidor permite el reinicio (opción excepcional)
+  const _showScreen = showScreen;
+  showScreen = function(id){ _showScreen(id); if(id==='screen-admin-hub' && window.rpMostrarTarjeta) window.rpMostrarTarjeta(); };
 })();
