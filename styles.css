@@ -458,3 +458,12 @@ table.ca-tabla.ca-cerrados td{color:#5b6866;}
 .grupo-chips .rp-chip:hover,.grupo-chips .rp-chip:focus-visible{background:var(--danger,#B3261E);color:#fff;border-color:var(--danger,#B3261E);}
 .grupo-card{cursor:default;}
 .grupo-card:hover{transform:none;box-shadow:none;border-color:var(--line);}
+
+/* Página central de ingreso */
+.admin-link{display:none;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--deep);text-decoration:none;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;}
+.admin-link:hover,.admin-link:focus-visible{background:#6B4C9A;color:#fff;border-color:#6B4C9A;outline:none;}
+.app:has(#screen-home.active) .admin-link{display:inline-flex;}
+.home-roles{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));}
+.home-roles .role-card{display:flex;flex-direction:column;}
+.home-go{margin-top:auto;padding-top:12px;font-weight:600;font-size:13.5px;color:var(--teal-dark,#1F6F66);}
+@media (max-width:520px){.admin-link{padding:6px 10px;font-size:12px;}}
