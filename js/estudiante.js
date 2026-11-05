@@ -1,150 +1,116 @@
-<!DOCTYPE html>
-<!-- VERSION-EMPRESAS-UNIFICADO -->
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Campoalto · Asignación de prácticas · Estudiante</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<link rel="preconnect" href="https://avlyhjecouqrdkirdqrh.supabase.co" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div class="app">
+/* ============================= ESTUDIANTE ============================= */
+function renderEstudiante(){
+  showScreen('screen-estudiante');
+  document.getElementById('estDocLabel').textContent = state.documento;
+  document.getElementById('estDatosGenerales').innerHTML = datosGeneralesHtml(state.record, false, 'est');
+  renderEstNotasView();
+  renderAsignacionEstudiante();
 
-  <div class="topbar">
-    <a class="brand" href="index.html" title="Ir a la página principal">
-      <img class="brand-logo" src="data:image/png;base64,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" alt="Campoalto" width="150" height="39">
-      <span class="brand-sub">Educación para el Trabajo y el Desarrollo Humano</span>
-    </a>
-    <div class="topbar-actions" id="topbarActions"></div>
-  </div>
-
-  <!-- ESTUDIANTE LOGIN -->
-  <div class="screen" id="screen-estudiante-login">
-    <h2 style="margin:12px 0 4px;">Acceso Estudiante</h2>
-    <p class="helptext">Tu usuario es tu número de documento. La contraseña te la entrega el administrador.</p>
-    <div class="card" style="max-width:420px;">
-      <div class="field-row" style="grid-template-columns:1fr;">
-        <div class="field"><label>Usuario (documento)</label><input type="text" id="estUsuario" inputmode="numeric" autocomplete="username"></div>
-        <div class="field"><label>Contraseña</label>
-          <div class="pw-wrap">
-            <input type="password" id="estPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doEstudianteLogin()">
-            <button type="button" class="pw-toggle" data-target="estPassword" aria-label="Mostrar contraseña"></button>
-          </div>
-        </div>
-      </div>
-      <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="doEstudianteLogin()">Ingresar</button></div>
-      <div id="estLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
-      <p class="helptext" style="margin-top:12px;">¿Olvidaste tu contraseña? Pídele al administrador que te asigne una nueva.</p>
+  const mesesActivos = mesesPorModalidad(state.record.modalidad);
+  if(state.estMonth >= mesesActivos) state.estMonth = 0;
+  const tabs = document.getElementById('estMonthTabs');
+  tabs.innerHTML = '';
+  for(let i=0;i<mesesActivos;i++){
+    const filled = !!state.record.meses[i].firmaEstudiante;
+    const b = document.createElement('button');
+    b.className = 'tab'+(i===state.estMonth?' active':'')+(filled?' filled':'');
+    b.textContent = mesLabel(state.record, i);
+    b.onclick = ()=>{ state.estMonth = i; renderEstudiante(); };
+    tabs.appendChild(b);
+  }
+  const m = state.record.meses[state.estMonth];
+  document.getElementById('estControlView').innerHTML = `
+    <div class="field-row">
+      <div class="field"><label>Sitio de prácticas</label><div>${m.sitio||'— aún no diligenciado por la empresa —'}</div></div>
+      <div class="field"><label>Fecha inicio</label><div>${m.fechaInicio||'—'}</div></div>
+      <div class="field"><label>Fecha final</label><div>${m.fechaFin||'—'}</div></div>
     </div>
-  </div>
+    <div class="field"><label>Observaciones de la práctica</label><div>${m.observaciones||'—'}</div></div>
+  `;
+  setTimeout(()=>initSigPad('sig-estudiante-mes', m.firmaEstudiante), 30);
+  organizarPestanasEstudiante();
+}
+function renderEstNotasView(){
+  const rec = state.record;
+  const mesesActivos = mesesPorModalidad(rec.modalidad);
+  const heads = Array.from({length:mesesActivos}, (_,i)=>`<th>${mesLabel(rec,i)}</th>`).join('');
+  const rows = COMPETENCIAS.map(c=>{
+    const cells = rec.competencias[c.key].slice(0, mesesActivos).map(v=> v ? (v+' · '+SCORE_LABELS[v]) : '—').map(v=>`<td>${v}</td>`).join('');
+    return `<tr><td>${c.name}</td>${cells}</tr>`;
+  }).join('');
+  // mes que se muestra en la rúbrica: el último con alguna nota (o el primero)
+  if(estNotasMes === null || estNotasMes >= mesesActivos){
+    estNotasMes = 0;
+    for(let i=0;i<mesesActivos;i++){ if(COMPETENCIAS.some(c=>rec.competencias[c.key][i])) estNotasMes = i; }
+  }
+  const pills = Array.from({length:mesesActivos}, (_,i)=>{
+    const n = COMPETENCIAS.filter(c=>rec.competencias[c.key][i]!=null).length;
+    return `<button type="button" class="tab${i===estNotasMes?' active':''}" onclick="estNotasMes=${i};renderEstNotasView()">${mesLabel(rec,i)} · ${n}/4</button>`;
+  }).join('');
+  document.getElementById('estNotasView').innerHTML =
+    `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>
+     <div class="subhead" style="margin-top:18px;">Rúbrica de calificación · ${mesLabel(rec,estNotasMes)}</div>
+     <p class="helptext" style="margin-top:-2px;">Así se evalúa cada criterio. Se resalta el nivel que la empresa te asignó este mes.</p>
+     <div class="tabs">${pills}</div>${rubricaLecturaHtml(estNotasMes)}`;
+}
+let estNotasMes = null;
+function rubricaLecturaHtml(i){
+  const rec = state.record;
+  const head = `<tr><th class="rub-crit">Criterio</th>${[5,4,3,2,1].map(n=>`<th class="rub-lvl rub-l${n}"><b>${n}</b> · ${SCORE_LABELS[n]}</th>`).join('')}</tr>`;
+  const rows = COMPETENCIAS.map(c=>{
+    const cur = rec.competencias[c.key][i];
+    const cells = [5,4,3,2,1].map(n=>`<td class="rub-cell rub-ro${cur===n?' sel':''}">${cur===n?'<span class="rub-tu">✔ Tu nota</span>':''}${RUBRICA[c.key][n]}</td>`).join('');
+    return `<tr><th class="rub-crit"><div class="comp-name">${c.name}</div><div class="comp-desc">${c.desc}</div>
+      <div class="rub-res ${cur?'ok':''}">${cur ? 'Nota: '+cur+' · '+SCORE_LABELS[cur] : 'Sin calificar'}</div></th>${cells}</tr>`;
+  }).join('');
+  return `<div class="rub-wrap"><table class="rubrica"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+}
+async function saveEstudianteMes(){
+  const rec = state.record; const i = state.estMonth;
+  const sig = sigDataUrl('sig-estudiante-mes');
+  if(!sig){ toast('Firma primero en el recuadro', true); return; }
+  rec.meses[i].firmaEstudiante = sig;
+  await saveRecord(rec);
+  toast('Firma de '+mesLabel(rec,i).toLowerCase()+' guardada');
+  renderEstudiante();
+}
 
-  <!-- ESTUDIANTE CAMBIO DE CONTRASEÑA -->
-  <div class="screen" id="screen-estudiante-cambio">
-    <h2 style="margin:12px 0 4px;">Cambiar contraseña</h2>
-    <p class="helptext" id="estCambioHelp"></p>
-    <div class="card" style="max-width:420px;">
-      <div class="field-row" style="grid-template-columns:1fr;">
-        <div class="field"><label>Contraseña actual</label>
-          <div class="pw-wrap"><input type="password" id="estPwActual" autocomplete="current-password"><button type="button" class="pw-toggle" data-target="estPwActual" aria-label="Mostrar contraseña"></button></div></div>
-        <div class="field"><label>Contraseña nueva (mín. 8 caracteres)</label>
-          <div class="pw-wrap"><input type="password" id="estPwNueva" autocomplete="new-password"><button type="button" class="pw-toggle" data-target="estPwNueva" aria-label="Mostrar contraseña"></button></div></div>
-        <div class="field"><label>Repite la contraseña nueva</label>
-          <div class="pw-wrap"><input type="password" id="estPwNueva2" autocomplete="new-password"><button type="button" class="pw-toggle" data-target="estPwNueva2" aria-label="Mostrar contraseña"></button></div></div>
-      </div>
-      <div class="actions-row" style="justify-content:flex-start;">
-        <button class="primary" onclick="doEstudianteCambio()">Guardar contraseña</button>
-        <button class="ghost" id="estCambioCancel" onclick="cancelarCambioEstudiante()">Cancelar</button>
-      </div>
-      <div id="estCambioMsg" style="margin-top:12px;font-size:13.5px;"></div>
-    </div>
-  </div>
-
-  <!-- ESTUDIANTE -->
-  <div class="screen" id="screen-estudiante">
-    <div class="status-strip">
-      <div class="who">Estudiante · Documento <b id="estDocLabel"></b></div>
-      <div class="actions"><button class="ghost" onclick="goEstudianteCambio(false)">Cambiar contraseña</button><button class="danger" onclick="estudianteLogout()">Cerrar sesión</button></div>
-    </div>
-
-    <div class="card" id="estDatosGenerales"></div>
-
-    <div class="card">
-      <div class="section-bar deep">Asignación de práctica no remunerada</div>
-      <div id="estAsignacion"></div>
-    </div>
-
-
-    <div class="card">
-      <div class="section-bar teal">Mis notas — competencias transversales</div>
-      <p class="helptext" style="margin-top:-4px;">Estas notas las pone la empresa y no puedes editarlas.</p>
-      <div id="estNotasView"></div>
-    </div>
-
-    <div class="card">
-      <div class="section-bar teal">Mi control de cumplimiento · firma tu mes</div>
-      <p class="helptext" style="margin-top:-4px;">El sitio, las fechas y las observaciones las diligencia la empresa. Tú revisas y firmas cada mes.</p>
-      <div class="tabs" id="estMonthTabs"></div>
-      <div id="estControlView"></div>
-      <div class="sig-wrap">
-        <label>Firma estudiante (control de cumplimiento del mes)</label>
-        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-mes"></canvas></div>
-        <div class="sig-actions">
-          <span class="sig-status" id="sig-estudiante-mes-status">Sin firmar</span>
-          <button class="ghost" onclick="clearSig('sig-estudiante-mes')">Borrar firma</button>
-        </div>
-      </div>
-      <div class="actions-row"><button class="primary" onclick="saveEstudianteMes()">Guardar firma del mes</button></div>
-    </div>
-  </div>
-
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="js/config.js"></script>
-<script src="js/supabase-client.js"></script>
-<script src="js/password-toggle.js"></script>
-<script src="js/signature-pad.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/admin-users.js"></script>
-<script src="js/programas.js"></script>
-<script src="js/datos-generales.js"></script>
-<script src="js/empresa.js"></script>
-<script src="js/estudiante.js"></script>
-<script src="js/supervisor-panel.js"></script>
-<script src="js/administrador.js"></script>
-<script src="js/estudiante-auth.js"></script>
-<script src="js/reporte.js"></script>
-<script src="js/asignacion.js"></script>
-<script src="js/importexport.js"></script>
-<script src="js/modalidades.js"></script>
-<script src="js/rubrica.js"></script>
-<script src="js/contratacion.js"></script>
-<script src="js/carta-assets.js"></script>
-<script src="js/carta.js"></script>
-<script src="js/carta-fechas.js"></script>
-<script src="js/toast.js"></script>
-<script src="js/sesion.js"></script>
-<script src="js/pie-sesion.js"></script>
-<script src="js/planilla-template.js"></script>
-<script src="js/datos-personales.js"></script>
-<script src="js/pdf-export.js"></script>
-<script>
-  initPwToggles();
-  goHome = function(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:'', token:null}; goRole('estudiante'); };
-  goRole('estudiante');
-  restaurarSesion('estudiante');
-</script>
-</body>
-</html>
+/* ===== Pestañas del estudiante: Datos generales · Asignación · Mis notas · Control de cumplimiento ===== */
+let estTabActual = 'datos';
+function cardsEstudiante(){
+  const c = id => { const e = document.getElementById(id); return e ? (e.classList.contains('card') ? e : e.closest('.card')) : null; };
+  return { datos: c('estDatosGenerales'), asig: c('estAsignacion'), notas: c('estNotasView'), control: c('estMonthTabs') };
+}
+function organizarPestanasEstudiante(){
+  const cards = cardsEstudiante();
+  if(!cards.datos) return;
+  let ref = cards.datos;
+  ['asig','notas','control'].forEach(k=>{
+    if(cards[k] && cards[k] !== ref.nextElementSibling) ref.insertAdjacentElement('afterend', cards[k]);
+    if(cards[k]) ref = cards[k];
+  });
+  let bar = document.getElementById('estTabs');
+  if(!bar){
+    bar = document.createElement('div'); bar.className = 'tabs'; bar.id = 'estTabs';
+    cards.datos.insertAdjacentElement('beforebegin', bar);
+  }
+  bar.innerHTML =
+    '<button class="tab" id="estTab-datos" onclick="showEstTab(\'datos\')">Datos generales</button>'+
+    '<button class="tab" id="estTab-asig" onclick="showEstTab(\'asig\')">Asignación de práctica</button>'+
+    '<button class="tab" id="estTab-notas" onclick="showEstTab(\'notas\')">Mis notas</button>'+
+    '<button class="tab" id="estTab-control" onclick="showEstTab(\'control\')">Control y firma</button>';
+  showEstTab(estTabActual);
+}
+function showEstTab(tab){
+  estTabActual = tab;
+  const cards = cardsEstudiante();
+  Object.keys(cards).forEach(k=>{
+    if(cards[k]) cards[k].style.display = (k === tab) ? '' : 'none';
+    const b = document.getElementById('estTab-'+k); if(b) b.classList.toggle('active', k === tab);
+  });
+  // el lienzo de la firma necesita estar visible para medirse bien
+  if(tab === 'control' && state.record){
+    const m = state.record.meses[state.estMonth];
+    setTimeout(()=>initSigPad('sig-estudiante-mes', m.firmaEstudiante), 30);
+  }
+}
