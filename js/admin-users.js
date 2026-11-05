@@ -53,6 +53,7 @@ async function saveRoleAccount(){
       ? '<span style="color:var(--teal-dark)">Usuario actualizado.</span>'
       : '<span style="color:var(--teal-dark)">Usuario creado.</span>';
     renderRoleAccounts();
+    if(password && typeof correoOfrecerClaveCuenta === 'function') correoOfrecerClaveCuenta(email, nombre, role, password);
   }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">Error: '+e.message+'</span>'; }
 }
 async function deleteRoleAccount(userId){
@@ -172,6 +173,7 @@ async function saveAdministrador(){
     ['admDocumento','admEmail','admNombre','admPasswordNew'].forEach(id=>document.getElementById(id).value='');
     msg.innerHTML = '<span style="color:var(--teal-dark)">Usuario creado con rol «'+(typeof ROL_NOMBRES!=='undefined'?ROL_NOMBRES[rol]:rol)+'».</span>';
     renderAdminsList();
+    if(typeof correoOfrecerClaveCuenta === 'function') correoOfrecerClaveCuenta(email, nombre, 'personal', password);
   }catch(e){ console.error(e); err('Error: '+e.message); renderAdminsList(); }
 }
 async function changeAdminPassword(id, email){
