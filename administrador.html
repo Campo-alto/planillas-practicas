@@ -176,8 +176,8 @@
   <!-- ADMIN MÓDULO: ADMINISTRADORES -->
   <div class="screen" id="screen-admin-admins">
     <button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
-    <h2 style="margin:12px 0 4px;">Administradores</h2>
-    <p class="helptext">Ten cuidado a quién le das este acceso: un administrador puede ver, editar y eliminar cualquier estudiante. Solo un administrador con sesión activa puede crear a otro.</p>
+    <h2 style="margin:12px 0 4px;">Personal y roles</h2>
+    <p class="helptext">Aquí creas al personal y le asignas su rol: Administrador (acceso total), Coordinador de prácticas, Coordinador de gestión empresarial o Asistente. Ten cuidado con el rol Administrador: puede ver, editar y eliminar todo. Las funciones de cada rol se ajustan en «Roles y permisos».</p>
     <div class="card">
       <div class="field-row">
         <div class="field"><label>Correo</label><input type="email" id="admEmail" autocomplete="off"></div>
@@ -190,7 +190,7 @@
         </div>
       </div>
       <div class="actions-row" style="justify-content:flex-start;">
-        <button class="primary" onclick="saveAdministrador()">Crear administrador</button>
+        <button class="primary" onclick="saveAdministrador()">Crear usuario</button>
       </div>
       <div id="admFormMsg" style="margin-top:8px;font-size:13px;"></div>
     </div>
@@ -397,6 +397,7 @@
 <script src="js/modalidades.js"></script>
 <script src="js/rubrica.js"></script>
 <script src="js/contratacion.js"></script>
+<script src="js/roles-permisos.js"></script>
 <script src="js/panel-admin.js"></script>
 <script src="js/reset-plataforma.js"></script>
 <script src="js/carta-assets.js"></script>
