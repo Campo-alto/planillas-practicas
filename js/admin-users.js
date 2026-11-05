@@ -84,6 +84,13 @@ function asegurarUiAdministradores(){
     row.insertBefore(f, row.firstChild);
     row.querySelector('#admNombre').closest('.field').querySelector('label').textContent = 'Nombre completo';
   }
+  if(email && !document.getElementById('admRolNuevo') && typeof ROL_NOMBRES !== 'undefined'){
+    const row = email.closest('.field-row');
+    const f = document.createElement('div'); f.className = 'field';
+    f.innerHTML = '<label>Rol</label><select id="admRolNuevo">' +
+      Object.keys(ROL_NOMBRES).map(k=>'<option value="'+k+'"'+(k==='asistente'?' selected':'')+'>'+ROL_NOMBRES[k]+'</option>').join('') + '</select>';
+    row.appendChild(f);
+  }
   const list = document.getElementById('adminsList');
   if(list && !document.getElementById('admBuscar')){
     const bar = document.createElement('div');
@@ -117,6 +124,7 @@ async function filtrarAdministradores(){
     <td>${escapeAttr(a.documento) || '<span style="color:var(--danger)">sin documento</span>'}</td>
     <td>${escapeAttr(a.nombre) || '<span style="color:var(--muted)">—</span>'}${me && me.id===a.id ? ' <span style="color:var(--muted);font-size:11.5px;">(tú)</span>' : ''}</td>
     <td>${escapeAttr(a.email)}</td>
+    ${a.rol === undefined ? '' : '<td>'+selectorRolHtml(a, me)+'</td>'}
     <td>${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</td>
     <td style="white-space:nowrap;">
       <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editarPerfilAdmin('${a.id}')">Editar datos</button>
@@ -124,8 +132,8 @@ async function filtrarAdministradores(){
       ${me && me.id===a.id ? '' : `<button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteAdministrador('${a.id}','${escapeAttr(a.email)}')">Eliminar</button>`}
     </td>
   </tr>`).join('');
-  el.innerHTML = `<p class="helptext" style="margin:0 0 8px;">${lista.length} de ${adminsCache.length} administrador(es)</p>
-    <table class="students-list"><thead><tr><th>Documento</th><th>Nombre</th><th>Correo</th><th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML = `<p class="helptext" style="margin:0 0 8px;">${lista.length} de ${adminsCache.length} persona(s) del personal</p>
+    <table class="students-list"><thead><tr><th>Documento</th><th>Nombre</th><th>Correo</th>${lista.some(a=>a.rol!==undefined)?'<th>Rol</th>':''}<th>Creado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 async function editarPerfilAdmin(id){
   const a = adminsCache.find(x=>x.id===id); if(!a) return;
@@ -153,11 +161,12 @@ async function saveAdministrador(){
   if(adminsCache.some(a=>a.documento === documento)) return err('Ya existe un administrador con ese documento.');
   msg.innerHTML = '<span style="color:var(--muted)">Creando…</span>';
   try{
-    const r = await adminManage({ action:'create', email, nombre, password });
+    const rolSel = document.getElementById('admRolNuevo'); const rol = rolSel ? rolSel.value : 'administrador';
+    const r = await adminManage({ action:'create', email, nombre, password, rol });
     const { error } = await sb.rpc('admin_set_admin_profile', { p_user_id: r.id, p_documento: documento, p_nombre: nombre });
     if(error) throw new Error('Se creó el acceso pero no se guardó el perfil: ' + error.message);
     ['admDocumento','admEmail','admNombre','admPasswordNew'].forEach(id=>document.getElementById(id).value='');
-    msg.innerHTML = '<span style="color:var(--teal-dark)">Administrador creado.</span>';
+    msg.innerHTML = '<span style="color:var(--teal-dark)">Usuario creado con rol «'+(typeof ROL_NOMBRES!=='undefined'?ROL_NOMBRES[rol]:rol)+'».</span>';
     renderAdminsList();
   }catch(e){ console.error(e); err('Error: '+e.message); renderAdminsList(); }
 }
@@ -168,7 +177,22 @@ async function changeAdminPassword(id, email){
   catch(e){ toast('No se pudo cambiar: '+e.message, true); }
 }
 async function deleteAdministrador(id, email){
-  if(!confirm('¿Eliminar al administrador '+email+'? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Eliminar a '+email+' del personal? Esta acción no se puede deshacer.')) return;
   try{ await adminManage({ action:'delete', user_id:id }); toast('Administrador eliminado'); renderAdminsList(); }
   catch(e){ toast('No se pudo eliminar: '+e.message, true); }
+}
+
+// Selector de rol de cada persona (no se puede cambiar el propio rol)
+function selectorRolHtml(a, me){
+  const propio = me && me.id === a.id;
+  const opts = Object.keys(ROL_NOMBRES).map(k=>'<option value="'+k+'"'+(a.rol===k?' selected':'')+'>'+ROL_NOMBRES[k]+'</option>').join('');
+  return '<select '+(propio?'disabled title="No puedes cambiar tu propio rol"':'')+' style="font-size:12.5px;padding:4px 6px;" onchange="cambiarRolAdmin(\''+a.id+'\', this)">'+opts+'</select>';
+}
+async function cambiarRolAdmin(id, sel){
+  const a = adminsCache.find(x=>x.id===id); if(!a) return;
+  const nuevo = sel.value;
+  if(!confirm('¿Cambiar el rol de '+(a.nombre||a.email)+' a «'+ROL_NOMBRES[nuevo]+'»?')){ sel.value = a.rol; return; }
+  const { error } = await sb.rpc('admin_set_admin_rol', { p_user_id: id, p_rol: nuevo });
+  if(error){ toast(error.message, true); sel.value = a.rol; return; }
+  a.rol = nuevo; toast('Rol actualizado');
 }
