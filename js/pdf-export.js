@@ -211,6 +211,7 @@ async function downloadPdf(){
     await sig(3, so.firma, 598.5, 655.8, 415.4, 488);
 
     const bytes = await doc.save();
+    if(window._pdfCapturar){ const cap = window._pdfCapturar; window._pdfCapturar = null; cap(bytes); return; }   // envío por correo
     const blob = new Blob([bytes], {type:'application/pdf'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
