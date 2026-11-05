@@ -4,17 +4,17 @@
    Seguridad: la función SQL valida que seas administrador, que esté habilitado y la frase exacta; todo ocurre en una transacción. */
 let rpBackupOk = false;
 
-// Se llama al abrir el área "Administración": agrega la tarjeta solo si el servidor lo permite
+// Se llama al mostrar el panel: agrega la opción "Reiniciar plataforma" (en Administración) solo si el servidor lo permite
 window.rpMostrarTarjeta = async function(){
   try{
     if(typeof sb === 'undefined' || !sb) return;
     const { data } = await sb.rpc('admin_reset_habilitado');
-    const grid = document.querySelector('#screen-admin-grupo .pg-funciones');
-    if(data !== true || !grid || document.getElementById('rpCard')) return;
-    const c = document.createElement('div'); c.className = 'role-card rp-card'; c.id = 'rpCard'; c.setAttribute('role','button'); c.tabIndex = 0;
-    c.onclick = rpAbrir; c.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); rpAbrir(); } };
-    c.innerHTML = '<div class="icon" style="background:var(--danger)">⚠</div><h3>Reiniciar plataforma</h3><p>Borra los datos para empezar de cero. Exige copia de seguridad y confirmación. Uso excepcional.</p>';
-    grid.appendChild(c);
+    const chips = document.getElementById('grupoChips-administracion');
+    if(data !== true || !chips || document.getElementById('rpCard')) return;
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'grupo-chip rp-chip'; c.id = 'rpCard';
+    c.title = 'Borra los datos para empezar de cero. Uso excepcional.'; c.onclick = rpAbrir;
+    c.textContent = '⚠ Reiniciar plataforma';
+    chips.appendChild(c);
   }catch(e){ console.warn('reset:', e); }
 };
 
@@ -25,7 +25,7 @@ function rpPantalla(html){
 }
 function rpAbrir(){
   rpBackupOk = false;
-  rpPantalla(`<button class="linkbtn" onclick="pgAbrirGrupo('administracion')">← Volver a Administración</button>
+  rpPantalla(`<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <h2 style="margin:12px 0 4px;color:var(--danger)">Reiniciar plataforma</h2>
     <div class="note-box" style="background:#FBEAE7;border-color:#F0C4BD;color:#8F2A20;margin:10px 0 16px;"><b>Acción irreversible.</b> Los datos borrados no se pueden recuperar desde la aplicación. Antes de continuar descarga la copia de seguridad. Nunca se borran: administradores, programas, modalidades ni el historial de auditoría.</div>
     <div class="card" style="border-color:#E4C3BE;">
