@@ -32,7 +32,7 @@ async function doAdminLogin(){
   if(!email || !password){ msg.innerHTML = '<span style="color:var(--danger)">Escribe correo y contraseña.</span>'; return; }
   msg.innerHTML = '<span style="color:var(--muted)">Verificando…</span>';
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){ msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>'; return; }
+  if(error){ msg.innerHTML = '<span style="color:var(--danger)">' + (/banned|inhabilitad/i.test(error.message||'') ? 'Esta cuenta está inhabilitada. Comunícate con el administrador.' : 'Correo o contraseña incorrectos.') + '</span>'; return; }
   const role = data.user.user_metadata && data.user.user_metadata.role;
   // Las cuentas de administrador creadas antes de este cambio no tienen "role" en sus
   // metadatos todavía — se siguen tratando como administrador por compatibilidad.
@@ -41,6 +41,10 @@ async function doAdminLogin(){
     msg.innerHTML = '<span style="color:var(--danger)">Esta cuenta no tiene permisos de administrador.</span>';
     return;
   }
+  try{                                   // una cuenta inhabilitada (o que no es del personal) no entra al panel
+    const { data: okAdm } = await sb.rpc('is_admin');
+    if(okAdm === false){ await sb.auth.signOut(); msg.innerHTML = '<span style="color:var(--danger)">Esta cuenta está inhabilitada o no pertenece al personal.</span>'; return; }
+  }catch(_){}
   state.role = 'administrador';
   try{ sb.rpc('registrar_ingreso_personal').then(()=>{}, ()=>{}); }catch(_){}   // auditoría: ingreso del personal
   showScreen('screen-admin-hub');
@@ -136,7 +140,7 @@ async function doRoleLogin(){
   msg.innerHTML = '<span style="color:var(--muted)">Verificando…</span>';
   try{
     const { data, error } = await sb.rpc('login_role_account', { p_email: email, p_password: password });
-    if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">Error verificando credenciales.</span>'; return; }
+    if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">' + (/inhabilitad/i.test(error.message||'') ? esc(error.message) : 'Error verificando credenciales.') + '</span>'; return; }
     if(!data || data.role !== state.pendingRole){
       msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>';
       return;
@@ -227,6 +231,7 @@ async function renderAdminList(){
     if(error){ ({ data, error } = await sb.from('students').select('documento,nombre,programa,sede,semestre,modalidad,competencias,meses,updated_at').order('nombre', {ascending:true})); }
     if(error){ el.innerHTML = '<p style="color:var(--danger);font-size:13px;">No se pudo cargar el listado: '+error.message+'</p>'; return; }
     adminStudentsCache = data || [];
+    if(typeof inhabCargar === 'function') await inhabCargar();
     adminEmpresaPorDoc = {};
     try{
       const r = await pAsig;
@@ -296,15 +301,16 @@ function renderAdminListTable(conservarFoco){
       const cls = prog.count===0 ? 'no' : (prog.count===prog.total ? 'ok' : '');
       const platTxt = plat.pendientes===0 ? (plat.subidas>0 ? '✅ Al día' : '—') : ('📋 '+plat.pendientes+' sin subir');
       const platCls = plat.pendientes===0 ? (plat.subidas>0?'ok':'') : 'no';
-      return `<tr class="rowlink" onclick="jumpToAdmin('${s.documento}')">
-        <td class="cp-prog"><b>${esc(s.nombre||'(sin nombre)')}</b></td><td>${esc(s.documento)}</td>
+      return `<tr class="rowlink${typeof inhabEsta==='function' && inhabEsta('estudiante', s.documento) ? ' inhab-row' : ''}" onclick="jumpToAdmin('${s.documento}')">
+        <td class="cp-prog"><b>${esc(s.nombre||'(sin nombre)')}</b>${typeof inhabBadge==='function' ? inhabBadge('estudiante', s.documento) : ''}</td><td>${esc(s.documento)}</td>
         <td>${esc(s.programa||'—')}</td>
         <td>${empresa ? '<span class="cupo-jor">'+esc(empresa)+'</span>' : '<span style="color:var(--muted)">Sin asignar</span>'}</td>
         <td>${esc(s.sede||'—')}</td><td class="cp-c">${esc(s.semestre||'—')}</td>
         <td>${esc(s.modalidad||'—')}</td><td class="${cls}">${textoNotas(prog)}</td><td class="${platCls}">${platTxt}</td>
+        <td>${typeof inhabBoton==='function' ? inhabBoton('estudiante', s.documento, s.nombre||s.documento) : ''}</td>
       </tr>`;
     }).join('');
-    tabla = `<div class="cupos-wrap"><table class="cupos-table lista-est"><thead><tr><th>Nombre</th><th>Documento</th><th>Programa</th><th>Empresa asignada</th><th>Sede</th><th class="cp-c">Sem.</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    tabla = `<div class="cupos-wrap"><table class="cupos-table lista-est"><thead><tr><th>Nombre</th><th>Documento</th><th>Programa</th><th>Empresa asignada</th><th>Sede</th><th class="cp-c">Sem.</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th><th>Acceso</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   el.innerHTML = arriba + contadorGlobal + barra + tabla;
   if(conservarFoco){ const i = document.getElementById('adminListBusca'); if(i){ i.focus(); const n=i.value.length; try{ i.setSelectionRange(n,n); }catch(e){} } }
