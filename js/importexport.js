@@ -403,6 +403,8 @@ async function ieConfirmar(id){
 }
 
 /* ---------- pantalla ---------- */
+// ¿El rol del usuario tiene alguna de estas funciones habilitadas? (sin el módulo de roles, todo se permite)
+function puedeIE(){ return typeof puede !== 'function' || Array.prototype.some.call(arguments, m=>puede(m)); }
 function abrirImportExport(){
   if(!requireSupabase()) return;
   const body = document.getElementById('ieBody');
@@ -420,10 +422,10 @@ function abrirImportExport(){
       '</div>';
   };
   body.innerHTML =
-    card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Nombre completo. Modalidad, Programa y Jornada se reconocen aunque vengan escritos distinto (con numeración, "TL.", mayúsculas, textos largos…); si alguno no se reconoce, la fila se importa igual y te avisa.') +
-    card('empresas','🏢','Una fila por empresa y, si es de prácticas no remuneradas, puedes agregar Programa, Jornada y Cupos (repite la empresa en varias filas para varios cupos). Categorías: ' + CATEGORIAS_EMPRESA.map(c=>c.nombre).join(' · ') + '.') +
-    card('supervisores','👤','Crea o actualiza supervisores. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.') +
-    card('ca_empresas','🤝','Empresas que reciben aprendices (contrato de aprendizaje). Una fila por empresa; "Verificada SENA" = Sí las deja aprobadas. Se enlazan con el módulo Empresas por NIT o nombre.') +
-    card('asignaciones','📋','Lista de estudiantes con la empresa a la que fueron asignados.');
+    (puedeIE('est_importexport') ? card('estudiantes','🎓','Sube varios estudiantes de una vez. Obligatorios: Documento y Nombre completo. Modalidad, Programa y Jornada se reconocen aunque vengan escritos distinto (con numeración, "TL.", mayúsculas, textos largos…); si alguno no se reconoce, la fila se importa igual y te avisa.') : '') +
+    (puedeIE('emp_importexport') ? card('empresas','🏢','Una fila por empresa y, si es de prácticas no remuneradas, puedes agregar Programa, Jornada y Cupos (repite la empresa en varias filas para varios cupos). Categorías: ' + CATEGORIAS_EMPRESA.map(c=>c.nombre).join(' · ') + '.') : '') +
+    (puedeIE('sup_importexport') ? card('supervisores','👤','Crea o actualiza supervisores. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.') : '') +
+    (puedeIE('emp_importexport') ? card('ca_empresas','🤝','Empresas que reciben aprendices (contrato de aprendizaje). Una fila por empresa; "Verificada SENA" = Sí las deja aprobadas. Se enlazan con el módulo Empresas por NIT o nombre.') : '') +
+    (puedeIE('est_importexport','emp_importexport') ? card('asignaciones','📋','Lista de estudiantes con la empresa a la que fueron asignados.') : '');
   showScreen('screen-admin-datos');
 }
