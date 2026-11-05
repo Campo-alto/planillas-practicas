@@ -449,3 +449,7 @@ table.ca-tabla.ca-cerrados td{color:#5b6866;}
 .ce-barra .primary{white-space:nowrap;}
 #ceFormulario .field-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
 #ceFormulario input[readonly]{background:#F3F6F6;color:var(--muted);}
+
+/* Funciones del panel del administrador como enlaces directos */
+.grupo-chips .grupo-chip{font:inherit;font-size:12.5px;padding:5px 12px;border-radius:999px;background:#F3F0E8;color:var(--deep);border:1px solid var(--line);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .15s;}
+.grupo-chips .grupo-chip:hover,.grupo-chips .grupo-chip:focus-visible{background:var(--teal-dark,#1F6F66);color:#fff;border-color:var(--teal-dark,#1F6F66);transform:translateY(-1px);outline:none;}
