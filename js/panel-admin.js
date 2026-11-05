@@ -34,6 +34,7 @@
       funciones:[
         { icono:'Ad', clase:'administrador', titulo:'Personal y roles', mod:'solo_admin', desc:'Crear al personal (administradores, coordinadores y asistentes) y asignarle su rol.', abrir:()=>goAdminModule('administradores') },
         { icono:'🔑', clase:'administrador', titulo:'Roles y permisos', mod:'solo_admin', desc:'Habilitar o inhabilitar las funciones de cada rol.', abrir:()=>abrirPermisos() },
+        { icono:'🛡', clase:'administrador', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Reporte de quién creó, modificó, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() },
         { icono:'📚', clase:'supervisor', titulo:'Programas', mod:'adm_programas', desc:'Crear, ver y eliminar los programas / técnicos laborales por área.', abrir:()=>goAdminModule('programas') },
         { icono:'🗂', clase:'supervisor', titulo:'Modalidades', mod:'adm_modalidades', desc:'Agregar, modificar o eliminar modalidades y definir cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
         { icono:'📊', clase:'empresa', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crear, modificar, ordenar o eliminar los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
