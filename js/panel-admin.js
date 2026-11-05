@@ -10,7 +10,7 @@
     { id:'estudiantes', icono:'🎓', clase:'estudiante', titulo:'Estudiantes',
       desc:'Todo lo relacionado con los estudiantes y su proceso de práctica o contratación.',
       funciones:[
-        { icono:'🎓', clase:'estudiante', titulo:'Estudiantes registrados', desc:'Buscar, registrar y ver el estado de cada planilla de práctica.', abrir:()=>goRole('administrador') },
+        { icono:'🎓', clase:'estudiante', titulo:'Estudiantes registrados', desc:'Ver, crear y gestionar a cada estudiante y el estado de su planilla.', abrir:()=>goRole('administrador') },
         { icono:'🤝', clase:'empresa', titulo:'Contrato de aprendizaje', desc:'Verificar pagos, declarar aptos, seguir los procesos y confirmar contrataciones.', abrir:()=>caAbrirAdmin() },
         { icono:'⇅', clase:'administrador', titulo:'Importar / exportar estudiantes', desc:'Subir estudiantes desde Excel y descargar listados en Excel o PDF.', abrir:()=>abrirImportExport() }
       ] },
