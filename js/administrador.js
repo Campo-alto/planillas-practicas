@@ -5,10 +5,6 @@ async function renderAdministrador(){
   await loadProgramas();
   document.getElementById('admDatosGenerales').innerHTML = datosGeneralesHtml(state.record, true, 'adm');
   document.getElementById('admResumen').innerHTML = resumenPlanillaHtml(state.record, true);
-  const btn = document.getElementById('btnStartDelete');
-  if(btn) btn.disabled = true;
-  const panel = document.getElementById('deleteStudentPanel');
-  if(panel){ panel.style.display = 'none'; panel.innerHTML = ''; }
   await mostrarAccesoEstudiante();
   organizarPestanasAdmin();
   mostrarEmpresaAsignada();
@@ -40,12 +36,11 @@ function organizarPestanasAdmin(){
   const cards = {
     datos: datos,
     acceso: acceso ? acceso.closest('.card') : null,
-    estado: resumen.closest('.card'),
-    peligro: document.getElementById('admPeligroCard')
+    estado: resumen.closest('.card')
   };
-  // orden: datos → acceso → estado → zona de peligro (siempre la última)
+  // orden: datos → acceso → estado
   let ref = cards.datos;
-  ['acceso','estado','peligro'].forEach(k=>{
+  ['acceso','estado'].forEach(k=>{
     if(cards[k] && cards[k] !== ref.nextElementSibling){ ref.insertAdjacentElement('afterend', cards[k]); }
     if(cards[k]) ref = cards[k];
   });
@@ -58,8 +53,7 @@ function organizarPestanasAdmin(){
   bar.innerHTML =
     '<button class="tab" id="admTab-datos" onclick="showAdmTab(\'datos\')">Datos generales</button>'+
     '<button class="tab" id="admTab-acceso" onclick="showAdmTab(\'acceso\')">Acceso del estudiante</button>'+
-    '<button class="tab" id="admTab-estado" onclick="showAdmTab(\'estado\')">Estado de la planilla</button>'+
-    '<button class="tab tab-peligro" id="admTab-peligro" onclick="showAdmTab(\'peligro\')">⚠ Zona de peligro</button>';
+    '<button class="tab" id="admTab-estado" onclick="showAdmTab(\'estado\')">Estado de la planilla</button>';
   showAdmTab(admTabActual);
 }
 function showAdmTab(tab){
@@ -69,8 +63,7 @@ function showAdmTab(tab){
   const cards = {
     datos: document.getElementById('admDatosGenerales'),
     acceso: acceso ? acceso.closest('.card') : null,
-    estado: resumen ? resumen.closest('.card') : null,
-    peligro: document.getElementById('admPeligroCard')
+    estado: resumen ? resumen.closest('.card') : null
   };
   Object.keys(cards).forEach(k=>{
     if(cards[k]) cards[k].style.display = (k === tab) ? '' : 'none';
@@ -295,63 +288,4 @@ function resumenPlanillaHtml(rec, editable){
     ${rfTable}
     ${dsTable}
   `;
-}
-
-/* ============================= ELIMINAR ESTUDIANTE ============================= */
-let deleteSecurityCode = null;
-
-function downloadPdfBeforeDelete(){
-  downloadPdf();
-  const btn = document.getElementById('btnStartDelete');
-  if(btn) btn.disabled = false;
-  toast('Acta descargada. Ya puedes continuar con "Eliminar estudiante" si es necesario.');
-}
-
-function startDeleteStudent(){
-  deleteSecurityCode = String(Math.floor(100000 + Math.random()*900000)); // código de 6 dígitos
-  const panel = document.getElementById('deleteStudentPanel');
-  panel.style.display = 'block';
-  panel.innerHTML = `
-    <p style="color:var(--danger);font-weight:700;font-size:13.5px;margin-bottom:10px;">
-      Vas a eliminar permanentemente a <b>${escapeAttr(state.record.nombre)||state.documento}</b> (documento ${state.documento}) y toda su planilla. Esta acción no se puede deshacer.
-    </p>
-    <p style="font-size:13.5px;margin-bottom:6px;">Para confirmar, escribe este código de seguridad:</p>
-    <p style="font-size:22px;font-weight:800;letter-spacing:4px;color:var(--deep);background:#F7F4EE;border:1px dashed var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin-bottom:12px;">${deleteSecurityCode}</p>
-    <div class="field-row">
-      <div class="field"><label>Código de seguridad</label><input type="text" id="deleteCodeInput" inputmode="numeric" placeholder="Escribe el código de arriba"></div>
-    </div>
-    <div class="actions-row" style="justify-content:flex-start;">
-      <button class="ghost" onclick="cancelDeleteStudent()">Cancelar</button>
-      <button class="danger" onclick="confirmDeleteStudent()">Confirmar eliminación definitiva</button>
-    </div>
-    <div id="deleteStudentMsg" style="margin-top:8px;font-size:13px;"></div>
-  `;
-}
-
-function cancelDeleteStudent(){
-  deleteSecurityCode = null;
-  const panel = document.getElementById('deleteStudentPanel');
-  panel.style.display = 'none';
-  panel.innerHTML = '';
-}
-
-async function confirmDeleteStudent(){
-  if(!requireSupabase()) return;
-  const input = document.getElementById('deleteCodeInput').value.trim();
-  const msg = document.getElementById('deleteStudentMsg');
-  if(input !== deleteSecurityCode){
-    msg.innerHTML = '<span style="color:var(--danger)">El código no coincide. Revísalo e inténtalo de nuevo.</span>';
-    return;
-  }
-  msg.innerHTML = '<span style="color:var(--muted)">Eliminando…</span>';
-  try{
-    const { error } = await sb.from('students').delete().eq('documento', state.documento);
-    if(error){ throw new Error(error.message); }
-    toast('Estudiante eliminado');
-    deleteSecurityCode = null;
-    goRole('administrador');
-  }catch(e){
-    console.error(e);
-    msg.innerHTML = '<span style="color:var(--danger)">No se pudo eliminar: '+e.message+'</span>';
-  }
 }
