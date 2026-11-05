@@ -29,37 +29,36 @@
       </div>
     </div>
     <div class="topbar-actions" id="topbarActions"></div>
+    <a class="admin-link" href="administrador.html" title="Ingreso para administradores"><span aria-hidden="true">🔐</span> Administrador</a>
   </div>
 
   <!-- HOME -->
   <div class="screen active" id="screen-home">
     <div class="hero">
-      <h1>Diligencia y firma la planilla de prácticas en un solo lugar</h1>
-      <p>Busca al estudiante por número de documento, registra el desempeño mensual, recoge las firmas de empresa, estudiante y supervisor, y descarga el PDF consolidado.</p>
+      <h1>Asignación de prácticas</h1>
+      <p>Elige cómo vas a ingresar. Cada perfil entra con su propio acceso y solo ve lo que le corresponde.</p>
     </div>
-    <div class="role-grid">
-      <div class="role-card empresa" onclick="location.href='empresa.html'">
-        <div class="icon">E</div>
-        <h3>Empresa · Jefe inmediato</h3>
-        <p>Inicia sesión con el usuario que te dio el administrador para calificar el mes y firmar.</p>
-      </div>
-      <div class="role-card estudiante" onclick="location.href='estudiante.html'">
+    <div class="role-grid home-roles">
+      <div class="role-card estudiante" role="link" tabindex="0" onclick="location.href='estudiante.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='estudiante.html'}">
         <div class="icon">A</div>
         <h3>Estudiante</h3>
-        <p>Revisa lo diligenciado por tu jefe inmediato, responde las observaciones y firma cada mes.</p>
+        <p>Ingresa con tu documento para revisar tu planilla, responder las observaciones y firmar cada mes.</p>
+        <span class="home-go">Ingresar como estudiante →</span>
       </div>
-      <div class="role-card supervisor" onclick="location.href='supervisor.html'">
+      <div class="role-card empresa" role="link" tabindex="0" onclick="location.href='empresa.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='empresa.html'}">
+        <div class="icon">E</div>
+        <h3>Empresa · Jefe inmediato</h3>
+        <p>Ingresa con el usuario que te dio el administrador para calificar el mes, firmar y gestionar tus aprendices.</p>
+        <span class="home-go">Ingresar como empresa →</span>
+      </div>
+      <div class="role-card supervisor" role="link" tabindex="0" onclick="location.href='supervisor.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='supervisor.html'}">
         <div class="icon">S</div>
         <h3>Supervisor institucional</h3>
-        <p>Inicia sesión con el usuario que te dio el administrador para registrar la visita de seguimiento.</p>
-      </div>
-      <div class="role-card administrador" onclick="location.href='administrador.html'">
-        <div class="icon">Ad</div>
-        <h3>Administrador</h3>
-        <p>Inicia sesión para registrar estudiantes, crear usuarios de empresa/supervisor y ver el estado de cada planilla.</p>
+        <p>Ingresa con tu usuario para registrar la visita de seguimiento a cada practicante.</p>
+        <span class="home-go">Ingresar como supervisor →</span>
       </div>
     </div>
-    <div class="note-box">El administrador inicia sesión con correo y contraseña, y desde ahí crea los usuarios de Empresa y Supervisor. El estudiante sigue entrando solo con su número de documento.</div>
+    <div class="note-box">El estudiante entra con su número de documento y su clave. Empresa y supervisor entran con el correo y la contraseña que les entregó la institución. ¿Eres administrador? Usa el botón de arriba a la derecha.</div>
   </div>
 
   <!-- ADMIN LOGIN -->
