@@ -36,21 +36,21 @@
       <p class="home-lead">Elige cómo vas a ingresar. Cada perfil entra con su propio acceso y solo ve lo que le corresponde.</p>
     </div>
     <div class="role-grid home-roles">
-      <div class="role-card estudiante" role="link" tabindex="0" onclick="location.href='estudiante.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='estudiante.html'}">
+      <div class="role-card estudiante" role="link" tabindex="0" onclick="try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='estudiante.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='estudiante.html'}">
         <div class="icon">A</div>
         <h3>Estudiante</h3>
         <p>Ingresa con tu documento para revisar tu planilla, responder las observaciones y firmar cada mes.</p>
         <span class="home-go">Ingresar como estudiante →</span>
         <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('estudiante')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
       </div>
-      <div class="role-card empresa" role="link" tabindex="0" onclick="location.href='empresa.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='empresa.html'}">
+      <div class="role-card empresa" role="link" tabindex="0" onclick="try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='empresa.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='empresa.html'}">
         <div class="icon">E</div>
         <h3>Empresa · Jefe inmediato</h3>
         <p>Ingresa con el usuario que te dio el administrador para calificar el mes, firmar y gestionar tus aprendices.</p>
         <span class="home-go">Ingresar como empresa →</span>
         <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('empresa')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
       </div>
-      <div class="role-card supervisor" role="link" tabindex="0" onclick="location.href='supervisor.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='supervisor.html'}">
+      <div class="role-card supervisor" role="link" tabindex="0" onclick="try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='supervisor.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='supervisor.html'}">
         <div class="icon">S</div>
         <h3>Supervisor institucional</h3>
         <p>Ingresa con tu usuario para registrar la visita de seguimiento a cada practicante.</p>
