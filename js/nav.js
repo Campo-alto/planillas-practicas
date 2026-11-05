@@ -42,6 +42,7 @@ async function doAdminLogin(){
     return;
   }
   state.role = 'administrador';
+  try{ sb.rpc('registrar_ingreso_personal').then(()=>{}, ()=>{}); }catch(_){}   // auditoría: ingreso del personal
   showScreen('screen-admin-hub');
 }
 async function doForgotPassword(){
