@@ -1,13 +1,17 @@
 /* ============================= TRATAMIENTO DE DATOS PERSONALES =============================
    Antes de iniciar sesión, ESTUDIANTE y EMPRESA deben ver el aviso de tratamiento de datos personales y pulsar «Aceptar».
    No se aplica a ADMINISTRADOR ni a SUPERVISOR (esas páginas no cargan este archivo, y además se excluye por rol).
-   La aceptación se guarda solo en esta pestaña (sessionStorage) para no pedirla de nuevo si la contraseña se digita mal;
-   al cerrar la pestaña se borra y se vuelve a pedir en el siguiente ingreso. */
+   La aceptación se recuerda SOLO mientras no se recargue la página ni se cierre la sesión (para no pedirla de nuevo si la
+   contraseña se digita mal). Al recargar, volver al inicio o cerrar sesión, se vuelve a pedir en el siguiente ingreso.
+   Cubre: estudiante, empresa y empresa de contrato de aprendizaje. */
 const DP_URL = 'https://campoalto.dataprotected.co';
 const DP_KEY = 'dp_aceptado_v1';
 
-function dpAceptado(){ try{ return sessionStorage.getItem(DP_KEY) === '1'; }catch(e){ return false; } }
-function dpGuardar(){ try{ sessionStorage.setItem(DP_KEY, '1'); }catch(e){} }
+let dpOk = false;
+try{ sessionStorage.removeItem(DP_KEY); }catch(e){}          // versión anterior: ya no se guarda entre cargas de página
+function dpAceptado(){ return dpOk; }
+function dpGuardar(){ dpOk = true; }
+function dpOlvidar(){ dpOk = false; }
 
 function dpMostrar(alAceptar){
   let m = document.getElementById('dpModal');
@@ -44,3 +48,9 @@ function dpEnvolver(nombre, camposIds, aplica){
 }
 dpEnvolver('doEstudianteLogin', ['estUsuario','estPassword'], ()=>true);
 dpEnvolver('doRoleLogin', ['roleEmail','rolePassword'], ()=> typeof state !== 'undefined' && state.pendingRole === 'empresa');
+dpEnvolver('caLogin', ['caEmail','caPass'], ()=>true);
+// al cerrar sesión se vuelve a pedir en el siguiente ingreso
+['roleLogout','estudianteLogout'].forEach(n=>{
+  const o = window[n];
+  if(typeof o === 'function') window[n] = function(){ dpOlvidar(); return o.apply(this, arguments); };
+});
