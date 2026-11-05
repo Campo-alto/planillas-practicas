@@ -125,6 +125,7 @@ async function guardarClaveEstudiante(){
   const txt = 'Usuario: '+state.documento+'  Contraseña: '+pw;
   msg.innerHTML = '<div style="background:#EAF6F3;border:1px solid #BFE0D8;border-radius:8px;padding:10px 12px;"><b>Entrégale al estudiante:</b><br>Usuario: <b>'+esc(state.documento)+'</b><br>Contraseña: <b style="font-size:16px;letter-spacing:.5px;">'+esc(pw)+'</b><br><small>Deberá cambiarla al ingresar. Anótala ahora: no se vuelve a mostrar.</small><br><button class="ghost" type="button" style="margin-top:8px;" onclick="navigator.clipboard.writeText('+JSON.stringify(txt).replace(/"/g,'&quot;')+');toast(\'Copiado\')">Copiar usuario y contraseña</button></div>';
   toast('Contraseña guardada');
+  if(typeof correoOfrecerClaveEstudiante === 'function') correoOfrecerClaveEstudiante(state.documento, pw);
 }
 async function generarClavesMasivas(){
   if(!confirm('Se crearán contraseñas temporales para TODOS los estudiantes que aún no tienen acceso, y se descargará un Excel con ellas. ¿Continuar?')) return;
@@ -144,4 +145,5 @@ async function generarClavesMasivas(){
   XLSX.utils.book_append_sheet(wb, ws, 'Accesos');
   XLSX.writeFile(wb, 'accesos-estudiantes.xlsx');
   toast(data.length + ' accesos creados. Guarda el Excel: las claves no se vuelven a mostrar.');
+  if(typeof correoOfrecerClavesLote === 'function') await correoOfrecerClavesLote(data);
 }
