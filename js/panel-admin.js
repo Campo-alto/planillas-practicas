@@ -1,6 +1,6 @@
 /* ============================= PANEL DEL ADMINISTRADOR POR ÁREAS =============================
    El panel principal muestra 4 tarjetas grandes (Estudiantes, Empresas, Supervisores, Administración).
-   Al dar clic en una se abre una pantalla con las funciones de esa área, también como tarjetas.
+   Al dar clic en una se abre una pantalla con las funciones de esa área; cada función de la tarjeta también es un enlace directo.
    No cambia ninguna función: solo organiza los accesos. Se carga al final de administrador.html. */
 (function(){
   const run = (fn)=>()=>{ try{ fn(); }catch(e){ console.error(e); toast('No se pudo abrir esta opción: ' + e.message, true); } };
@@ -67,7 +67,7 @@
     const nuevo = document.createElement('div'); nuevo.className = 'grupo-grid';
     nuevo.innerHTML = GRUPOS.map(g=>`<div class="grupo-card ${g.clase}" role="button" tabindex="0" onclick="pgAbrirGrupo('${g.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pgAbrirGrupo('${g.id}')}">
         <div class="grupo-head"><span class="grupo-ico">${g.icono}</span><div><h3>${g.titulo}</h3><p>${g.desc}</p></div></div>
-        <div class="grupo-chips">${g.funciones.map(f=>`<span>${f.titulo}</span>`).join('')}</div>
+        <div class="grupo-chips">${g.funciones.map((f,i)=>`<button type="button" class="grupo-chip" title="Abrir ${f.titulo}" onclick="event.stopPropagation();pgAbrirFuncion('${g.id}',${i})" onkeydown="event.stopPropagation()">${f.titulo}</button>`).join('')}</div>
         <div class="grupo-abrir">Abrir ${g.titulo.toLowerCase()} →</div></div>`).join('');
     grid.replaceWith(nuevo);
   }
