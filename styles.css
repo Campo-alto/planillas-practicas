@@ -548,3 +548,11 @@ a.home-modal-go:hover,a.home-modal-go:focus-visible{background:var(--deep);outli
 .inhab-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#FBDADA;color:#A11D1D;white-space:nowrap;}
 tr.inhab-row td{opacity:.62;}
 tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
+
+/* ===== Correos ===== */
+.cor-modal{position:fixed;inset:0;background:rgba(15,30,30,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;}
+.cor-caja{background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.cor-caja textarea{width:100%;}
+.cor-op{display:block;margin:6px 0;font-size:13.5px;}
+.cor-est{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:700;}
+.cor-enviado{background:#DDF1E4;color:#14663A;}.cor-pendiente{background:#FFF1CC;color:#7A5A00;}.cor-error{background:#FBDADA;color:#A11D1D;}
