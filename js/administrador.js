@@ -115,6 +115,7 @@ async function mostrarEmpresaAsignada(){
       html = '🏢 <b>Empresa asignada:</b> '+esc(act.empresa)+' <span style="color:var(--muted)">· Jornada '+esc(act.jornada)+' · '+esc(act.programa)+'</span>'+
         (prev0 && prev0.meses_restantes!=null ? ' <span style="color:var(--muted)">· por '+textoMeses(prev0.meses_restantes)+' (cambio de empresa)</span>' : '')+
         ' <button class="ghost" type="button" style="padding:4px 10px;font-size:12px;margin-left:8px;" onclick="descargarCartaAdmin()">📄 Carta de presentación (PDF)</button>'+
+        ' <button class="ghost" type="button" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="correoEnviarCarta()">✉ Enviar carta por correo</button>'+
         ' <button class="danger" type="button" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="liberarDesdeFicha(\''+act.id+'\')">Inactivar de esta empresa</button>';
     } else {
       html = '🏢 <b>Empresa asignada:</b> <span style="color:var(--muted)">'+(previas.length ? 'inactivo(a) — sin empresa actualmente' : 'aún no tiene empresa asignada')+'</span>';
