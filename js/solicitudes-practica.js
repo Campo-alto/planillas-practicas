@@ -81,7 +81,7 @@ function spaPintarDetalle(){
     return `<tr><td><b>${esc(r.nombre)}</b><div class="aud-ref">${r.obligatorio ? 'Obligatorio' : 'Opcional'} · máx. ${esc(r.max_mb)} MB</div></td>
       <td>${x ? esc(x.nombre_archivo) + '<div class="aud-ref">' + spaTam(x.tamano) + ' · ' + spaF(x.subido_en) + '</div>' : '<span style="color:var(--danger)">' + (r.obligatorio ? 'Falta' : 'No subido') + '</span>'}</td>
       <td>${x ? spaChip(x.estado) + (x.observacion ? '<div class="aud-ref">' + esc(x.observacion) + '</div>' : '') : ''}</td>
-      <td class="aud-nw">${x ? `<button class="ghost" style="padding:5px 10px;font-size:12px;" onclick="spaVerDoc('${esc(s.id)}','${esc(r.id)}')">👁 Ver PDF</button>
+      <td class="aud-nw">${x ? `<button class="ghost" style="padding:5px 10px;font-size:12px;" onclick="spaVerDoc('${esc(s.id)}','${esc(r.id)}')">👁 Vista previa</button>
         ${rev ? `<button class="primary" style="padding:5px 10px;font-size:12px;" title="Aprobar documento" onclick="spaMarcar('${esc(r.id)}','ok')">✔</button>
         <button class="danger" style="padding:5px 10px;font-size:12px;" title="Devolver documento" onclick="spaMarcar('${esc(r.id)}','rechazado')">✖</button>` : ''}` : ''}</td></tr>`;
   }).join('');
@@ -98,17 +98,59 @@ function spaPintarDetalle(){
       <button class="ghost" onclick="spaResolver('devolver')">Devolver para corregir</button>
       <button class="danger" onclick="spaResolver('rechazar')">Rechazar</button></div>` : ''}`;
 }
+/* Vista previa dentro de la plataforma (se dibuja en pantalla; sin botón de descargar ni imprimir) */
+const SPA_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const SPA_PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let spaPdfListo = null;
+function spaCargarPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve();
+  if(spaPdfListo) return spaPdfListo;
+  spaPdfListo = new Promise((ok, mal)=>{
+    const sc = document.createElement('script'); sc.src = SPA_PDFJS; sc.crossOrigin = 'anonymous';
+    sc.onload = ()=>{
+      try{
+        // el motor del visor se carga desde un archivo local temporal para evitar bloqueos entre dominios
+        const w = URL.createObjectURL(new Blob(["importScripts('" + SPA_PDFJS_WORKER + "');"], { type:'text/javascript' }));
+        pdfjsLib.GlobalWorkerOptions.workerSrc = w; ok();
+      }catch(e){ mal(e); }
+    };
+    sc.onerror = ()=>{ spaPdfListo = null; mal(new Error('No se pudo cargar el visor de PDF (¿sin internet o bloqueado?)')); };
+    document.head.appendChild(sc);
+  });
+  return spaPdfListo;
+}
+function spaCerrarVisor(){
+  const v = document.getElementById('spaVisor'); if(v) v.remove();
+  document.removeEventListener('keydown', spaTeclaVisor);
+  document.body.style.overflow = '';
+}
+function spaTeclaVisor(e){ if(e.key === 'Escape') spaCerrarVisor(); if((e.ctrlKey || e.metaKey) && ['s','p'].includes((e.key || '').toLowerCase())) e.preventDefault(); }
 async function spaVerDoc(id, req){
-  const { data, error } = await sb.rpc('admin_sol_pr_doc', { p_id: id, p_requisito: req });
-  if(error){ toast('No se pudo abrir: ' + error.message, true); return; }
+  spaCerrarVisor();
+  const nombre = (spaDet.requisitos.find(r=>r.id === req) || {}).nombre || 'Documento';
+  const v = document.createElement('div'); v.id = 'spaVisor'; v.className = 'spa-visor';
+  v.innerHTML = `<div class="spa-visor-bar"><b>${esc(nombre)}</b><span class="aud-ref" id="spaVisorInfo" style="color:#cfe;">Cargando…</span>
+      <button class="ghost" onclick="spaCerrarVisor()">✕ Cerrar</button></div><div class="spa-visor-cuerpo" id="spaVisorCuerpo" oncontextmenu="return false"></div>`;
+  document.body.appendChild(v); document.body.style.overflow = 'hidden'; document.addEventListener('keydown', spaTeclaVisor);
+  const cuerpo = document.getElementById('spaVisorCuerpo'), info = document.getElementById('spaVisorInfo');
   try{
+    const [{ data, error }] = await Promise.all([sb.rpc('admin_sol_pr_doc', { p_id: id, p_requisito: req }), spaCargarPdfJs()]);
+    if(error) throw new Error(error.message);
     const bin = atob(data.base64), bytes = new Uint8Array(bin.length);
     for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const url = URL.createObjectURL(new Blob([bytes], { type:'application/pdf' }));
-    const w = window.open(url, '_blank', 'noopener');
-    if(!w){ const a = document.createElement('a'); a.href = url; a.download = data.nombre_archivo || 'documento.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
-    setTimeout(()=>URL.revokeObjectURL(url), 120000);
-  }catch(e){ toast('No se pudo mostrar el PDF', true); }
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const total = Math.min(pdf.numPages, 40);
+    info.textContent = (data.nombre_archivo || '') + ' · ' + total + (total === 1 ? ' página' : ' páginas') + (pdf.numPages > 40 ? ' (se muestran 40)' : '');
+    cuerpo.innerHTML = '';
+    const ancho = Math.min(cuerpo.clientWidth - 24, 900), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for(let n = 1; n <= total; n++){
+      if(!document.getElementById('spaVisor')) return;          // se cerró mientras cargaba
+      const pag = await pdf.getPage(n), base = pag.getViewport({ scale: 1 }), sc = ancho / base.width, vp = pag.getViewport({ scale: sc * dpr });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = (vp.width / dpr) + 'px'; c.style.height = (vp.height / dpr) + 'px';
+      cuerpo.appendChild(c);
+      await pag.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+  }catch(e){ cuerpo.innerHTML = '<p style="color:#fff;padding:20px;">No se pudo mostrar el documento: ' + esc(e.message || 'error') + '</p>'; info.textContent = ''; }
 }
 async function spaMarcar(req, estado){
   let obs = '';
