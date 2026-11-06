@@ -11,6 +11,7 @@
       desc:'Todo lo relacionado con los estudiantes y su proceso de práctica o contratación.',
       funciones:[
         { icono:'🎓', clase:'estudiante', titulo:'Estudiantes registrados', mod:'est_registrados', desc:'Ver, crear y gestionar a cada estudiante y el estado de su planilla.', abrir:()=>goRole('administrador') },
+        { icono:'📨', clase:'estudiante', titulo:'Solicitudes de acceso', mod:'est_registrados', desc:'Aprobar o rechazar las solicitudes de usuario de los estudiantes; al aprobar reciben su usuario y contraseña por correo.', abrir:()=>abrirSolicitudes() },
         { icono:'🤝', clase:'empresa', titulo:'Contrato de aprendizaje', mod:'est_contrato', desc:'Verificar pagos, declarar aptos, seguir los procesos y confirmar contrataciones.', abrir:()=>caAbrirAdmin() },
         { icono:'⇅', clase:'administrador', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Subir estudiantes desde Excel y descargar listados en Excel o PDF.', abrir:()=>abrirImportExport() }
       ] },
