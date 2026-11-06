@@ -12,6 +12,7 @@
       funciones:[
         { icono:'🎓', clase:'estudiante', titulo:'Estudiantes registrados', mod:'est_registrados', desc:'Ver, crear y gestionar a cada estudiante y el estado de su planilla.', abrir:()=>goRole('administrador') },
         { icono:'📨', clase:'estudiante', titulo:'Solicitudes de acceso', mod:'est_registrados', desc:'Aprobar o rechazar las solicitudes de usuario de los estudiantes; al aprobar reciben su usuario y contraseña por correo.', abrir:()=>abrirSolicitudes() },
+        { icono:'📂', clase:'estudiante', titulo:'Solicitudes de práctica', mod:'est_registrados', desc:'Revisar la modalidad, los datos y los documentos en PDF que envían los estudiantes; aprobar, devolver o rechazar.', abrir:()=>abrirSolicitudesPractica() },
         { icono:'🤝', clase:'empresa', titulo:'Contrato de aprendizaje', mod:'est_contrato', desc:'Verificar pagos, declarar aptos, seguir los procesos y confirmar contrataciones.', abrir:()=>caAbrirAdmin() },
         { icono:'⇅', clase:'administrador', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Subir estudiantes desde Excel y descargar listados en Excel o PDF.', abrir:()=>abrirImportExport() }
       ] },
@@ -39,6 +40,7 @@
         { icono:'✉️', clase:'empresa', titulo:'Correos automáticos', mod:'solo_admin', desc:'Avisos y recordatorios por correo, envío de claves, y bitácora de lo enviado.', abrir:()=>abrirCorreos() },
         { icono:'📚', clase:'supervisor', titulo:'Programas', mod:'adm_programas', desc:'Crear, ver y eliminar los programas / técnicos laborales por área.', abrir:()=>goAdminModule('programas') },
         { icono:'🗂', clase:'supervisor', titulo:'Modalidades', mod:'adm_modalidades', desc:'Agregar, modificar o eliminar modalidades y definir cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
+        { icono:'📑', clase:'supervisor', titulo:'Documentos por modalidad', mod:'adm_modalidades', desc:'Lista de documentos (PDF) que sube el estudiante en cada modalidad, si son obligatorios y el peso máximo de cada uno.', abrir:()=>abrirDocsModalidad() },
         { icono:'📊', clase:'empresa', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crear, modificar, ordenar o eliminar los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
       ] }
   ];
