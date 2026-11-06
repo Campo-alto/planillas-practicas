@@ -556,3 +556,6 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 .cor-op{display:block;margin:6px 0;font-size:13.5px;}
 .cor-est{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:700;}
 .cor-enviado{background:#DDF1E4;color:#14663A;}.cor-pendiente{background:#FFF1CC;color:#7A5A00;}.cor-error{background:#FBDADA;color:#A11D1D;}
+
+/* ===== Solicitudes de acceso ===== */
+.sa-badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:10px;background:#C0392B;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:18px;}
