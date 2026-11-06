@@ -23,8 +23,6 @@ function solPantalla(){
 }
 async function solAbrir(){
   const el = solPantalla(); if(!el) return;
-  try{ if(typeof loadProgramas === 'function') await loadProgramas(); }catch(e){ console.warn(e); }
-  const mods = (typeof MODALIDADES !== 'undefined' ? MODALIDADES : []);
   el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-estudiante-login')">← Volver al ingreso</button>
     <h2 style="margin:12px 0 4px;">Solicitar mi acceso</h2>
     <p class="helptext" style="text-align:justify;">Llena tus datos. Tu solicitud llegará a la persona encargada y, cuando la apruebe, recibirás en tu correo tu <b>usuario y tu contraseña</b> para ingresar. Escribe bien tu correo: ahí te llegará la respuesta.</p>
@@ -35,12 +33,6 @@ async function solAbrir(){
         <div class="field"><label>Nombres *</label><input id="sol-nombres" maxlength="80" autocomplete="given-name"></div>
         <div class="field"><label>Correo electrónico *</label><input id="sol-correo" type="email" maxlength="120" autocomplete="email"></div>
         <div class="field"><label>Teléfono</label><input id="sol-telefono" inputmode="tel" maxlength="20" autocomplete="tel"></div>
-        ${typeof renderAreaProgramaSelects === 'function' ? renderAreaProgramaSelects('sol', '') : ''}
-        <div class="field"><label>Modalidad de práctica</label><select id="sol-modalidad"><option value="">Selecciona…</option>${mods.map(m=>'<option value="'+esc(m.nombre)+'">'+esc(m.nombre)+'</option>').join('')}</select></div>
-        <div class="field"><label>Sede</label><input id="sol-sede" maxlength="80"></div>
-        <div class="field"><label>Semestre</label><input id="sol-semestre" maxlength="20"></div>
-        <div class="field"><label>Periodo académico</label><input id="sol-periodo" maxlength="30" placeholder="Ej. 2026-2"></div>
-        <div class="field"><label>Jornada en que solicitas el cupo</label><select id="sol-jornada"><option value="">Sin definir…</option>${(typeof JORNADAS !== 'undefined' ? JORNADAS : []).map(j=>'<option value="'+esc(j)+'">'+esc(j)+'</option>').join('')}</select></div>
       </div>
       <div style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden;" aria-hidden="true"><label>No llenar</label><input id="sol-web" tabindex="-1" autocomplete="off"></div>
       <label style="display:block;margin:10px 0;font-size:13.5px;"><input type="checkbox" id="sol-acepta"> He leído y acepto la <a href="${typeof DP_URL !== 'undefined' ? DP_URL : 'https://campoalto.dataprotected.co'}" target="_blank" rel="noopener noreferrer"><b>política de tratamiento de datos personales</b></a> de Campoalto.</label>
@@ -61,8 +53,7 @@ async function solEnviar(){
   const b = document.getElementById('solEnviar'); b.disabled = true; msg.innerHTML = '<span style="color:var(--muted)">Enviando…</span>';
   const { error } = await sb.rpc('solicitar_acceso_estudiante', {
     p_documento: doc, p_apellidos: g('sol-apellidos'), p_nombres: g('sol-nombres'), p_correo: correo, p_telefono: g('sol-telefono'),
-    p_programa: g('sol-programa'), p_sede: g('sol-sede'), p_semestre: g('sol-semestre'), p_modalidad: g('sol-modalidad'),
-    p_periodo: g('sol-periodo'), p_jornada: g('sol-jornada'), p_acepta: true, p_web: g('sol-web') });
+    p_programa: '', p_sede: '', p_semestre: '', p_modalidad: '', p_periodo: '', p_jornada: '', p_acepta: true, p_web: g('sol-web') });
   if(error){ b.disabled = false; err(/PGRST202|42883|Could not find/i.test(error.message + ' ' + (error.code || '')) ? 'Esta función aún no está disponible. Avisa a la institución.' : error.message); return; }
   try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}   // avisa al encargado al instante
   document.getElementById('solCard').innerHTML = `<div style="text-align:center;padding:10px 0;">
