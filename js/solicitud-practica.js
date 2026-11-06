@@ -1,280 +1,235 @@
-/* ============================= SOLICITUDES DE PRÁCTICA (encargado) + DOCUMENTOS POR MODALIDAD =============================
-   1) Bandeja: las solicitudes que envían los estudiantes (modalidad + datos + documentos en PDF). Se revisa cada documento
-      (✔ aprobado / ✖ devuelto con motivo) y se APRUEBA (la modalidad y los datos pasan al estudiante), se DEVUELVE para que
-      corrija o se RECHAZA. En cada caso el estudiante recibe un correo.
-   2) Documentos por modalidad: la lista de documentos que debe subir el estudiante en cada modalidad, si es obligatorio
-      y el peso máximo de cada PDF.
-   Requiere solicitud-practica-etapa24.sql. Para los correos: correos-etapa21.sql y la función «enviar-correo». */
+/* ============================= SOLICITUD DE PRÁCTICA (lado del estudiante) =============================
+   Al ingresar, el estudiante que aún no tiene modalidad ve las modalidades disponibles, elige una, llena sus datos y
+   sube cada documento en PDF por separado (cada uno con su peso máximo). La solicitud llega al encargado, que la revisa.
+   · Contrato de aprendizaje: solo se llenan los datos y se sigue con su formulario de inscripción.
+   · Las modalidades, los documentos y los pesos los configura la institución (Administración → Documentos por modalidad).
+   Seguridad: la base de datos valida todo otra vez (que sea un PDF real, el peso, que el documento sea de tu modalidad
+   y que solo veas tus archivos). Requiere solicitud-practica-etapa24.sql. */
 
-let spaEstado = 'enviada', spaFilas = [], spaDet = null;
+let spEst = null, spSel = null, spEditando = false;
 
-function spaPantalla(id){
-  let el = document.getElementById(id);
-  if(!el){
-    const ref = document.getElementById('screen-admin-hub') || document.querySelector('.screen'); if(!ref) return null;
-    el = document.createElement('div'); el.className = 'screen'; el.id = id; ref.parentNode.appendChild(el);
-  }
-  return el;
-}
-const spaF = iso => iso ? new Date(iso).toLocaleString('es-CO', { timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) : '—';
-const spaTam = b => b >= 1048576 ? (b/1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b/1024)) + ' KB';
-function spaChip(e){
+(function(){
+  if(typeof organizarPestanasEstudiante !== 'function') return;
+  const _cards = cardsEstudiante;
+  cardsEstudiante = function(){ const c = _cards(); const e = document.getElementById('estSpCard'); if(e) c.sp = e; return c; };
+  const _org = organizarPestanasEstudiante;
+  organizarPestanasEstudiante = function(){
+    if(!document.getElementById('estSpCard')){
+      const last = document.getElementById('estMonthTabs'); const host = last ? last.closest('.card') : null;
+      if(host){ const d = document.createElement('div'); d.className = 'card'; d.id = 'estSpCard'; host.insertAdjacentElement('afterend', d); }
+    }
+    _org();
+    const bar = document.getElementById('estTabs');
+    if(bar && document.getElementById('estSpCard') && !document.getElementById('estTab-sp')){
+      const b = document.createElement('button'); b.className = 'tab'; b.id = 'estTab-sp'; b.textContent = 'Solicitud de práctica';
+      b.onclick = ()=>showEstTab('sp');
+      if(state.record && !state.record.modalidad) bar.insertBefore(b, bar.firstChild); else bar.appendChild(b);
+    }
+    // el estudiante que aún no tiene modalidad entra directo a elegirla (solo la primera vez de la sesión)
+    if(state.record && !state.record.modalidad && !state.spInicial){ state.spInicial = true; estTabActual = 'sp'; }
+    showEstTab(estTabActual);
+  };
+  const _show = showEstTab;
+  showEstTab = function(tab){ _show(tab); if(tab === 'sp') spCargar(); };
+})();
+
+const SP_JORNADAS = ['Mañana','Tarde','Noche','Sábado','Domingo','Entre semana'];
+function spMsg(t, ok){ const e = document.getElementById('spMsg'); if(e) e.innerHTML = t ? `<span style="color:var(${ok ? '--teal-dark' : '--danger'})">${esc(t)}</span>` : ''; }
+function spFmtTam(b){ return b >= 1048576 ? (b/1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b/1024)) + ' KB'; }
+function spChip(e){
   const m = { ok:['cor-enviado','Aprobado'], rechazado:['cor-error','Devuelto'], pendiente:['cor-pendiente','Por revisar'],
               borrador:['cor-pendiente','Borrador'], enviada:['cor-pendiente','En revisión'], devuelta:['cor-error','Devuelta'],
               aprobada:['cor-enviado','Aprobada'], rechazada:['cor-error','Rechazada'] }[e] || ['cor-pendiente', e];
   return `<span class="cor-est ${m[0]}">${m[1]}</span>`;
 }
-const SPA_ETQ = { programa:'Programa', sede:'Sede', semestre:'Semestre', periodo:'Periodo', jornada:'Jornada', telefono:'Teléfono',
-  lugar_nombre:'Lugar de prácticas', lugar_direccion:'Dirección', lugar_ciudad:'Ciudad', lugar_contacto:'Contacto', lugar_telefono:'Tel. contacto', lugar_correo:'Correo contacto',
-  exp_entidad:'Empresa / entidad', exp_cargo:'Cargo', exp_tiempo:'Tiempo de experiencia', exp_contacto:'Jefe / contacto', exp_telefono:'Tel. contacto', exp_correo:'Correo contacto' };
+function spLabel(k){ return { programa:'Programa', sede:'Sede', semestre:'Semestre', periodo:'Periodo académico', jornada:'Jornada', telefono:'Teléfono',
+  lugar_nombre:'Lugar de prácticas', lugar_direccion:'Dirección', lugar_ciudad:'Ciudad', lugar_contacto:'Contacto', lugar_telefono:'Teléfono del contacto', lugar_correo:'Correo del contacto',
+  exp_entidad:'Empresa o entidad', exp_cargo:'Cargo', exp_tiempo:'Tiempo de experiencia', exp_contacto:'Jefe o contacto', exp_telefono:'Teléfono del contacto', exp_correo:'Correo del contacto' }[k] || k; }
 
-/* ---------------------------------------------------------------- BANDEJA */
-async function abrirSolicitudesPractica(){
-  if(!requireSupabase()) return;
-  const el = spaPantalla('screen-admin-solprac'); if(!el) return;
-  el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
-    <h2 style="margin:12px 0 4px;">Solicitudes de práctica</h2>
-    <p class="helptext" style="text-align:justify;">Aquí llegan las solicitudes de los estudiantes con su modalidad, sus datos y sus documentos en PDF. Revisa cada documento y luego <b>aprueba</b> (el estudiante queda con su modalidad y sigue con su planilla), <b>devuelve</b> para que corrija o <b>rechaza</b>.</p>
-    <div class="card">
-      <div class="aud-filtros">
-        <div class="field"><label>Estado</label><select id="spaEstado" onchange="spaConsultar()"><option value="enviada">En revisión</option><option value="devuelta">Devueltas</option><option value="borrador">En borrador</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="">Todas</option></select></div>
-        <div class="field aud-ancho"><label>Buscar (documento, nombre o modalidad)</label><input type="search" id="spaTexto" maxlength="80" onkeydown="if(event.key==='Enter')spaConsultar()"></div>
-      </div>
-      <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="spaConsultar()">Consultar</button></div>
-      <div id="spaResumen" class="lista-cuenta" style="margin-top:10px;"></div>
-      <div id="spaTabla"><p style="color:var(--muted)">Cargando…</p></div>
-    </div>`;
-  showScreen('screen-admin-solprac');
-  spaConsultar();
-}
-async function spaConsultar(){
-  const t = document.getElementById('spaTabla'); if(!t) return;
-  spaEstado = document.getElementById('spaEstado').value; const q = document.getElementById('spaTexto').value.trim();
-  const { data, error } = await sb.rpc('admin_sol_pr_lista', { p_estado: spaEstado || null, p_texto: q || null, p_limite: 200, p_offset: 0 });
-  if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste solicitud-practica-etapa24.sql?)</p>'; return; }
-  spaFilas = data.filas || []; const r = data.resumen || {};
-  document.getElementById('spaResumen').textContent = (r.enviada||0) + ' en revisión · ' + (r.devuelta||0) + ' devueltas · ' + (r.aprobada||0) + ' aprobadas · ' + (r.rechazada||0) + ' rechazadas · ' + (r.borrador||0) + ' en borrador';
-  if(!spaFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">No hay solicitudes con estos filtros.</p>'; return; }
-  t.innerHTML = '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Enviada</th><th>Estudiante</th><th>Modalidad</th><th>Documentos</th><th>Estado</th><th></th></tr></thead><tbody>' +
-    spaFilas.map(s=>`<tr><td class="aud-nw">${spaF(s.enviada_en || s.creado)}</td>
-      <td><b>${esc(s.nombre || '')}</b><br><span class="aud-ref">Doc. ${esc(s.documento)}</span></td>
-      <td>${esc(s.modalidad)}</td>
-      <td class="aud-nw">${s.subidos} subidos · ${s.requeridos} obligatorios</td>
-      <td>${spaChip(s.estado)}${s.resuelta_por ? '<div class="aud-ref">' + esc(s.resuelta_por) + ' · ' + spaF(s.resuelta_en) + '</div>' : ''}</td>
-      <td class="aud-nw"><button class="primary" style="padding:5px 10px;font-size:12px;" onclick="spaDetalle('${esc(s.id)}')">${s.estado === 'enviada' ? 'Revisar' : 'Ver'}</button></td></tr>`).join('') + '</tbody></table></div>';
+async function spCargar(){
+  const el = document.getElementById('estSpCard'); if(!el) return;
+  el.innerHTML = '<p class="helptext">Cargando…</p>';
+  try{ if(typeof loadProgramas === 'function') await loadProgramas(); }catch(e){ console.warn(e); }
+  const { data, error } = await sb.rpc('est_pr_estado', { p_token: state.token });
+  if(error){ el.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ya se ejecutó solicitud-practica-etapa24.sql?)</p>'; return; }
+  spEst = data; spEditando = false; spRender();
 }
 
-/* ---------------------------------------------------------------- DETALLE / REVISIÓN */
-async function spaDetalle(id){
-  const el = spaPantalla('screen-admin-solprac-det'); if(!el) return;
-  el.innerHTML = '<p class="helptext">Cargando…</p>'; showScreen('screen-admin-solprac-det');
-  const { data, error } = await sb.rpc('admin_sol_pr_detalle', { p_id: id });
-  if(error){ el.innerHTML = '<button class="linkbtn" onclick="abrirSolicitudesPractica()">← Volver</button><p style="color:var(--danger)">' + esc(error.message) + '</p>'; return; }
-  spaDet = data; spaPintarDetalle();
+function spResumenDatos(d){
+  const ks = Object.keys(d || {}); if(!ks.length) return '';
+  return '<dl class="sp-datos">' + ks.map(k=>`<div><dt>${esc(spLabel(k))}</dt><dd>${esc(d[k])}</dd></div>`).join('') + '</dl>';
 }
-function spaPintarDetalle(){
-  const el = document.getElementById('screen-admin-solprac-det'), d = spaDet; if(!el || !d) return;
-  const s = d.solicitud, e = d.estudiante, rev = s.estado === 'enviada';
-  const datos = Object.keys(s.datos || {}).map(k=>`<div><dt>${esc(SPA_ETQ[k] || k)}</dt><dd>${esc(s.datos[k])}</dd></div>`).join('');
-  const docs = d.requisitos.map(r=>{
-    const x = r.doc;
-    return `<tr><td><b>${esc(r.nombre)}</b><div class="aud-ref">${r.obligatorio ? 'Obligatorio' : 'Opcional'} · máx. ${esc(r.max_mb)} MB</div></td>
-      <td>${x ? esc(x.nombre_archivo) + '<div class="aud-ref">' + spaTam(x.tamano) + ' · ' + spaF(x.subido_en) + '</div>' : '<span style="color:var(--danger)">' + (r.obligatorio ? 'Falta' : 'No subido') + '</span>'}</td>
-      <td>${x ? spaChip(x.estado) + (x.observacion ? '<div class="aud-ref">' + esc(x.observacion) + '</div>' : '') : ''}</td>
-      <td class="aud-nw">${x ? `<button class="ghost" style="padding:5px 10px;font-size:12px;" onclick="spaVerDoc('${esc(s.id)}','${esc(r.id)}')">👁 Vista previa</button>
-        ${rev ? `<button class="primary" style="padding:5px 10px;font-size:12px;" title="Aprobar documento" onclick="spaMarcar('${esc(r.id)}','ok')">✔</button>
-        <button class="danger" style="padding:5px 10px;font-size:12px;" title="Devolver documento" onclick="spaMarcar('${esc(r.id)}','rechazado')">✖</button>` : ''}` : ''}</td></tr>`;
-  }).join('');
-  el.innerHTML = `<button class="linkbtn" onclick="abrirSolicitudesPractica()">← Volver a la bandeja</button>
-    <h2 style="margin:12px 0 4px;">${esc(e.nombre || s.documento)} · ${spaChip(s.estado)}</h2>
-    <p class="helptext">Documento ${esc(s.documento)} · ${esc(e.correo || 'sin correo')} · Modalidad solicitada: <b>${esc(s.modalidad)}</b>${s.enviada_en ? ' · Enviada ' + spaF(s.enviada_en) : ''}</p>
-    ${s.observacion ? `<div class="note-box"><b>Observación:</b> ${esc(s.observacion)}</div>` : ''}
-    <div class="card"><div class="section-bar deep">Datos del estudiante</div><dl class="sp-datos">${datos || '<p class="helptext">Sin datos.</p>'}</dl></div>
-    <div class="card"><div class="section-bar deep">Documentos</div>
-      <div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Documento</th><th>Archivo</th><th>Revisión</th><th></th></tr></thead><tbody>${docs || '<tr><td colspan="4">Esta modalidad no tiene documentos.</td></tr>'}</tbody></table></div>
-      ${rev ? '<p class="helptext" style="margin-top:8px;">Marca ✔ (aprobado) o ✖ (devuelto, con motivo) en cada documento. Luego resuelve la solicitud.</p>' : ''}</div>
-    ${rev ? `<div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">
-      <button class="primary" onclick="spaResolver('aprobar')">Aprobar solicitud</button>
-      <button class="ghost" onclick="spaResolver('devolver')">Devolver para corregir</button>
-      <button class="danger" onclick="spaResolver('rechazar')">Rechazar</button></div>` : ''}`;
-}
-/* Vista previa dentro de la plataforma (se dibuja en pantalla; sin botón de descargar ni imprimir) */
-const SPA_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const SPA_PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-let spaPdfListo = null;
-function spaCargarPdfJs(){
-  if(window.pdfjsLib) return Promise.resolve();
-  if(spaPdfListo) return spaPdfListo;
-  spaPdfListo = new Promise((ok, mal)=>{
-    const sc = document.createElement('script'); sc.src = SPA_PDFJS; sc.crossOrigin = 'anonymous';
-    sc.onload = ()=>{
-      try{
-        // el motor del visor se carga desde un archivo local temporal para evitar bloqueos entre dominios
-        const w = URL.createObjectURL(new Blob(["importScripts('" + SPA_PDFJS_WORKER + "');"], { type:'text/javascript' }));
-        pdfjsLib.GlobalWorkerOptions.workerSrc = w; ok();
-      }catch(e){ mal(e); }
-    };
-    sc.onerror = ()=>{ spaPdfListo = null; mal(new Error('No se pudo cargar el visor de PDF (¿sin internet o bloqueado?)')); };
-    document.head.appendChild(sc);
-  });
-  return spaPdfListo;
-}
-function spaCerrarVisor(){
-  const v = document.getElementById('spaVisor'); if(v) v.remove();
-  document.removeEventListener('keydown', spaTeclaVisor);
-  document.body.style.overflow = '';
-}
-function spaTeclaVisor(e){ if(e.key === 'Escape') spaCerrarVisor(); if((e.ctrlKey || e.metaKey) && ['s','p'].includes((e.key || '').toLowerCase())) e.preventDefault(); }
-async function spaVerDoc(id, req){
-  spaCerrarVisor();
-  const nombre = (spaDet.requisitos.find(r=>r.id === req) || {}).nombre || 'Documento';
-  const v = document.createElement('div'); v.id = 'spaVisor'; v.className = 'spa-visor';
-  v.innerHTML = `<div class="spa-visor-bar"><b>${esc(nombre)}</b><span class="aud-ref" id="spaVisorInfo" style="color:#cfe;">Cargando…</span>
-      <button class="ghost" onclick="spaCerrarVisor()">✕ Cerrar</button></div><div class="spa-visor-cuerpo" id="spaVisorCuerpo" oncontextmenu="return false"></div>`;
-  document.body.appendChild(v); document.body.style.overflow = 'hidden'; document.addEventListener('keydown', spaTeclaVisor);
-  const cuerpo = document.getElementById('spaVisorCuerpo'), info = document.getElementById('spaVisorInfo');
-  try{
-    const [{ data, error }] = await Promise.all([sb.rpc('admin_sol_pr_doc', { p_id: id, p_requisito: req }), spaCargarPdfJs()]);
-    if(error) throw new Error(error.message);
-    const bin = atob(data.base64), bytes = new Uint8Array(bin.length);
-    for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-    const total = Math.min(pdf.numPages, 40);
-    info.textContent = (data.nombre_archivo || '') + ' · ' + total + (total === 1 ? ' página' : ' páginas') + (pdf.numPages > 40 ? ' (se muestran 40)' : '');
-    cuerpo.innerHTML = '';
-    const ancho = Math.min(cuerpo.clientWidth - 24, 900), dpr = Math.min(window.devicePixelRatio || 1, 2);
-    for(let n = 1; n <= total; n++){
-      if(!document.getElementById('spaVisor')) return;          // se cerró mientras cargaba
-      const pag = await pdf.getPage(n), base = pag.getViewport({ scale: 1 }), sc = ancho / base.width, vp = pag.getViewport({ scale: sc * dpr });
-      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = (vp.width / dpr) + 'px'; c.style.height = (vp.height / dpr) + 'px';
-      cuerpo.appendChild(c);
-      await pag.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
-    }
-  }catch(e){ cuerpo.innerHTML = '<p style="color:#fff;padding:20px;">No se pudo mostrar el documento: ' + esc(e.message || 'error') + '</p>'; info.textContent = ''; }
-}
-async function spaMarcar(req, estado){
-  let obs = '';
-  if(estado === 'rechazado'){ obs = prompt('¿Por qué devuelves este documento? (el estudiante lo verá)', ''); if(obs === null) return; if(!obs.trim()){ toast('Escribe el motivo', true); return; } }
-  const { error } = await sb.rpc('admin_sol_pr_revisar', { p_id: spaDet.solicitud.id, p_requisito: req, p_estado: estado, p_obs: obs });
-  if(error){ toast(error.message, true); return; }
-  await spaDetalle(spaDet.solicitud.id);
-}
-async function spaEnviarCorreo(to, asunto, texto){
-  if(!to) return 'El estudiante no tiene correo registrado.';
-  if(typeof correoEnviarItems !== 'function') return 'El envío de correos no está instalado (falta correos.js).';
-  try{ const r = await correoEnviarItems('solicitud', [{ to, asunto, texto }]); return r.errores.length ? r.errores[0].error : null; }
-  catch(e){ return e.message; }
-}
-async function spaResolver(accion){
-  const s = spaDet.solicitud, nombre = spaDet.estudiante.nombre || s.documento;
-  let obs = '';
-  if(accion === 'aprobar'){ if(!confirm('¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
-  if(accion === 'devolver'){ obs = prompt('¿Qué debe corregir el estudiante? (se le enviará por correo)', ''); if(obs === null) return; }
-  if(accion === 'rechazar'){ obs = prompt('Motivo del rechazo (se le enviará por correo):', ''); if(obs === null) return; if(!obs.trim()){ toast('Escribe el motivo', true); return; } }
-  const { data, error } = await sb.rpc('admin_sol_pr_resolver', { p_id: s.id, p_accion: accion, p_obs: obs });
-  if(error){ toast(error.message, true); return; }
-  let asunto, texto;
-  const firma = '\n\nPolitécnico Campoalto';
-  if(accion === 'aprobar'){
-    asunto = 'Tu solicitud de práctica fue aprobada';
-    texto = 'Hola ' + data.nombre + ',\n\nTu solicitud de práctica fue APROBADA. Modalidad: ' + data.modalidad + '.\n\n' +
-      (/rap|aprendizajes previos|homologaci/i.test(data.modalidad) ? 'Se te enviará tu planilla y se coordinará la reunión con el supervisor y la empresa para calificar tu experiencia.' :
-       /rlp|lugar de pr|validaci/i.test(data.modalidad) ? 'Tu planilla quedó asociada al lugar de prácticas que indicaste; continúa con ella en la plataforma.' : 'Ingresa a la plataforma para continuar con tu práctica.') + firma;
-  } else if(accion === 'devolver'){
-    asunto = 'Tu solicitud de práctica necesita correcciones';
-    texto = 'Hola ' + data.nombre + ',\n\nRevisamos tu solicitud de práctica (' + data.modalidad + ') y necesita correcciones.' +
-      (data.observacion ? '\n\nIndicaciones: ' + data.observacion : '') + (data.devueltos && data.devueltos.length ? '\n\nDocumentos devueltos:\n- ' + data.devueltos.join('\n- ') : '') +
-      '\n\nIngresa a la plataforma, corrige y envíala de nuevo.' + firma;
-  } else {
-    asunto = 'Respuesta a tu solicitud de práctica';
-    texto = 'Hola ' + data.nombre + ',\n\nTu solicitud de práctica (' + data.modalidad + ') no pudo ser aprobada.\n\nMotivo: ' + data.observacion + '\n\nPuedes enviar una nueva solicitud desde la plataforma o comunicarte con la institución.' + firma;
+
+function spRender(){
+  const el = document.getElementById('estSpCard'); const e = spEst; if(!el || !e) return;
+  const sol = e.solicitud;
+  let h = '<div class="section-bar teal">Solicitud de práctica</div>';
+  const abierta = sol && ['borrador','enviada','devuelta'].includes(sol.estado);
+
+  if(e.modalidad_actual){
+    h += `<div class="note-box" style="background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">✅ Tu modalidad de práctica es: <b>${esc(e.modalidad_actual)}</b>.</div>`;
+    if(sol && sol.estado === 'aprobada') h += `<p class="helptext">Tu solicitud fue aprobada${sol.resuelta_en ? ' el ' + esc(new Date(sol.resuelta_en).toLocaleDateString('es-CO')) : ''}. Sigue con tu planilla y las demás secciones.</p>` + spResumenDatos(sol.datos);
+    h += '<p class="helptext">Si necesitas cambiar de modalidad, comunícate con la institución.</p>';
+    el.innerHTML = h; return;
   }
-  const fallo = await spaEnviarCorreo(data.correo, asunto, texto);
-  toast(fallo ? 'Listo, pero no se pudo enviar el correo al estudiante: ' + fallo : (accion === 'aprobar' ? 'Solicitud aprobada y estudiante notificado' : accion === 'devolver' ? 'Solicitud devuelta y estudiante notificado' : 'Solicitud rechazada y estudiante notificado'), !!fallo);
-  abrirSolicitudesPractica();
-}
 
-/* Marca en el panel cuántas solicitudes de práctica esperan revisión */
-(function(){
-  if(typeof showScreen !== 'function') return;
-  const _show = showScreen;
-  showScreen = function(id){
-    _show(id);
-    if(id === 'screen-admin-hub' && typeof sb !== 'undefined' && sb) setTimeout(spaMarcarPendientes, 500);
-  };
-})();
-async function spaMarcarPendientes(){
+  if(abierta && !spEditando){
+    const mod = (e.modalidades || []).find(m=>m.id === sol.modalidad_id) || { requisitos:[], tipo:'general' };
+    h += `<div class="sp-cab"><div><b>${esc(sol.modalidad)}</b></div>${spChip(sol.estado)}</div>`;
+    if(sol.estado === 'devuelta') h += `<div class="note-box" style="background:#FBEAE7;border-color:#F0C4BD;color:#8F2A20;"><b>Tu solicitud fue devuelta.</b> ${sol.observacion ? esc(sol.observacion) : 'Corrige lo indicado y envíala de nuevo.'}</div>`;
+    if(sol.estado === 'enviada') h += '<div class="note-box">⏳ Tu solicitud está en revisión. Te avisaremos por correo cuando tenga respuesta; también puedes volver a consultar aquí.</div>';
+    if(sol.estado === 'borrador') h += '<div class="note-box">Sube cada documento en un PDF separado. Cuando estén todos los obligatorios, envía tu solicitud a revisión.</div>';
+    h += '<div class="subhead" style="margin-top:12px;">Tus datos</div>' + spResumenDatos(sol.datos);
+    if(sol.estado !== 'enviada') h += '<div class="actions-row" style="justify-content:flex-start;margin:6px 0 0;"><button class="ghost" onclick="spEditar()">Editar mis datos</button></div>';
+
+    const docs = {}; (e.documentos || []).forEach(d=>{ docs[d.requisito_id] = d; });
+    const reqs = mod.requisitos || [];
+    const editable = sol.estado === 'borrador' || sol.estado === 'devuelta';
+    if(reqs.length){
+      const oblig = reqs.filter(r=>r.obligatorio), listos = oblig.filter(r=>docs[r.id]).length;
+      h += `<div class="subhead" style="margin-top:16px;">Documentos (PDF) · ${listos} de ${oblig.length} obligatorios cargados</div><div class="sp-docs">`;
+      h += reqs.map(r=>{
+        const d = docs[r.id];
+        const bloqueado = d && d.estado === 'ok';
+        return `<div class="sp-doc ${d ? 'sp-ok' : ''}">
+          <div class="sp-doc-t"><span class="sp-ic">${d ? (d.estado === 'rechazado' ? '✖' : '✔') : '☐'}</span>
+            <div><b>${esc(r.nombre)}</b> <span class="aud-ref">${r.obligatorio ? 'Obligatorio' : 'Opcional'} · PDF de hasta ${esc(r.max_mb)} MB</span>
+            ${r.descripcion ? `<div class="aud-ref">${esc(r.descripcion)}</div>` : ''}</div></div>
+          <div class="sp-doc-a">
+            ${d ? `<div class="aud-ref">${esc(d.nombre_archivo)} · ${spFmtTam(d.tamano)} ${spChip(d.estado)}</div>${d.estado === 'rechazado' && d.observacion ? `<div class="aud-ref" style="color:var(--danger);">Motivo: ${esc(d.observacion)}</div>` : ''}` : ''}
+            ${editable && !bloqueado ? `<label class="ghost sp-subir">${d ? 'Reemplazar' : 'Subir PDF'}<input type="file" accept="application/pdf,.pdf" style="display:none;" onchange="spSubir('${esc(r.id)}', ${Number(r.max_mb)}, this)"></label>
+              ${d ? `<button class="ghost" style="padding:5px 10px;font-size:12px;" onclick="spQuitar('${esc(r.id)}')">Quitar</button>` : ''}` : ''}
+          </div></div>`;
+      }).join('') + '</div>';
+    } else if(sol.estado !== 'enviada'){
+      h += '<p class="helptext">Esta modalidad no tiene documentos configurados.</p>';
+    }
+    h += '<div id="spMsg" style="margin:10px 0;font-size:13.5px;"></div>';
+    if(editable){
+      h += '<div class="actions-row" style="justify-content:flex-start;"><button class="primary" id="spEnviar" onclick="spEnviar()">Enviar solicitud a revisión</button>' +
+           (sol.estado === 'borrador' ? '<button class="ghost" onclick="spCancelar()">Cancelar y elegir otra modalidad</button>' : '') + '</div>';
+    } else {
+      h += '<div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="spCargar()">Actualizar estado</button></div>';
+    }
+    el.innerHTML = h; return;
+  }
+
+  // elegir modalidad + llenar datos (o editar los datos de una solicitud abierta)
+  const mods = e.modalidades || [];
+  if(sol && sol.estado === 'rechazada') h += `<div class="note-box" style="background:#FBEAE7;border-color:#F0C4BD;color:#8F2A20;">Tu solicitud anterior (${esc(sol.modalidad)}) fue rechazada.${sol.observacion ? ' <b>Motivo:</b> ' + esc(sol.observacion) : ''} Puedes corregirla y reenviarla, o enviar una nueva.</div>
+    <div class="actions-row" style="justify-content:flex-start;margin:0 0 10px;"><button class="primary" onclick="spReabrir()">Corregir y reenviar esta solicitud</button></div>`;
+  if(!spSel) spSel = abierta ? sol.modalidad_id : null;
+  if(abierta && spEditando) spSel = sol.modalidad_id;
+  const dato = Object.assign({}, e.datos_estudiante || {}, abierta ? (sol.datos || {}) : {});
+  if(!abierta) h += '<p class="helptext" style="text-align:justify;">Elige la modalidad de práctica que necesitas. Después llenarás tus datos y, según la modalidad, subirás tus documentos en PDF.</p>';
+  if(!abierta){
+    h += '<div class="sp-mods">' + mods.map(m=>`<label class="sp-mod ${spSel === m.id ? 'sel' : ''}" onclick="spElegir('${esc(m.id)}')">
+        <input type="radio" name="spMod" ${spSel === m.id ? 'checked' : ''}><div><b>${esc(m.nombre)}</b>
+        <div class="aud-ref">${m.tipo === 'contrato' ? 'Solo llenas el formulario de solicitud.' : (m.requisitos.length ? 'Documentos: ' + m.requisitos.map(r=>esc(r.nombre)).join(', ') + '.' : 'Sin documentos.')}</div></div></label>`).join('') + '</div>';
+    if(!mods.length) h += '<p class="helptext">Por ahora no hay modalidades disponibles. Comunícate con la institución.</p>';
+  }
+  const m = mods.find(x=>x.id === spSel);
+  if(m){
+    h += `<div class="subhead" style="margin-top:14px;">Tus datos · ${esc(m.nombre)}</div><div class="field-row">
+      ${typeof renderAreaProgramaSelects === 'function' ? renderAreaProgramaSelects('sp', dato.programa || '') : ''}
+      <div class="field"><label>Sede *</label><input id="sp-sede" maxlength="80" value="${escapeAttr(dato.sede || '')}"></div>
+      <div class="field"><label>Semestre *</label><input id="sp-semestre" maxlength="20" value="${escapeAttr(dato.semestre || '')}"></div>
+      <div class="field"><label>Periodo académico *</label><input id="sp-periodo" maxlength="30" placeholder="Ej. 2026-2" value="${escapeAttr(dato.periodo || '')}"></div>
+      <div class="field"><label>Jornada en que solicitas el cupo *</label><select id="sp-jornada"><option value="">Selecciona…</option>${SP_JORNADAS.map(j=>`<option value="${esc(j)}" ${dato.jornada === j ? 'selected' : ''}>${esc(j)}</option>`).join('')}</select></div>
+      <div class="field"><label>Teléfono</label><input id="sp-telefono" inputmode="tel" maxlength="20" value="${escapeAttr(dato.telefono || '')}"></div>
+    </div>`;
+    if(m.tipo === 'rlp') h += `<div class="subhead" style="margin-top:10px;">Lugar donde harás la práctica (el que tú conseguiste)</div><div class="field-row">
+      <div class="field"><label>Nombre de la empresa o lugar *</label><input id="sp-lugar_nombre" maxlength="150" value="${escapeAttr(dato.lugar_nombre || '')}"></div>
+      <div class="field"><label>Dirección *</label><input id="sp-lugar_direccion" maxlength="150" value="${escapeAttr(dato.lugar_direccion || '')}"></div>
+      <div class="field"><label>Ciudad</label><input id="sp-lugar_ciudad" maxlength="80" value="${escapeAttr(dato.lugar_ciudad || '')}"></div>
+      <div class="field"><label>Persona de contacto *</label><input id="sp-lugar_contacto" maxlength="120" value="${escapeAttr(dato.lugar_contacto || '')}"></div>
+      <div class="field"><label>Teléfono del contacto</label><input id="sp-lugar_telefono" inputmode="tel" maxlength="30" value="${escapeAttr(dato.lugar_telefono || '')}"></div>
+      <div class="field"><label>Correo del contacto</label><input id="sp-lugar_correo" type="email" maxlength="120" value="${escapeAttr(dato.lugar_correo || '')}"></div></div>`;
+    if(m.tipo === 'rap') h += `<div class="subhead" style="margin-top:10px;">Experiencia previa que quieres que te reconozcan</div><div class="field-row">
+      <div class="field"><label>Empresa o entidad *</label><input id="sp-exp_entidad" maxlength="150" value="${escapeAttr(dato.exp_entidad || '')}"></div>
+      <div class="field"><label>Cargo que desempeñaste *</label><input id="sp-exp_cargo" maxlength="100" value="${escapeAttr(dato.exp_cargo || '')}"></div>
+      <div class="field"><label>Tiempo de experiencia *</label><input id="sp-exp_tiempo" maxlength="60" placeholder="Ej. 2 años y 3 meses" value="${escapeAttr(dato.exp_tiempo || '')}"></div>
+      <div class="field"><label>Jefe o contacto</label><input id="sp-exp_contacto" maxlength="120" value="${escapeAttr(dato.exp_contacto || '')}"></div>
+      <div class="field"><label>Teléfono del contacto</label><input id="sp-exp_telefono" inputmode="tel" maxlength="30" value="${escapeAttr(dato.exp_telefono || '')}"></div>
+      <div class="field"><label>Correo del contacto</label><input id="sp-exp_correo" type="email" maxlength="120" value="${escapeAttr(dato.exp_correo || '')}"></div></div>`;
+    h += '<div id="spMsg" style="margin:10px 0;font-size:13.5px;"></div>';
+    h += `<div class="actions-row" style="justify-content:flex-start;"><button class="primary" id="spGuardar" onclick="spGuardar()">${m.tipo === 'contrato' ? 'Elegir esta modalidad' : 'Guardar y continuar a los documentos'}</button>` +
+         (abierta ? '<button class="ghost" onclick="spCargar()">Cancelar</button>' : '') + '</div>';
+  }
+  el.innerHTML = h;
+}
+function spElegir(id){ spSel = id; spRender(); }
+function spEditar(){ spEditando = true; spRender(); }
+
+function spLeerDatos(){
+  const g = id => ((document.getElementById(id) || {}).value || '').trim();
+  const d = { programa: g('sp-programa'), sede: g('sp-sede'), semestre: g('sp-semestre'), periodo: g('sp-periodo'), jornada: g('sp-jornada'), telefono: g('sp-telefono') };
+  ['lugar_nombre','lugar_direccion','lugar_ciudad','lugar_contacto','lugar_telefono','lugar_correo','exp_entidad','exp_cargo','exp_tiempo','exp_contacto','exp_telefono','exp_correo']
+    .forEach(k=>{ const e = document.getElementById('sp-' + k); if(e) d[k] = e.value.trim(); });
+  return d;
+}
+async function spGuardar(){
+  const m = (spEst.modalidades || []).find(x=>x.id === spSel); if(!m) return;
+  const d = spLeerDatos();
+  if(!d.programa) return spMsg('Elige tu programa.');
+  if(!d.sede || !d.semestre || !d.periodo) return spMsg('Completa sede, semestre y periodo académico.');
+  if(!d.jornada) return spMsg('Elige la jornada en que solicitas el cupo.');
+  if(m.tipo === 'contrato' && !confirm('¿Elegir «' + m.nombre + '»? Después de elegirla solo la institución puede cambiarla.')) return;
+  const b = document.getElementById('spGuardar'); b.disabled = true; spMsg('Guardando…', true);
+  const { data, error } = await sb.rpc('est_pr_guardar', { p_token: state.token, p_modalidad_id: m.id, p_datos: d });
+  if(error){ b.disabled = false; return spMsg(error.message); }
+  if(data && data.directo){
+    toast('Modalidad elegida. Continúa con tu inscripción de contrato de aprendizaje.');
+    state.spInicial = true; estTabActual = 'datos';
+    if(typeof entrarEstudiante === 'function') await entrarEstudiante();
+    return;
+  }
+  spSel = null; await spCargar();
+}
+async function spCancelar(){
+  if(!confirm('¿Cancelar esta solicitud y elegir otra modalidad? Se borrarán los documentos que subiste.')) return;
+  const { error } = await sb.rpc('est_pr_cancelar', { p_token: state.token });
+  if(error) return spMsg(error.message);
+  spSel = null; await spCargar();
+}
+function spALeerBase64(file){
+  return new Promise((ok, mal)=>{ const r = new FileReader(); r.onerror = ()=>mal(new Error('No se pudo leer el archivo'));
+    r.onload = ()=>{ const s = String(r.result || ''); ok(s.slice(s.indexOf(',') + 1)); }; r.readAsDataURL(file); });
+}
+async function spSubir(reqId, maxMb, input){
+  const f = input.files && input.files[0]; input.value = '';
+  if(!f) return;
+  if(!/\.pdf$/i.test(f.name) || (f.type && f.type !== 'application/pdf')) return spMsg('El archivo debe ser un PDF.');
+  if(f.size > maxMb * 1048576) return spMsg('«' + f.name + '» pesa ' + spFmtTam(f.size) + ' y el máximo para este documento es ' + maxMb + ' MB.');
+  if(f.size < 100) return spMsg('El archivo está vacío.');
+  spMsg('Subiendo «' + f.name + '»…', true);
   try{
-    const { data, error } = await sb.rpc('admin_sol_pr_pendientes');
-    if(error || !data) return;
-    const chip = [...document.querySelectorAll('.grupo-chip')].find(c=>c.title === 'Abrir Solicitudes de práctica');
-    if(chip && !chip.querySelector('.sa-badge')) chip.insertAdjacentHTML('beforeend', ' <span class="sa-badge">' + data + '</span>');
-  }catch(_){}
+    const b64 = await spALeerBase64(f);
+    const { error } = await sb.rpc('est_pr_subir', { p_token: state.token, p_requisito: reqId, p_nombre: f.name, p_base64: b64 });
+    if(error) return spMsg(error.message);
+    toast('Documento cargado');
+    await spCargar();
+  }catch(e){ spMsg(e.message || 'No se pudo subir el archivo'); }
+}
+async function spQuitar(reqId){
+  if(!confirm('¿Quitar este documento?')) return;
+  const { error } = await sb.rpc('est_pr_quitar', { p_token: state.token, p_requisito: reqId });
+  if(error) return spMsg(error.message);
+  await spCargar();
+}
+async function spEnviar(){
+  if(!confirm('¿Enviar tu solicitud a revisión? Después no podrás cambiar los documentos hasta que te respondan.')) return;
+  const b = document.getElementById('spEnviar'); b.disabled = true; spMsg('Enviando…', true);
+  const { error } = await sb.rpc('est_pr_enviar', { p_token: state.token });
+  if(error){ b.disabled = false; return spMsg(error.message); }
+  try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}   // avisa al encargado
+  toast('Solicitud enviada a revisión');
+  await spCargar();
 }
 
-/* ---------------------------------------------------------------- DOCUMENTOS POR MODALIDAD */
-let dmDatos = [];
-async function abrirDocsModalidad(){
-  if(!requireSupabase()) return;
-  const el = spaPantalla('screen-admin-docmod'); if(!el) return;
-  el.innerHTML = '<button class="linkbtn" onclick="showScreen(\'screen-admin-hub\')">← Volver al panel</button><h2 style="margin:12px 0 4px;">Documentos por modalidad</h2><p class="helptext">Cargando…</p>';
-  showScreen('screen-admin-docmod');
-  await dmPintar();
-}
-async function dmPintar(){
-  const el = document.getElementById('screen-admin-docmod'); if(!el) return;
-  const { data, error } = await sb.rpc('admin_modalidades_docs');
-  if(error){ el.innerHTML = '<button class="linkbtn" onclick="showScreen(\'screen-admin-hub\')">← Volver al panel</button><p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste solicitud-practica-etapa24.sql?)</p>'; return; }
-  dmDatos = data || [];
-  el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
-    <h2 style="margin:12px 0 4px;">Documentos por modalidad</h2>
-    <p class="helptext" style="text-align:justify;">Define qué documentos (todos en PDF, cada uno por separado) debe subir el estudiante en cada modalidad, si es <b>obligatorio</b> y el <b>peso máximo</b> de cada archivo (0,1 a 5 MB). Si quitas un documento que ya tiene archivos subidos, solo se desactiva (no se pierde nada). Contrato de aprendizaje no pide documentos: solo el formulario. Desmarca «Disponible» para ocultar una modalidad a los estudiantes (por ejemplo, las de Enfermería, que asigna la institución).</p>` +
-    dmDatos.map((m, mi)=>`<div class="card"><div class="section-bar deep">${esc(m.nombre)}</div>
-      <label style="display:block;margin:4px 0 10px;font-size:13.5px;"><input type="checkbox" ${m.solicitable ? 'checked' : ''} onchange="dmSolicitable('${esc(m.id)}', this.checked)"> Disponible para que el estudiante la elija</label>
-      ${m.tipo === 'contrato' ? '<p class="helptext">Esta modalidad solo pide el formulario de solicitud; no requiere documentos.</p>' : ''}
-      <div class="cupos-wrap"><table class="cupos-table" style="min-width:760px"><thead><tr><th>Documento</th><th>Indicación para el estudiante</th><th>Obligatorio</th><th>Peso máx. (MB)</th><th>Orden</th><th>Activo</th><th></th></tr></thead><tbody>` +
-      m.requisitos.map(r=>`<tr>
-        <td><input id="dm-${esc(r.id)}-n" maxlength="120" value="${escapeAttr(r.nombre)}" style="min-width:180px;"></td>
-        <td><input id="dm-${esc(r.id)}-d" maxlength="300" value="${escapeAttr(r.descripcion)}" style="min-width:200px;"></td>
-        <td style="text-align:center;"><input type="checkbox" id="dm-${esc(r.id)}-o" ${r.obligatorio ? 'checked' : ''}></td>
-        <td><input type="number" id="dm-${esc(r.id)}-m" min="0.1" max="5" step="0.1" value="${esc(r.max_mb)}" style="width:80px;"></td>
-        <td><input type="number" id="dm-${esc(r.id)}-r" min="0" max="99" value="${esc(r.orden)}" style="width:60px;"></td>
-        <td style="text-align:center;"><input type="checkbox" id="dm-${esc(r.id)}-a" ${r.activo ? 'checked' : ''}></td>
-        <td class="aud-nw"><button class="primary" style="padding:5px 10px;font-size:12px;" onclick="dmGuardar('${esc(r.id)}','${esc(m.id)}')">Guardar</button>
-          <button class="danger" style="padding:5px 10px;font-size:12px;" onclick="dmEliminar('${esc(r.id)}')">Quitar</button></td></tr>`).join('') +
-      `<tr style="background:var(--bg-soft,#f6f5ef);"><td><input id="dmN-${mi}-n" maxlength="120" placeholder="Nuevo documento…" style="min-width:180px;"></td>
-        <td><input id="dmN-${mi}-d" maxlength="300" placeholder="Indicación (opcional)" style="min-width:200px;"></td>
-        <td style="text-align:center;"><input type="checkbox" id="dmN-${mi}-o" checked></td>
-        <td><input type="number" id="dmN-${mi}-m" min="0.1" max="5" step="0.1" value="2" style="width:80px;"></td>
-        <td></td><td></td>
-        <td><button class="primary" style="padding:5px 10px;font-size:12px;" onclick="dmAgregar(${mi})">Agregar</button></td></tr>` +
-      '</tbody></table></div></div>').join('');
-}
-async function dmSolicitable(id, v){
-  const { error } = await sb.rpc('admin_modalidad_solicitable', { p_id: id, p_valor: !!v });
-  toast(error ? error.message : (v ? 'Modalidad disponible para los estudiantes' : 'Modalidad oculta para los estudiantes'), !!error);
-  if(error) dmPintar();
-}
-async function dmGuardar(rid, mid){
-  const g = s => document.getElementById('dm-' + rid + '-' + s);
-  const mb = parseFloat(String(g('m').value).replace(',', '.'));
-  if(isNaN(mb) || mb < 0.1 || mb > 5){ toast('El peso máximo debe estar entre 0,1 y 5 MB', true); return; }
-  const { error } = await sb.rpc('admin_requisito_guardar', { p_id: rid, p_modalidad_id: mid, p_nombre: g('n').value, p_descripcion: g('d').value,
-    p_obligatorio: g('o').checked, p_max_mb: mb, p_orden: parseInt(g('r').value || '0', 10), p_activo: g('a').checked });
-  toast(error ? error.message : 'Documento guardado', !!error);
-}
-async function dmAgregar(mi){
-  const m = dmDatos[mi]; const g = s => document.getElementById('dmN-' + mi + '-' + s);
-  const mb = parseFloat(String(g('m').value).replace(',', '.'));
-  if(isNaN(mb) || mb < 0.1 || mb > 5){ toast('El peso máximo debe estar entre 0,1 y 5 MB', true); return; }
-  const { error } = await sb.rpc('admin_requisito_guardar', { p_id: null, p_modalidad_id: m.id, p_nombre: g('n').value, p_descripcion: g('d').value,
-    p_obligatorio: g('o').checked, p_max_mb: mb, p_orden: null, p_activo: true });
+async function spReabrir(){
+  const { error } = await sb.rpc('est_pr_reabrir', { p_token: state.token });
   if(error){ toast(error.message, true); return; }
-  toast('Documento agregado'); dmPintar();
-}
-async function dmEliminar(rid){
-  if(!confirm('¿Quitar este documento de la lista? Si ya hay archivos subidos solo se desactivará.')) return;
-  const { data, error } = await sb.rpc('admin_requisito_eliminar', { p_id: rid });
-  if(error){ toast(error.message, true); return; }
-  toast(data && data.desactivado ? 'Ya tenía archivos: se desactivó (no se perdió nada)' : 'Documento eliminado'); dmPintar();
+  toast('Solicitud reabierta: corrige los documentos y envíala de nuevo');
+  await spCargar();
 }
