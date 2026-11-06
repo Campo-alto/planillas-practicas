@@ -576,3 +576,11 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 .sp-ic{font-size:18px;line-height:1.2;}
 .sp-doc-a{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;}
 .sp-subir{display:inline-block;padding:6px 12px;font-size:13px;border-radius:8px;border:1px solid var(--line,#ccc);cursor:pointer;}
+
+/* ===== Visor de PDF (solo vista previa) ===== */
+.spa-visor{position:fixed;inset:0;z-index:9999;background:rgba(15,25,25,.92);display:flex;flex-direction:column;}
+.spa-visor-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0b3b39;color:#fff;flex-wrap:wrap;}
+.spa-visor-bar b{flex:1 1 auto;}
+.spa-visor-cuerpo{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;align-items:center;gap:12px;user-select:none;-webkit-user-select:none;}
+.spa-visor-cuerpo canvas{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4);max-width:100%;}
+@media print{.spa-visor{display:none!important;}}
