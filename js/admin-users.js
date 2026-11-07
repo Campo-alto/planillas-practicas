@@ -167,7 +167,12 @@ async function saveAdministrador(){
   msg.innerHTML = '<span style="color:var(--muted)">Creando…</span>';
   try{
     const rolSel = document.getElementById('admRolNuevo'); const rol = rolSel ? rolSel.value : 'administrador';
-    const r = await adminManage({ action:'create', email, nombre, password, rol });
+    // «Supervisor general» se crea como asistente y luego se cambia el rol (así no hace falta volver a desplegar la función admin-manage)
+    const r = await adminManage({ action:'create', email, nombre, password, rol: rol === 'sup_general' ? 'asistente' : rol });
+    if(rol === 'sup_general'){
+      const { error: eRol } = await sb.rpc('admin_set_admin_rol', { p_user_id: r.id, p_rol: 'sup_general' });
+      if(eRol) throw new Error('Se creó el acceso pero no se pudo asignar el rol «Supervisor general»: ' + eRol.message + ' (¿ejecutaste la etapa 25?)');
+    }
     const { error } = await sb.rpc('admin_set_admin_profile', { p_user_id: r.id, p_documento: documento, p_nombre: nombre });
     if(error) throw new Error('Se creó el acceso pero no se guardó el perfil: ' + error.message);
     ['admDocumento','admEmail','admNombre','admPasswordNew'].forEach(id=>document.getElementById(id).value='');
