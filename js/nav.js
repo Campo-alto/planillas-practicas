@@ -200,6 +200,9 @@ async function doLookup(){
       rec = emptyRecord(doc);
       state.isNewRecord = true;
       msg.innerHTML = '<span style="color:var(--teal-dark)">No existe todavía — se creará un registro nuevo para este documento.</span>';
+    } else if(state.role === 'empresa'){
+      msg.innerHTML = '<span style="color:var(--danger)">No se pudo abrir este estudiante: verifica el documento. Solo puedes abrir a los estudiantes que hacen su práctica en tu empresa.</span>';
+      return;
     } else if(state.role === 'supervisor'){
       msg.innerHTML = '<span style="color:var(--danger)">No se pudo abrir este estudiante: puede que no exista, que aún no te lo hayan asignado o que su visita esté asignada a otro supervisor. Revisa «Mis visitas asignadas».</span>';
       return;
