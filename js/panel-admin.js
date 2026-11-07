@@ -63,8 +63,15 @@
     el.innerHTML = html; return el;
   }
 
+  /* Recuerda la última función abierta (solo qué opción, nada sensible) para volver a ella si la página se recarga */
+  const RUTA_KEY = 'cai_admin_ruta_v1', RUTA_MAX_MS = 12 * 3600 * 1000;
+  let rutaPendiente = null;
+  try{ const r = JSON.parse(sessionStorage.getItem(RUTA_KEY) || 'null'); if(r && r.gid != null && Date.now() - r.t < RUTA_MAX_MS) rutaPendiente = r; }catch(_){}
+  function rutaGuardar(gid, i){ try{ sessionStorage.setItem(RUTA_KEY, JSON.stringify({ gid, i, t:Date.now() })); }catch(_){} }
+  window.pgRutaOlvidar = function(){ rutaPendiente = null; try{ sessionStorage.removeItem(RUTA_KEY); }catch(_){} };
   window.pgAbrirFuncion = function(gid, i){
     const g = GRUPOS.find(x=>x.id===gid); if(!g || !g.funciones[i]) return;
+    rutaGuardar(gid, i);
     run(g.funciones[i].abrir)();
   };
 
@@ -119,9 +126,15 @@
   const _showScreen = showScreen;
   showScreen = function(id){
     _showScreen(id);
+    if(id === 'screen-home' || id === 'screen-admin-login') window.pgRutaOlvidar();
     if(id !== 'screen-admin-hub') return;
+    const volver = rutaPendiente; rutaPendiente = null;   // solo la primera vez tras una recarga
+    if(!volver) { try{ sessionStorage.removeItem(RUTA_KEY); }catch(_){} }   // el administrador volvió al panel a propósito
     pgPintar();
     const listo = (typeof cargarPermisos === 'function') ? cargarPermisos() : Promise.resolve();
-    Promise.resolve(listo).then(()=>{ pgPintar(); if(window.rpMostrarTarjeta && (typeof puede !== 'function' || puede('solo_admin'))) window.rpMostrarTarjeta(); });
+    Promise.resolve(listo).then(()=>{ pgPintar();
+      if(volver){ try{ const g = GRUPOS.find(x=>x.id===volver.gid); const f = g && g.funciones[volver.i];
+        if(f && (typeof puede !== 'function' || !f.mod || puede(f.mod))) { window.pgAbrirFuncion(volver.gid, volver.i); return; } }catch(e){ console.error('Volver a la opción:', e); } }
+      if(window.rpMostrarTarjeta && (typeof puede !== 'function' || puede('solo_admin'))) window.rpMostrarTarjeta(); });
   };
 })();
