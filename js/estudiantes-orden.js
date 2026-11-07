@@ -7,6 +7,11 @@ const ord = { campo:'nombre', desc:false, sede:'', programa:'', modalidad:'', se
 const ORD_CAMPOS = [['nombre','Nombre (A-Z)'], ['ultimo_acceso','Último acceso'], ['created_at','Fecha de registro'], ['updated_at','Última actualización'],
                     ['sede','Sede'], ['programa','Programa'], ['semestre','Semestre'], ['modalidad','Modalidad'], ['empresa','Empresa asignada']];
 
+const ORD_COL = new Intl.Collator('es', { numeric:true });
+/* La búsqueda y los filtros se recuerdan mientras la pestaña siga abierta (también si se recarga) */
+const ORD_KEY = 'cai_lista_est_v1';
+try{ const g = JSON.parse(sessionStorage.getItem(ORD_KEY) || 'null'); if(g){ Object.assign(ord, g.ord || {}); if(typeof g.b === 'string') adminStudentsBusqueda = g.b; if(g.solo) adminStudentsSoloPendientes = true; } }catch(_){}
+function ordGuardar(){ try{ sessionStorage.setItem(ORD_KEY, JSON.stringify({ ord, b:adminStudentsBusqueda, solo:!!adminStudentsSoloPendientes })); }catch(_){} }
 function ordT(v){ const t = v ? new Date(v).getTime() : NaN; return isNaN(t) ? null : t; }
 function ordFecha(v){ const t = ordT(v); return t === null ? '—' : new Date(t).toLocaleString('es-CO', { timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
 function ordActivos(){ return [ord.sede, ord.programa, ord.modalidad, ord.semestre, ord.acceso, ord.desde, ord.hasta].filter(Boolean).length + (ord.campo !== 'nombre' || ord.desc ? 1 : 0); }
@@ -39,18 +44,18 @@ function ordAplicar(list){
     list = list.slice().sort((a, b)=>{
       if(esFecha){
         const ta = ordT(val(a)), tb = ordT(val(b));
-        if(ta === null && tb === null) return String(a.s.nombre).localeCompare(String(b.s.nombre), 'es');
+        if(ta === null && tb === null) return ORD_COL.compare(String(a.s.nombre), String(b.s.nombre));
         if(ta === null) return 1; if(tb === null) return -1;
         return (tb - ta) * dir;
       }
-      const c = String(val(a) || '').localeCompare(String(val(b) || ''), 'es', { numeric:true });
-      return (c || String(a.s.nombre).localeCompare(String(b.s.nombre), 'es')) * dir;
+      const c = ORD_COL.compare(String(val(a) || ''), String(val(b) || ''));
+      return (c || ORD_COL.compare(String(a.s.nombre), String(b.s.nombre))) * dir;
     });
     return list;
   }
 }
 
-function ordUnicos(campo){ const m = new Map(); (adminStudentsCache || []).forEach(s=>{ const v = s[campo]; if(v != null && String(v).trim() !== '') { const k = _norm(String(v)).trim(); if(!m.has(k)) m.set(k, String(v).trim()); } }); return [...m.values()].sort((a,b)=>a.localeCompare(b, 'es', { numeric:true })); }
+function ordUnicos(campo){ const m = new Map(); (adminStudentsCache || []).forEach(s=>{ const v = s[campo]; if(v != null && String(v).trim() !== '') { const k = _norm(String(v)).trim(); if(!m.has(k)) m.set(k, String(v).trim()); } }); return [...m.values()].sort((a,b)=>ORD_COL.compare(a, b)); }
 function ordSel(id, etiqueta, campo, actual){
   return `<div class="field"><label>${etiqueta}</label><select onchange="ord.${id}=this.value;renderAdminListTable()"><option value="">Todas</option>${ordUnicos(campo).map(v=>`<option value="${esc(v)}"${ordIgual(v, actual) && actual ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`;
 }
@@ -75,11 +80,12 @@ function ordDecorar(){
         <div class="field"><label>Hasta</label><input type="date" value="${ord.hasta}" onchange="ord.hasta=this.value;renderAdminListTable()"></div>
       </div>${conFechas ? '' : '<div class="note-box">Las fechas de registro y de acceso aparecerán cuando ejecutes <b>estudiantes-orden-etapa27.sql</b>. El último acceso se llena desde el próximo ingreso de cada estudiante.</div>'}</div>`);
   ref.parentNode.insertBefore(caja, ref);
+  const porDoc = new Map((adminStudentsCache || []).map(x=>[x.documento, x]));
   if(tabla){ // columna «Último acceso» al final de cada fila
     const th = document.createElement('th'); th.textContent = 'Último acceso'; tabla.querySelector('thead tr').appendChild(th);
     tabla.querySelectorAll('tbody tr').forEach(tr=>{
       const m = /jumpToAdmin\('([^']+)'\)/.exec(tr.getAttribute('onclick') || ''); if(!m) return;
-      const s = adminStudentsCache.find(x=>x.documento === m[1]); const td = document.createElement('td'); td.className = 'aud-nw';
+      const s = porDoc.get(m[1]); const td = document.createElement('td'); td.className = 'aud-nw';
       td.innerHTML = s && ordT(s.ultimo_acceso) !== null ? esc(ordFecha(s.ultimo_acceso)) : '<span style="color:var(--muted)">Nunca</span>';
       tr.appendChild(td);
     });
@@ -92,6 +98,7 @@ function ordDecorar(){
     const y = window.scrollY;
     const r = _r.apply(this, arguments);
     try{ ordDecorar(); }catch(e){ console.error(e); }
+    ordGuardar();
     if(Math.abs(window.scrollY - y) > 4) window.scrollTo(0, y);
     return r;
   };
