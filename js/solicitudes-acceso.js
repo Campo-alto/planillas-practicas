@@ -119,7 +119,8 @@ async function saMarcarPendientes(){
   try{
     const { data, error } = await sb.rpc('admin_solicitudes_pendientes');
     if(error || !data) return;
-    const chip = [...document.querySelectorAll('.grupo-chip')].find(c=>c.title === 'Abrir Solicitudes de acceso');
-    if(chip && !chip.querySelector('.sa-badge')) chip.insertAdjacentHTML('beforeend', ' <span class="sa-badge">' + data + '</span>');
+    const b = [...document.querySelectorAll('.fn-card')].find(c=>c.getAttribute('data-fn') === 'Solicitudes de acceso');
+    const sl = b && b.querySelector('.fn-badge');
+    if(sl) sl.innerHTML = '<span class="sa-badge" title="Pendientes por revisar">' + data + '</span>';
   }catch(_){}
 }
