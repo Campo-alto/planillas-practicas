@@ -285,7 +285,13 @@ function adminListaFiltrada(){
 }
 function textoNotas(prog){ return prog.total===1 ? (prog.count===1?'Nota registrada':'Nota pendiente') : (prog.count+'/'+prog.total+' meses calificados'); }
 function textoPlat(plat){ return plat.pendientes===0 ? (plat.subidas>0 ? 'Al día' : '-') : (plat.pendientes+' sin subir'); }
-function adminListBuscar(v){ adminStudentsBusqueda = v; renderAdminListTable(true); }
+let _adminBuscarT = null, adminListLimite = 150;
+function adminListBuscar(v){
+  adminStudentsBusqueda = v; adminListLimite = 150;
+  clearTimeout(_adminBuscarT);
+  _adminBuscarT = setTimeout(()=>{ try{ renderAdminListTable(true); }catch(e){ console.error('Buscar:', e); } }, 300);   // espera a que termine de escribir
+}
+function adminListMas(){ adminListLimite += 150; renderAdminListTable(); }
 function renderAdminListTable(conservarFoco){
   const el = document.getElementById('lookupAdminList');
   if(!adminStudentsCache || adminStudentsCache.length===0){ el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no hay estudiantes registrados.</p>'; return; }
@@ -303,7 +309,8 @@ function renderAdminListTable(conservarFoco){
   let tabla;
   if(list.length===0){ tabla = '<p style="color:var(--muted);font-size:13px;">No hay estudiantes que coincidan con el filtro.</p>'; }
   else {
-    const rows = list.map(({s,prog,plat,empresa})=>{
+    const hayMas = list.length > adminListLimite;
+    const rows = (hayMas ? list.slice(0, adminListLimite) : list).map(({s,prog,plat,empresa})=>{
       const cls = prog.count===0 ? 'no' : (prog.count===prog.total ? 'ok' : '');
       const platTxt = plat.pendientes===0 ? (plat.subidas>0 ? '✅ Al día' : '—') : ('📋 '+plat.pendientes+' sin subir');
       const platCls = plat.pendientes===0 ? (plat.subidas>0?'ok':'') : 'no';
@@ -316,10 +323,13 @@ function renderAdminListTable(conservarFoco){
         <td>${typeof inhabBoton==='function' ? inhabBoton('estudiante', s.documento, s.nombre||s.documento) : ''}</td>
       </tr>`;
     }).join('');
-    tabla = `<div class="cupos-wrap"><table class="cupos-table lista-est"><thead><tr><th>Nombre</th><th>Documento</th><th>Programa</th><th>Empresa asignada</th><th>Sede</th><th class="cp-c">Sem.</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th><th>Acceso</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    tabla = `<div class="cupos-wrap"><table class="cupos-table lista-est"><thead><tr><th>Nombre</th><th>Documento</th><th>Programa</th><th>Empresa asignada</th><th>Sede</th><th class="cp-c">Sem.</th><th>Modalidad</th><th>Notas</th><th>Plataforma académica</th><th>Acceso</th></tr></thead><tbody>${rows}</tbody></table></div>${hayMas ? `<div class="lista-cuenta" style="text-align:center;margin-top:10px;">Se muestran ${adminListLimite} de ${list.length}. <button class="ghost" onclick="adminListMas()">Mostrar 150 más</button> <span style="color:var(--muted);font-size:12px;">(Excel y PDF exportan todos)</span></div>` : ''}`;
   }
+  // el cuadro de búsqueda se conserva tal cual (no se reemplaza) para que no se pierda el foco ni se cierre el teclado
+  const viejo = conservarFoco ? document.getElementById('adminListBusca') : null;
+  if(viejo) viejo.parentNode.removeChild(viejo);
   el.innerHTML = arriba + contadorGlobal + barra + tabla;
-  if(conservarFoco){ const i = document.getElementById('adminListBusca'); if(i){ i.focus(); const n=i.value.length; try{ i.setSelectionRange(n,n); }catch(e){} } }
+  if(viejo){ const nuevo = document.getElementById('adminListBusca'); if(nuevo) nuevo.parentNode.replaceChild(viejo, nuevo); try{ viejo.focus({preventScroll:true}); }catch(e){ viejo.focus(); } }
 }
 function adminListExportar(formato){
   const list = adminListaFiltrada();
