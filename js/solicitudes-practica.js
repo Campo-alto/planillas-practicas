@@ -207,8 +207,9 @@ async function spaMarcarPendientes(){
   try{
     const { data, error } = await sb.rpc('admin_sol_pr_pendientes');
     if(error || !data) return;
-    const chip = [...document.querySelectorAll('.grupo-chip')].find(c=>c.title === 'Abrir Solicitudes de práctica');
-    if(chip && !chip.querySelector('.sa-badge')) chip.insertAdjacentHTML('beforeend', ' <span class="sa-badge">' + data + '</span>');
+    const b = [...document.querySelectorAll('.fn-card')].find(c=>c.getAttribute('data-fn') === 'Solicitudes de práctica');
+    const sl = b && b.querySelector('.fn-badge');
+    if(sl) sl.innerHTML = '<span class="sa-badge" title="Pendientes por revisar">' + data + '</span>';
   }catch(_){}
 }
 
