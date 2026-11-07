@@ -618,3 +618,7 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 .ord-caja{margin:0 0 10px}
 .ord-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .ord-panel{margin-top:8px;padding:12px;border:1px solid var(--line,#d9dee5);border-radius:10px;background:var(--card,#fff)}
+
+/* ===== Empresas por confirmar ===== */
+.ec-card{border:1px solid var(--line,#d9dee5);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--card,#fff)}
+.ec-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
