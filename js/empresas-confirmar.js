@@ -5,21 +5,25 @@
    envía el correo. Si no se puede confirmar, «Devolver» avisa al estudiante.
    Requiere empresas-confirmar-etapa28.sql. Correos: función «enviar-correo» (tipos «clave» y «solicitud», sin redesplegar). */
 
-let ecEstado = 'pendiente', ecFilas = [];
-const EC_ET = { pendiente:'Por confirmar', confirmada:'Confirmadas', devuelta:'Devueltas' };
+let ecEstado = 'apto', ecFilas = [];
+const EC_ET = { apto:'Aptos: crear acceso', coordinacion:'En coordinación', pendiente:'Esperando visita', confirmada:'Con acceso creado', no_apto:'No aptos (otro lugar)', devuelta:'Devueltos', descartada:'Cerrados' };
+let ecMax = 3;
 
 async function abrirEmpresasConfirmar(estado){
   if(!requireSupabase()) return;
   if(estado) ecEstado = estado;
   const el = spaPantalla('screen-admin-empconf'); if(!el) return;
+  try{ const c = await sb.rpc('admin_lugares_config'); if(c.data) ecMax = c.data.max_lugares; }catch(_){}
+  const esAdmin = typeof permAdmin !== 'undefined' && permAdmin && permAdmin.total;
   el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <h2 style="margin:12px 0 4px;">Empresas por confirmar</h2>
-    <p class="helptext" style="text-align:justify;">En <b>RLP</b> y <b>RAP</b> la empresa la consigue el estudiante y todavía no está registrada. Revisa los datos que escribió, corrígelos si hace falta y confirma:
-    se crea el <b>usuario y la contraseña</b> de la empresa, se le envía por correo y solo podrá ver y calificar a <b>ese estudiante</b>. Si la empresa ya tenía usuario, se reutiliza y se le vincula el nuevo estudiante.</p>
+    <p class="helptext" style="text-align:justify;">En <b>RLP</b> y <b>RAP</b> la empresa la consigue el estudiante. El proceso es: <b>1)</b> se aprueba la solicitud → <b>2)</b> el supervisor visita el lugar y dice si es <b>apto</b> →
+    <b>3)</b> recién entonces aquí se <b>crea el usuario y la contraseña</b> de la empresa y se le envía por correo (solo podrá ver y calificar a ese estudiante). Si el lugar <b>no es apto</b>, el estudiante elige otro; al llegar al límite de lugares —o en RAP— el caso pasa a <b>coordinación</b>.</p>
     <div class="card">
       <div class="aud-filtros">
         <div class="field"><label>Ver</label><select id="ecEstado" onchange="ecEstado=this.value;ecConsultar()">${Object.keys(EC_ET).map(k=>`<option value="${k}"${k === ecEstado ? ' selected' : ''}>${EC_ET[k]}</option>`).join('')}</select></div>
         <div class="field aud-ancho"><label>Buscar (empresa, estudiante o documento)</label><input type="search" id="ecTexto" maxlength="80" onkeydown="if(event.key==='Enter')ecConsultar()"></div>
+        <div class="field"><label>Límite de lugares por estudiante</label><span style="display:flex;gap:6px;align-items:center;"><input type="number" id="ecMax" min="1" max="10" value="${ecMax}" style="width:70px;"${esAdmin ? '' : ' disabled title="Solo el administrador lo puede cambiar"'}>${esAdmin ? '<button class="ghost" onclick="ecGuardarMax()">Guardar</button>' : ''}</span></div>
       </div>
       <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="ecConsultar()">Consultar</button></div>
       <div id="ecLista"><p style="color:var(--muted)">Cargando…</p></div>
@@ -27,25 +31,53 @@ async function abrirEmpresasConfirmar(estado){
   showScreen('screen-admin-empconf');
   ecConsultar();
 }
+async function ecGuardarMax(){
+  const n = parseInt(document.getElementById('ecMax').value, 10);
+  const { data, error } = await sb.rpc('admin_lugares_config_guardar', { p_max: n });
+  if(error){ toast(error.message, true); return; }
+  ecMax = data.max_lugares; toast('Límite guardado: ' + ecMax + ' lugares por estudiante');
+}
 async function ecConsultar(){
   const t = document.getElementById('ecLista'); if(!t) return;
   const { data, error } = await sb.rpc('admin_lugares_lista', { p_estado: ecEstado, p_texto: document.getElementById('ecTexto').value.trim() || null });
-  if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste empresas-confirmar-etapa28.sql?)</p>'; return; }
+  if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste lugar-apto-etapa29.sql?)</p>'; return; }
   ecFilas = data || [];
-  if(!ecFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">' + (ecEstado === 'pendiente' ? 'No hay empresas esperando confirmación. 🎉' : 'No hay registros.') + '</p>'; return; }
+  if(!ecFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">' + (ecEstado === 'apto' ? 'No hay lugares aptos esperando que crees el acceso de la empresa.' : 'No hay registros.') + '</p>'; return; }
+  const CONC = { apto:'✔ Apto', condiciones:'⚠ Apto con condiciones', no_apto:'✖ No apto' };
   t.innerHTML = ecFilas.map((f,i)=>{
-    const campo = (k, et, ph)=>`<div class="field"><label>${et}</label><input id="ec-${k}-${i}" maxlength="${k === 'direccion' || k === 'nombre' ? 150 : 120}" value="${esc(f[k] || '')}" placeholder="${ph || ''}"${ecEstado === 'confirmada' ? ' readonly' : ''}></div>`;
+    const editable = f.estado === 'pendiente' || f.estado === 'apto';
+    const campo = (k, et, ph)=>`<div class="field"><label>${et}</label><input id="ec-${k}-${i}" maxlength="${k === 'direccion' || k === 'nombre' ? 150 : 120}" value="${esc(f[k] || '')}" placeholder="${ph || ''}"${editable ? '' : ' readonly'}></div>`;
+    const c = f.concepto;
+    const acc = f.estado === 'apto' ? `<button class="primary" onclick="ecConfirmar(${i})">✔ Crear acceso y enviar correo</button><button class="ghost" onclick="ecGuardarDatos(${i})">Guardar datos</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
+      : f.estado === 'pendiente' ? `<button class="ghost" onclick="ecGuardarDatos(${i})">Guardar datos</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
+      : f.estado === 'coordinacion' ? `<button class="primary" onclick="ecCoord(${i},'otra_oportunidad')">Dar otra oportunidad</button><button class="danger" onclick="ecCoord(${i},'cerrar')">Cerrar el caso</button>` : '';
     return `<div class="ec-card">
       <div class="ec-head"><b>${esc(f.estudiante || '')}</b> <span class="aud-ref">Doc. ${esc(f.documento)} · ${esc(f.modalidad || '')}</span>
-        <span class="cor-est ${f.estado === 'confirmada' ? 'cor-enviado' : 'cor-pendiente'}">${EC_ET[f.estado]}</span></div>
+        <span class="cor-est ${f.estado === 'confirmada' || f.estado === 'apto' ? 'cor-enviado' : 'cor-pendiente'}">${EC_ET[f.estado]}</span>
+        <span class="aud-ref">Lugar n.º ${f.intento} · no aptos: ${f.no_aptos} de ${f.maximo}</span></div>
+      ${c ? `<div class="note-box"><b>Concepto del supervisor (${esc(c.supervisor)}, ${esc(c.fecha)}):</b> ${esc(CONC[c.concepto] || c.concepto)}${c.observaciones ? ' — ' + esc(c.observaciones) : ''}</div>` : (f.estado === 'pendiente' ? '<div class="helptext">Esperando que el supervisor visite el lugar y dé su concepto. Aún no se puede crear el acceso de la empresa.</div>' : '')}
       <div class="field-row">${campo('nombre','Empresa o lugar *')}${campo('contacto','Persona de contacto *')}${campo('correo','Correo (será el usuario) *','empresa@correo.com')}
         ${campo('telefono','Teléfono')}${campo('direccion','Dirección')}${campo('ciudad','Ciudad')}${campo('nit','NIT (opcional)')}</div>
-      ${f.estado === 'devuelta' ? `<div class="note-box"><b>Motivo de la devolución:</b> ${esc(f.observacion || '')}</div>` : ''}
-      ${f.estado === 'confirmada' ? `<div class="helptext">Confirmada por ${esc(f.resuelta_por || '')} · la empresa tiene acceso a ${f.estudiantes_vinculados} estudiante(s).</div>` : ''}
-      <div class="actions-row" style="justify-content:flex-start;">${
-        f.estado === 'pendiente' ? `<button class="primary" onclick="ecConfirmar(${i})">✔ Confirmar y crear acceso</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
-        : f.estado === 'devuelta' ? `<button class="ghost" onclick="ecReabrir(${i})">Volver a revisar</button>` : ''}</div></div>`;
+      ${f.estado === 'devuelta' || f.estado === 'descartada' ? `<div class="note-box"><b>Motivo:</b> ${esc(f.observacion || '')}</div>` : ''}
+      ${f.estado === 'confirmada' ? `<div class="helptext">Acceso creado por ${esc(f.resuelta_por || '')} · la empresa tiene acceso a ${f.estudiantes_vinculados} estudiante(s).</div>` : ''}
+      <div class="actions-row" style="justify-content:flex-start;">${acc}</div></div>`;
   }).join('');
+}
+async function ecGuardarDatos(i){
+  const { error } = await sb.rpc('admin_lugar_datos', { p_id: ecFilas[i].id, p_datos: ecLeer(i) });
+  if(error){ toast(error.message, true); return; }
+  toast('Datos guardados');
+}
+async function ecCoord(i, accion){
+  const f = ecFilas[i];
+  const obs = prompt(accion === 'cerrar' ? 'Motivo del cierre (se le enviará a ' + f.estudiante + '):' : 'Indicaciones para ' + f.estudiante + ' (por ejemplo, qué debe presentar):', '');
+  if(obs === null) return;
+  if(!obs.trim()){ toast('Escribe la decisión', true); return; }
+  const { error } = await sb.rpc('admin_lugar_coordinacion', { p_id: f.id, p_accion: accion, p_obs: obs });
+  if(error){ toast(error.message, true); return; }
+  try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
+  toast(accion === 'cerrar' ? 'Caso cerrado. Se avisó al estudiante.' : 'Se le dio otra oportunidad. Se avisó al estudiante.');
+  ecConsultar();
 }
 function ecLeer(i){ const v = k=>document.getElementById('ec-' + k + '-' + i).value.trim(); return { nombre:v('nombre'), contacto:v('contacto'), correo:v('correo'), telefono:v('telefono'), direccion:v('direccion'), ciudad:v('ciudad'), nit:v('nit') }; }
 
@@ -53,7 +85,7 @@ async function ecConfirmar(i){
   const f = ecFilas[i], d = ecLeer(i);
   if(!d.nombre || !d.contacto){ toast('Escribe el nombre de la empresa y la persona de contacto', true); return; }
   if(!corEmailOk(d.correo)){ toast('Escribe un correo válido: será el usuario de la empresa', true); return; }
-  if(!confirm('¿Confirmar «' + d.nombre + '» y crear su acceso con el correo ' + d.correo + '?\nPodrá ver y calificar solo a ' + f.estudiante + '.')) return;
+  if(!confirm('El supervisor declaró este lugar como apto.\n¿Crear el acceso de «' + d.nombre + '» con el correo ' + d.correo + '?\nPodrá ver y calificar solo a ' + f.estudiante + '.')) return;
   const { data, error } = await sb.rpc('admin_lugar_confirmar', { p_id: f.id, p_datos: d });
   if(error){ toast(error.message, true); return; }
   const url = typeof corUrl === 'function' ? corUrl() : location.origin;
@@ -99,7 +131,7 @@ async function ecDevolver(i){
 async function ecReabrir(i){
   const { error } = await sb.rpc('admin_lugar_reabrir', { p_id: ecFilas[i].id });
   if(error){ toast(error.message, true); return; }
-  ecEstado = 'pendiente'; abrirEmpresasConfirmar('pendiente');
+  abrirEmpresasConfirmar('pendiente');
 }
 
 /* Número de empresas por confirmar en la tarjeta del panel */
