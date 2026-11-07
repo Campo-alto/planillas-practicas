@@ -9,12 +9,13 @@ window.rpMostrarTarjeta = async function(){
   try{
     if(typeof sb === 'undefined' || !sb) return;
     const { data } = await sb.rpc('admin_reset_habilitado');
-    const chips = document.getElementById('grupoChips-administracion');
-    if(data !== true || !chips || document.getElementById('rpCard')) return;
-    const c = document.createElement('button'); c.type = 'button'; c.className = 'grupo-chip rp-chip'; c.id = 'rpCard';
-    c.title = 'Borra los datos para empezar de cero. Uso excepcional.'; c.onclick = rpAbrir;
-    c.textContent = '⚠ Reiniciar plataforma';
-    chips.appendChild(c);
+    const host = document.getElementById('grupoCards-seguridad');
+    if(data !== true || !host || document.getElementById('rpCard')) return;
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'fn-card fn-peligro'; c.id = 'rpCard';
+    c.setAttribute('data-fn', 'Reiniciar plataforma'); c.setAttribute('data-texto', 'reiniciar plataforma borrar datos empezar de cero');
+    c.onclick = rpAbrir;
+    c.innerHTML = '<span class="fn-ico">⚠</span><span class="fn-txt"><span class="fn-tit">Reiniciar plataforma</span><span class="fn-desc">Uso excepcional: borra los datos para empezar de cero (exige copia de seguridad y confirmación).</span></span><span class="fn-go" aria-hidden="true">›</span>';
+    host.appendChild(c);
   }catch(e){ console.warn('reset:', e); }
 };
 
