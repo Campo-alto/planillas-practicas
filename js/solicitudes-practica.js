@@ -190,6 +190,13 @@ async function spaResolver(accion){
     texto = 'Hola ' + data.nombre + ',\n\nTu solicitud de práctica (' + data.modalidad + ') no pudo ser aprobada.\n\nMotivo: ' + data.observacion + '\n\nPuedes enviar una nueva solicitud desde la plataforma o comunicarte con la institución.' + firma;
   }
   const fallo = await spaEnviarCorreo(data.correo, asunto, texto);
+  // RAP y RLP: además se avisa al supervisor general para que asigne la visita
+  let falloSG = null;
+  if(accion === 'aprobar' && /rap|aprendizajes previos|homologaci|rlp|lugar de pr|validaci/i.test(data.modalidad) && typeof vaAvisarSupervisorGeneral === 'function'){
+    falloSG = await vaAvisarSupervisorGeneral({ nombre: data.nombre, documento: data.documento, modalidad: data.modalidad });
+    if(falloSG) toast('Aprobada, pero no se avisó al supervisor general: ' + falloSG, true);
+  }
+  if(falloSG) { abrirSolicitudesPractica(); return; }
   toast(fallo ? 'Listo, pero no se pudo enviar el correo al estudiante: ' + fallo : (accion === 'aprobar' ? 'Solicitud aprobada y estudiante notificado' : accion === 'devolver' ? 'Solicitud devuelta y estudiante notificado' : 'Solicitud rechazada y estudiante notificado'), !!fallo);
   abrirSolicitudesPractica();
 }
