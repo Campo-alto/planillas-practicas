@@ -613,3 +613,8 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 .eg-btn{padding:2px 7px;font-size:13px;margin-left:3px}
 .eg-del:hover{background:#fdecea;border-color:#e0a4a0}
 .eg-barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 8px;padding:6px 2px;font-size:13.5px}
+
+/* ===== Ordenar y filtrar estudiantes ===== */
+.ord-caja{margin:0 0 10px}
+.ord-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ord-panel{margin-top:8px;padding:12px;border:1px solid var(--line,#d9dee5);border-radius:10px;background:var(--card,#fff)}
