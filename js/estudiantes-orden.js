@@ -17,10 +17,16 @@ function ordActivos(){ return [ord.sede, ord.programa, ord.modalidad, ord.semest
   const _f = adminListaFiltrada;
   adminListaFiltrada = function(){
     let list = _f.apply(this, arguments);
-    if(ord.sede) list = list.filter(x=>(x.s.sede || '') === ord.sede);
-    if(ord.programa) list = list.filter(x=>(x.s.programa || '') === ord.programa);
-    if(ord.modalidad) list = list.filter(x=>(x.s.modalidad || '') === ord.modalidad);
-    if(ord.semestre) list = list.filter(x=>(x.s.semestre || '') === ord.semestre);
+    try{ return ordAplicar(list); }catch(e){ console.error('Ordenar/filtrar:', e); return list; }   // si algo falla, la lista se muestra completa en vez de romperse
+  };
+})();
+function ordIgual(a, b){ return _norm(String(a == null ? '' : a)).trim() === _norm(String(b == null ? '' : b)).trim(); }
+function ordAplicar(list){
+  {
+    if(ord.sede) list = list.filter(x=>ordIgual(x.s.sede, ord.sede));
+    if(ord.programa) list = list.filter(x=>ordIgual(x.s.programa, ord.programa));
+    if(ord.modalidad) list = list.filter(x=>ordIgual(x.s.modalidad, ord.modalidad));
+    if(ord.semestre) list = list.filter(x=>ordIgual(x.s.semestre, ord.semestre));
     if(ord.acceso === 'si') list = list.filter(x=>ordT(x.s.ultimo_acceso) !== null);
     if(ord.acceso === 'no') list = list.filter(x=>ordT(x.s.ultimo_acceso) === null);
     const col = ord.fechaDe === 'acceso' ? 'ultimo_acceso' : 'created_at';
@@ -41,12 +47,12 @@ function ordActivos(){ return [ord.sede, ord.programa, ord.modalidad, ord.semest
       return (c || String(a.s.nombre).localeCompare(String(b.s.nombre), 'es')) * dir;
     });
     return list;
-  };
-})();
+  }
+}
 
-function ordUnicos(campo){ return [...new Set((adminStudentsCache || []).map(s=>s[campo]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b), 'es', { numeric:true })); }
+function ordUnicos(campo){ const m = new Map(); (adminStudentsCache || []).forEach(s=>{ const v = s[campo]; if(v != null && String(v).trim() !== '') { const k = _norm(String(v)).trim(); if(!m.has(k)) m.set(k, String(v).trim()); } }); return [...m.values()].sort((a,b)=>a.localeCompare(b, 'es', { numeric:true })); }
 function ordSel(id, etiqueta, campo, actual){
-  return `<div class="field"><label>${etiqueta}</label><select onchange="ord.${id}=this.value;renderAdminListTable()"><option value="">Todas</option>${ordUnicos(campo).map(v=>`<option value="${esc(v)}"${v === actual ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`;
+  return `<div class="field"><label>${etiqueta}</label><select onchange="ord.${id}=this.value;renderAdminListTable()"><option value="">Todas</option>${ordUnicos(campo).map(v=>`<option value="${esc(v)}"${ordIgual(v, actual) && actual ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`;
 }
 function ordLimpiar(){ Object.assign(ord, { campo:'nombre', desc:false, sede:'', programa:'', modalidad:'', semestre:'', acceso:'', fechaDe:'registro', desde:'', hasta:'' }); renderAdminListTable(); }
 
@@ -83,8 +89,10 @@ function ordDecorar(){
   if(typeof renderAdminListTable !== 'function') return;
   const _r = renderAdminListTable;
   renderAdminListTable = function(){
+    const y = window.scrollY;
     const r = _r.apply(this, arguments);
     try{ ordDecorar(); }catch(e){ console.error(e); }
+    if(Math.abs(window.scrollY - y) > 4) window.scrollTo(0, y);
     return r;
   };
 })();
