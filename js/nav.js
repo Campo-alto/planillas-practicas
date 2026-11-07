@@ -200,6 +200,9 @@ async function doLookup(){
       rec = emptyRecord(doc);
       state.isNewRecord = true;
       msg.innerHTML = '<span style="color:var(--teal-dark)">No existe todavía — se creará un registro nuevo para este documento.</span>';
+    } else if(state.role === 'supervisor'){
+      msg.innerHTML = '<span style="color:var(--danger)">No se pudo abrir este estudiante: puede que no exista, que aún no te lo hayan asignado o que su visita esté asignada a otro supervisor. Revisa «Mis visitas asignadas».</span>';
+      return;
     } else {
       msg.innerHTML = '<span style="color:var(--danger)">Este estudiante aún no está registrado. Pide al administrador que lo registre primero.</span>';
       return;
