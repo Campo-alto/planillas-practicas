@@ -1,5 +1,5 @@
 /* ============================= ROLES Y PERMISOS DEL PERSONAL =============================
-   Roles: Administrador (todo) · Coordinador de prácticas · Coordinador de gestión empresarial · Asistente.
+   Roles: Administrador (todo) · Coordinador de prácticas · Coordinador de gestión empresarial · Asistente · Supervisor general.
    El panel solo muestra las funciones que el rol tiene habilitadas, y el administrador puede habilitar o
    inhabilitar cada función de los otros tres roles en «Roles y permisos».
    SEGURIDAD: esto solo organiza lo que se VE. La base de datos (roles-permisos-etapa18.sql) es quien rechaza
@@ -9,9 +9,10 @@ const ROL_NOMBRES = {
   administrador: 'Administrador',
   coord_practicas: 'Coordinador de prácticas',
   coord_gestion: 'Coordinador de gestión empresarial',
-  asistente: 'Asistente'
+  asistente: 'Asistente',
+  sup_general: 'Supervisor general'
 };
-const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente'];
+const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente', 'sup_general'];
 
 let permAdmin = { listo:false, rol:null, total:false, modulos:[], uid:null };
 
