@@ -28,6 +28,7 @@
     { id:'supervisores', icono:'👤', clase:'supervisor', titulo:'Supervisión',
       desc:'Quienes acompañan la práctica y el registro de sus visitas.',
       funciones:[
+        { icono:'🧭', clase:'supervisor', paso:1, titulo:'Visitas por asignar', mod:'sup_asignar', desc:'Estudiantes de RAP y RLP aprobados que esperan supervisor. Asigna cada visita; el estudiante queda bloqueado para los demás.', abrir:()=>abrirVisitasAsignar() },
         { icono:'S', clase:'supervisor', titulo:'Usuarios de supervisores', mod:'sup_usuarios', desc:'Crea y administra los accesos de los supervisores institucionales.', abrir:()=>goAdminModule('supervisor') },
         { icono:'📋', clase:'empresa', titulo:'Reporte de visitas', mod:'sup_reporte', desc:'Consulta una fila por visita: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.', abrir:()=>goAdminModule('reporte') },
         { icono:'⇅', clase:'administrador', titulo:'Importar / exportar supervisores', mod:'sup_importexport', desc:'Crea supervisores desde Excel y descarga el listado.', abrir:()=>abrirImportExport() }
