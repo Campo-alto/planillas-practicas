@@ -75,7 +75,7 @@ async function spaDetalle(id){
 function spaPintarDetalle(){
   const el = document.getElementById('screen-admin-solprac-det'), d = spaDet; if(!el || !d) return;
   const s = d.solicitud, e = d.estudiante, rev = s.estado === 'enviada';
-  const datos = Object.keys(s.datos || {}).map(k=>`<div><dt>${esc(SPA_ETQ[k] || k)}</dt><dd>${esc(s.datos[k])}</dd></div>`).join('');
+  const datos = Object.keys(s.datos || {}).map(k=>`<tr><td><b>${esc(SPA_ETQ[k] || k)}</b></td><td>${esc(s.datos[k])}</td></tr>`).join('');
   const docs = d.requisitos.map(r=>{
     const x = r.doc;
     return `<tr><td><b>${esc(r.nombre)}</b><div class="aud-ref">${r.obligatorio ? 'Obligatorio' : 'Opcional'} · máx. ${esc(r.max_mb)} MB</div></td>
@@ -89,7 +89,7 @@ function spaPintarDetalle(){
     <h2 style="margin:12px 0 4px;">${esc(e.nombre || s.documento)} · ${spaChip(s.estado)}</h2>
     <p class="helptext">Documento ${esc(s.documento)} · ${esc(e.correo || 'sin correo')} · Modalidad solicitada: <b>${esc(s.modalidad)}</b>${s.enviada_en ? ' · Enviada ' + spaF(s.enviada_en) : ''}</p>
     ${s.observacion ? `<div class="note-box"><b>Observación:</b> ${esc(s.observacion)}</div>` : ''}
-    <div class="card"><div class="section-bar deep">Datos del estudiante</div><dl class="sp-datos">${datos || '<p class="helptext">Sin datos.</p>'}</dl></div>
+    <div class="card"><div class="section-bar deep">Datos del estudiante</div>${datos ? '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Dato</th><th>Valor</th></tr></thead><tbody>' + datos + '</tbody></table></div>' : '<p class="helptext">Sin datos.</p>'}</div>
     <div class="card"><div class="section-bar deep">Documentos</div>
       <div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Documento</th><th>Archivo</th><th>Revisión</th><th></th></tr></thead><tbody>${docs || '<tr><td colspan="4">Esta modalidad no tiene documentos.</td></tr>'}</tbody></table></div>
       ${rev ? '<p class="helptext" style="margin-top:8px;">Marca ✔ (aprobado) o ✖ (devuelto, con motivo) en cada documento. Luego resuelve la solicitud.</p>' : ''}</div>
