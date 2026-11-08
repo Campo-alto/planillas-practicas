@@ -27,9 +27,9 @@ function asisFormHtml(m){
       <div class="field"><label>Hasta (si fue más de un día)</label><input type="date" id="asHasta-${m}" min="${asisHoy(-120)}" max="${asisHoy(60)}"></div>
     </div>
     <div class="field"><label>¿Qué ocurrió? *</label><textarea id="asMotivo-${m}" rows="3" maxlength="1000" placeholder="Cuenta brevemente el motivo de la inasistencia"></textarea></div>
-    <div class="field"><label>Soportes en PDF (incapacidad, cita, constancia…) — máx. 5 archivos de 5 MB</label>
+    ${m === 'emp' ? '<p class="helptext" style="margin:0 0 8px;">Los soportes (incapacidad, cita, constancia…) los anexa el <b>estudiante</b> desde su cuenta; la empresa solo reporta la inasistencia.</p>' : `<div class="field"><label>Soportes en PDF (incapacidad, cita, constancia…) — máx. 5 archivos de 5 MB</label>
       <input type="file" id="asArch-${m}" accept="application/pdf,.pdf" multiple onchange="asisElegir('${m}', this)">
-      <div id="asNombres-${m}" class="helptext" style="margin-top:4px;"></div></div>
+      <div id="asNombres-${m}" class="helptext" style="margin-top:4px;"></div></div>`}
     <div class="actions-row" style="justify-content:flex-start;"><button class="primary" id="asEnviar-${m}" onclick="asisEnviar('${m}')">Enviar reporte</button><span id="asMsg-${m}"></span></div>
   </div>`;
 }
@@ -54,7 +54,7 @@ async function asisEnviar(m){
   const datos = { tipo: document.getElementById('asTipo-' + m).value, desde: document.getElementById('asDesde-' + m).value, hasta: document.getElementById('asHasta-' + m).value || '', motivo: document.getElementById('asMotivo-' + m).value.trim() };
   if(!datos.desde) return asisMsg(m, 'Indica la fecha de la inasistencia');
   if(datos.motivo.length < 5) return asisMsg(m, 'Cuenta brevemente qué ocurrió');
-  if(datos.tipo === 'incapacidad' && !asisFiles[m].length && !confirm('Elegiste «Incapacidad médica» pero no anexaste el PDF de la incapacidad. ¿Enviar el reporte sin soporte?')) return;
+  if(m === 'est' && datos.tipo === 'incapacidad' && !asisFiles[m].length && !confirm('Elegiste «Incapacidad médica» pero no anexaste el PDF de la incapacidad. ¿Enviar el reporte sin soporte?')) return;
   btn.disabled = true;
   const r = await asisRpc(m, 'reportar', { p_datos: datos });
   if(r.error){ btn.disabled = false; return asisMsg(m, esc(r.error.message)); }
@@ -78,8 +78,15 @@ async function asisCargar(m){
         return `<tr><td class="aud-nw"><b>${asisFechaCorta(i.desde)}${i.hasta !== i.desde ? '<br>→ ' + asisFechaCorta(i.hasta) : ''}</b></td><td>${esc(ASIS_TIPOS[i.tipo] || i.tipo)}</td><td>${esc(i.motivo)}</td>
           <td>${i.reportado_por === 'empresa' ? 'Empresa' : 'Estudiante'}</td><td>${i.docs.length ? i.docs.map(d=>'📎 ' + esc(d.nombre)).join('<br>') : '<span style="color:var(--muted)">Sin soportes</span>'}</td>
           <td><span class="cor-est ${e[1]}">${e[0]}</span></td><td>${i.observacion ? esc(i.observacion) : '—'}</td>
-          <td>${i.estado === 'pendiente' && m === 'est' && i.reportado_por === 'estudiante' ? `<button class="ghost" onclick="asisEliminar('${i.id}')">Quitar</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
+          <td>${i.estado === 'pendiente' && m === 'est' && i.docs.length < 5 ? `<label class="ghost" style="cursor:pointer;padding:5px 9px;border-radius:8px;font-size:12px;display:inline-block;">📎 Anexar soporte<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="asisAnexar('${i.id}', this)"></label> ` : ''}${i.estado === 'pendiente' && m === 'est' && i.reportado_por === 'estudiante' ? `<button class="ghost" onclick="asisEliminar('${i.id}')">Quitar</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
   caja.innerHTML = '<div class="subhead">Inasistencias reportadas</div>' + lista;
+}
+async function asisAnexar(id, inp){
+  const f = inp.files && inp.files[0]; if(!f) return; inp.value = '';
+  if(!/\.pdf$/i.test(f.name)){ toast('Solo se aceptan archivos PDF', true); return; }
+  if(f.size > 5 * 1048576){ toast('El archivo supera los 5 MB', true); return; }
+  try{ const { error } = await asisRpc('est', 'subir', { p_id: id, p_nombre: f.name, p_base64: await asisLeerB64(f) }); if(error) throw new Error(error.message); toast('Soporte anexado'); asisCargar('est'); }
+  catch(e){ toast(e.message, true); }
 }
 async function asisEliminar(id){
   if(!confirm('¿Quitar este reporte? Se borrarán también los PDF anexados.')) return;
@@ -98,7 +105,7 @@ function asisEmpresaMontar(){
   const pantalla = document.getElementById('screen-empresa'); if(!pantalla || !state.documento) return;
   let card = document.getElementById('empAsisCard');
   if(!card){ card = document.createElement('div'); card.className = 'card'; card.id = 'empAsisCard'; pantalla.appendChild(card); }
-  card.innerHTML = '<div class="section-bar teal">Asistencia a la práctica</div><p class="helptext" style="margin-top:-4px;">Reporta si el estudiante faltó (incapacidad, permiso, calamidad…) y anexa los soportes en PDF. El asistente de prácticas lo revisará.</p><div id="empAsisCont"></div><div class="subhead" style="margin-top:22px;">Actas de comité</div><div id="actasCaja-emp"></div>';
+  card.innerHTML = '<div class="section-bar teal">Asistencia a la práctica</div><p class="helptext" style="margin-top:-4px;">Reporta si el estudiante faltó (incapacidad, permiso, calamidad…). El estudiante anexa sus soportes en PDF y el asistente de prácticas lo revisará.</p><div id="empAsisCont"></div><div class="subhead" style="margin-top:22px;">Actas de comité</div><div id="actasCaja-emp"></div>';
   asisPintar(document.getElementById('empAsisCont'), 'emp');
   if(typeof actasMiLista === 'function') actasMiLista('emp');
 }
