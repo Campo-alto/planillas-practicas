@@ -153,7 +153,7 @@ async function cvDetalle(id){
       <div class="field-row">${inp('Lectiva inicio', c.lectiva_ini)}${inp('Lectiva fin', c.lectiva_fin)}${inp('Productiva inicio', c.prod_ini)}${inp('Productiva fin', c.prod_fin)}</div>
       <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="cvGuardarFechas()">Guardar fechas</button></div></div>
     <div class="card"><div class="section-bar deep">Estudiantes (${activos.length})</div>
-      <div class="cor-aviso" style="margin:6px 0;font-size:13px;">1) Selecciona y <b>envía las cartas de fechas</b> · 2) cuando el contrato esté firmado, <b>formaliza</b> (se habilitan las planillas) · 3) las planillas se envían por correo.</div>
+      <div class="cor-aviso" style="margin:6px 0;font-size:13px;">1) Selecciona y <b>envía las cartas de fechas</b> · 2) cada estudiante debe <b>completar su hoja de vida</b> (en su pestaña «Contrato de aprendizaje») · 3) cuando el contrato esté firmado, <b>formaliza</b> (se habilitan las planillas) · 4) las planillas se envían por correo.</div>
       <div class="actions-row" style="justify-content:flex-start;flex-wrap:wrap;gap:10px;align-items:center;">
         <label style="font-size:13px;"><input type="checkbox" id="cvEnvEmp" checked> Enviar a la empresa</label>
         <label style="font-size:13px;"><input type="checkbox" id="cvEnvEst" checked> Enviar a cada estudiante</label></div>
@@ -162,12 +162,13 @@ async function cvDetalle(id){
         <button class="ghost" onclick="cvDescargarCartas()">⬇ Solo descargar cartas</button>
         <button class="primary" onclick="cvFormalizar()">✔ Formalizar seleccionados</button>
         <button class="ghost" onclick="cvEnviarPlanillas()">📨 Enviar planillas (formalizados)</button></div>
-      <div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th><input type="checkbox" onchange="cvMarcarTodos(this.checked)" title="Marcar todos"></th><th>Documento</th><th>Estudiante</th><th>Programa</th><th>Etapa lectiva</th><th>Etapa productiva</th><th>Estado</th><th></th></tr></thead><tbody>` +
+      <div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th><input type="checkbox" onchange="cvMarcarTodos(this.checked)" title="Marcar todos"></th><th>Documento</th><th>Estudiante</th><th>Programa</th><th>Etapa lectiva</th><th>Etapa productiva</th><th>Hoja de vida</th><th>Estado</th><th></th></tr></thead><tbody>` +
     (ests.length ? ests.map(x=>`<tr${x.estado === 'retirado' ? ' style="opacity:.55"' : ''}><td>${x.estado === 'retirado' ? '' : `<input type="checkbox" class="cvChk" value="${esc(x.documento)}" onchange="cvMarcar('${esc(x.documento)}',this.checked)">`}</td>
       <td>${esc(x.documento)}</td><td><b>${esc(x.nombre)}</b><br><span class="aud-ref">${esc(x.correo || 'sin correo')}</span></td><td>${esc(x.programa || '')}</td>
       <td class="aud-nw">${x.lectiva_ini ? cvF(x.lectiva_ini) + ' → ' + cvF(x.lectiva_fin) : '<span style="color:var(--danger)">Falta</span>'}</td><td class="aud-nw">${x.prod_ini ? cvF(x.prod_ini) + ' → ' + cvF(x.prod_fin) : '<span style="color:var(--danger)">Falta</span>'}</td>
+      <td>${x.estado === 'retirado' ? '' : x.hv_completa ? '<span class="cor-est cor-enviado">Completa</span>' : '<span class="cor-est cor-pendiente">Pendiente</span>'}</td>
       <td><span class="cor-est ${cvEstCls[x.estado]}">${cvEstTxt[x.estado]}</span>${x.formalizado_en ? '<br><span class="aud-ref">' + cvF(x.formalizado_en) + '</span>' : x.carta_enviada_en ? '<br><span class="aud-ref">' + cvF(x.carta_enviada_en) + '</span>' : ''}${x.estado === 'retirado' ? '<br><span class="aud-ref">' + esc(x.motivo_retiro) + '</span>' : ''}</td>
-      <td class="aud-nw">${x.estado === 'retirado' ? '' : `<button class="danger" onclick="cvRetirar('${esc(x.documento)}')">Retirar</button>`}</td></tr>`).join('') : '<tr><td colspan="8" style="color:var(--muted)">Sin estudiantes.</td></tr>') +
+      <td class="aud-nw">${x.estado === 'retirado' ? '' : `<button class="danger" onclick="cvRetirar('${esc(x.documento)}')">Retirar</button>`}</td></tr>`).join('') : '<tr><td colspan="9" style="color:var(--muted)">Sin estudiantes.</td></tr>') +
     `</tbody></table></div></div>
     <div class="card"><details><summary style="cursor:pointer;font-weight:600;">+ Agregar más estudiantes</summary>${cvPickerHtml()}
       <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="cvAgregar()">Agregar al convenio</button></div></details></div>
