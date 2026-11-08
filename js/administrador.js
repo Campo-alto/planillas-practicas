@@ -254,7 +254,7 @@ function resumenPlanillaHtml(rec, editable){
       <td class="${rf.firmaSupervisor?'ok':'no'}">${rf.firmaSupervisor?'Firmado':'Pendiente'}</td>
       <td>${editable
         ? (rf.bloqueado
-            ? `🔒 ${m.congelado?'Congelado (empresa anterior)':'Bloqueado'} <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleVisitaLock('rf', false)">Desbloquear</button>`
+            ? `🔒 ${rf.congelado?'Congelado (empresa anterior)':'Bloqueado'} <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleVisitaLock('rf', false)">Desbloquear</button>`
             : `Editable <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleVisitaLock('rf', true)">Bloquear</button>`)
         : (rf.bloqueado ? '🔒 Bloqueado' : 'Editable')}</td>
     </tr></tbody></table>`;
@@ -268,7 +268,7 @@ function resumenPlanillaHtml(rec, editable){
       <td class="${ds.obsSupervisor.firma?'ok':'no'}">${ds.obsSupervisor.firma?'Firmado':'Pendiente'}</td>
       <td>${editable
         ? (ds.bloqueado
-            ? `🔒 ${m.congelado?'Congelado (empresa anterior)':'Bloqueado'} <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleVisitaLock('ds', false)">Desbloquear</button>`
+            ? `🔒 ${ds.congelado?'Congelado (empresa anterior)':'Bloqueado'} <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleVisitaLock('ds', false)">Desbloquear</button>`
             : `Editable <button class="ghost" style="padding:4px 8px;font-size:11.5px;margin-left:6px;" onclick="adminToggleVisitaLock('ds', true)">Bloquear</button>`)
         : (ds.bloqueado ? '🔒 Bloqueado' : 'Editable')}</td>
     </tr></tbody></table>`;
