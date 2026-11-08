@@ -112,14 +112,14 @@ function audDetalleHtml(d){
   if(!d) return '<span style="color:var(--muted)">Sin más detalle.</span>';
   let h = '';
   if(d.cambios && Object.keys(d.cambios).length){
-    h += '<ul class="aud-det">' + Object.keys(d.cambios).map(k=>{
+    h += '<table class="cupos-table aud-tabla"><thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead><tbody>' + Object.keys(d.cambios).map(k=>{
       const v = d.cambios[k];
-      if(v && typeof v === 'object' && 'antes' in v) return '<li><b>' + esc(audCampo(k)) + ':</b> <span class="aud-antes">' + esc(v.antes || '(vacío)') + '</span> → <span class="aud-desp">' + esc(v.despues || '(vacío)') + '</span></li>';
-      return '<li><b>' + esc(audCampo(k)) + ':</b> ' + esc(String(v)) + '</li>';
-    }).join('') + '</ul>';
+      if(v && typeof v === 'object' && 'antes' in v) return '<tr><td><b>' + esc(audCampo(k)) + '</b></td><td class="aud-antes">' + esc(v.antes || '(vacío)') + '</td><td class="aud-desp">' + esc(v.despues || '(vacío)') + '</td></tr>';
+      return '<tr><td><b>' + esc(audCampo(k)) + '</b></td><td>—</td><td>' + esc(String(v)) + '</td></tr>';
+    }).join('') + '</tbody></table>';
   }
   if(d.partes_modificadas && d.partes_modificadas.length) h += '<div><b>Partes modificadas:</b> ' + d.partes_modificadas.map(p=>esc(audRuta(p))).join(' · ') + '</div>';
-  if(d.datos && Object.keys(d.datos).length) h += '<ul class="aud-det">' + Object.keys(d.datos).filter(k=>k!=='id').map(k=>'<li><b>' + esc(audCampo(k)) + ':</b> ' + esc(String(d.datos[k])) + '</li>').join('') + '</ul>';
+  if(d.datos && Object.keys(d.datos).length) h += '<table class="cupos-table aud-tabla"><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>' + Object.keys(d.datos).filter(k=>k!=='id').map(k=>'<tr><td><b>' + esc(audCampo(k)) + '</b></td><td>' + esc(String(d.datos[k])) + '</td></tr>').join('') + '</tbody></table>';
   if(d.info) h += '<div>' + esc(String(d.info)) + '</div>';
   if(!h) h = '<pre class="aud-pre">' + esc(JSON.stringify(d, null, 1)) + '</pre>';
   return h;
