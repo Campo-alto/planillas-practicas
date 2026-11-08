@@ -10,6 +10,10 @@ async function caRpc(fn, args){
   if(!requireSupabase()) throw new Error('Sin conexión');
   const { data, error } = await sb.rpc(fn, args||{});
   if(error) throw new Error(error.message);
+  // acciones que generan avisos por correo: se envían de inmediato (si falla, la cola los reintenta)
+  if(/^(ca_postular|ca_decidir|ca_emp_crear_oferta|ca_emp_tomar|ca_emp_accion|ca_registrar_empresa|admin_ca_(confirmar|empresa_estado|oferta_estado|carta_guardar)|ca_emp_carta_)/.test(fn)){
+    try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
+  }
   return data;
 }
 const CA_ESTADO_TXT = { pendiente:'Pendiente', apto:'Apto', no_apto:'No apto', contratado:'Contratado', aprobada:'Aprobada', rechazada:'Rechazada', cerrada:'Cerrada',
@@ -218,23 +222,28 @@ function caGoLogin(){
   if(typeof initPwToggles==='function') initPwToggles();
   showScreen('screen-ca-login');
 }
-async function caLogin(){
-  const email = val('caEmail'), pass = document.getElementById('caPass').value;
-  if(!email || !pass){ caMsg('caLoginMsg','Escribe correo y contraseña.'); return; }
+async function caLogin(){ return caLoginCon(val('caEmail'), document.getElementById('caPass').value, 'caLoginMsg', 'caPass'); }
+// Ingreso de empresa de contrato de aprendizaje: lleva directo al formulario «Solicitudes de aprendices»
+async function caLoginCon(email, pass, msgId, passId){
+  if(!email || !pass){ caMsg(msgId,'Escribe correo y contraseña.'); return; }
   try{
     const data = await caRpc('login_role_account', { p_email: email, p_password: pass });
+    const limpiar = ()=>{ const el = document.getElementById(passId); if(el) el.value = ''; };
     if(data && data.role === 'empresa' && data.token){   // es una empresa de prácticas (no contrato de aprendizaje): la llevamos a su acceso
       state.token = data.token; state.role = 'empresa'; state.pendingRole = 'empresa';
       state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email;
-      document.getElementById('caPass').value = ''; goRole('empresa'); return;
+      limpiar(); goRole('empresa'); return;
     }
-    if(!data || data.role !== 'empresa_ca'){ caMsg('caLoginMsg','Correo o contraseña incorrectos.'); return; }
+    if(!data || data.role !== 'empresa_ca'){ caMsg(msgId,'Correo o contraseña incorrectos.'); return; }
     state.token = data.token; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
     state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email;
-    document.getElementById('caPass').value = '';
-    caEmpTab = 'plan'; caEmpAuto = true;   // al ingresar: directo a las planillas (si no tiene aprendices, abre «Mis solicitudes»)
-    caAbrirPanel();
-  }catch(e){ caMsg('caLoginMsg', e.message); }
+    limpiar(); caEmpTab = 'ofertas'; caEmpAuto = false;
+    await caAbrirPanel(); caIrAlFormulario();
+  }catch(e){ caMsg(msgId, e.message); }
+}
+function caIrAlFormulario(){
+  let n = 0; const t = setInterval(()=>{ const f = document.getElementById('ofCargo'); n++;
+    if(f){ clearInterval(t); try{ f.scrollIntoView({ behavior:'smooth', block:'center' }); f.focus({ preventScroll:true }); }catch(_){} } else if(n > 20) clearInterval(t); }, 150);
 }
 function caGoRegistro(){
   caScreen('screen-ca-registro', `<button class="linkbtn" onclick="caVolverLoginEmpresa()">← Volver</button>
@@ -272,7 +281,7 @@ let caEmp = null, caEmpTab = 'ofertas', caEmpProcesos = [], caEmpCand = null;
 async function caAbrirPanel(){
   try{ caEmp = await caRpc('ca_emp_mi', { p_token: state.token }); }
   catch(e){ toast(e.message, true); caSalir(); return; }
-  caPintarPanel();
+  await caPintarPanel();
 }
 function caSalir(){ state.caMode = false; if(sb && state.token){ sb.rpc('role_logout', { p_token: state.token }); } if(typeof _ssClear==='function') _ssClear(); state.token = null; state.role = null; state.pendingRole = null; goHome(); }
 async function caPintarPanel(){
@@ -574,3 +583,36 @@ function caAdmPro(){
 }
 async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de este estudiante? Se cerrará su proceso como contratado.')) return;
   try{ await caRpc('admin_ca_confirmar', { p_post: id }); toast('Contratación confirmada'); caAdmPintar(); }catch(e){ toast(e.message, true); } }
+
+/* ---- Acceso «Empresa»: elegir el tipo de contrato para llevar a cada quien a su lugar ---- */
+(function(){
+  const LS = 'cai_tipo_empresa';
+  const guardado = ()=>{ try{ return localStorage.getItem(LS) || 'practica'; }catch(_){ return 'practica'; } };
+  if(typeof goRoleLogin === 'function'){
+    const _g = goRoleLogin;
+    goRoleLogin = function(role){
+      _g.apply(this, arguments);
+      let box = document.getElementById('roleTipoBox');
+      if(!box){
+        const fr = document.querySelector('#screen-role-login .field-row'); if(!fr) return;
+        box = document.createElement('div'); box.className = 'field'; box.id = 'roleTipoBox';
+        box.innerHTML = '<label>Tipo de contrato</label><select id="roleTipo"><option value="practica">Práctica no remunerada (RLP / RAP)</option><option value="ca">Contrato de aprendizaje</option></select>';
+        fr.insertBefore(box, fr.firstChild);
+        document.getElementById('roleTipo').addEventListener('change', e=>{ try{ localStorage.setItem(LS, e.target.value); }catch(_){} });
+      }
+      box.style.display = role === 'empresa' ? '' : 'none';
+      if(role === 'empresa') document.getElementById('roleTipo').value = guardado();
+    };
+  }
+  if(typeof doRoleLogin === 'function'){
+    const _d = doRoleLogin;
+    doRoleLogin = function(){
+      const t = document.getElementById('roleTipo');
+      if(state.pendingRole === 'empresa' && t && t.value === 'ca'){
+        const msg = document.getElementById('roleLoginMsg'); if(msg) msg.innerHTML = '';
+        return caLoginCon(document.getElementById('roleEmail').value.trim(), document.getElementById('rolePassword').value, 'roleLoginMsg', 'rolePassword');
+      }
+      return _d.apply(this, arguments);
+    };
+  }
+})();
