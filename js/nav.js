@@ -141,6 +141,13 @@ async function doRoleLogin(){
   try{
     const { data, error } = await sb.rpc('login_role_account', { p_email: email, p_password: password });
     if(error){ console.error(error); msg.innerHTML = '<span style="color:var(--danger)">' + (/inhabilitad/i.test(error.message||'') ? esc(error.message) : 'Error verificando credenciales.') + '</span>'; return; }
+    // Empresa de contrato de aprendizaje que entró por el acceso de «Empresa»: la llevamos a su panel
+    if(data && data.role === 'empresa_ca' && state.pendingRole === 'empresa' && typeof caAbrirPanel === 'function'){
+      state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email; state.token = data.token;
+      state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
+      document.getElementById('rolePassword').value = ''; msg.innerHTML = '';
+      caAbrirPanel(); return;
+    }
     if(!data || data.role !== state.pendingRole){
       msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>';
       return;
