@@ -630,3 +630,18 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 #screen-role-login #roleRegLink { margin-top: 14px; color: var(--ink, inherit); }
 #screen-role-login #roleRegLink .linkbtn { text-decoration: underline; }
 #screen-role-login .card > .linkbtn { margin-top: 14px; text-decoration: underline; }
+
+/* ===== Ruta guiada («Mi ruta» y pendientes por proceso) ===== */
+.gd-prog{margin:6px 0 14px}.gd-prog-bar{height:10px;background:#E5E0D5;border-radius:6px;overflow:hidden}.gd-prog-bar span{display:block;height:100%;background:var(--teal,#357b84);transition:width .4s}
+.gd-prog-txt{font-size:13px;color:var(--muted,#666);margin-top:4px}
+.gd-next{border:2px solid var(--teal,#357b84);background:#EAF3F4;border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.gd-next-lbl{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--teal-dark,#255a61)}
+.gd-next-tit{font-size:20px;font-weight:700;margin:4px 0}.gd-next-det{font-size:14.5px;margin-bottom:12px}.gd-ok{border-color:#2E8B57;background:#EAF6F0}
+.gd-lista{list-style:none;margin:0;padding:0}.gd-paso{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #E9E4D8}
+.gd-num{flex:0 0 32px;height:32px;border-radius:50%;background:#E5E0D5;color:#555;font-weight:700;display:flex;align-items:center;justify-content:center}
+.gd-hecho .gd-num{background:#2E8B57;color:#fff}.gd-actual .gd-num,.gd-foco .gd-num{background:var(--teal,#357b84);color:#fff}.gd-espera .gd-num{background:#D9A441;color:#fff}
+.gd-pend{opacity:.6}.gd-tit{font-weight:600;font-size:15px}.gd-det{font-size:13.5px;color:var(--muted,#666);margin-top:2px}.gd-btn{margin-top:6px}
+.gd-grupo{margin:12px 0}.gd-grupo-t{font-weight:700;font-size:14px;margin-bottom:6px}.gd-chips{display:flex;flex-wrap:wrap;gap:8px}
+.gd-chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line,#ddd);background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13.5px}
+.gd-chip b{min-width:26px;height:26px;border-radius:13px;background:#E5E0D5;display:inline-flex;align-items:center;justify-content:center}
+.gd-chip.on{border-color:#c0392b}.gd-chip.on b{background:#c0392b;color:#fff}
