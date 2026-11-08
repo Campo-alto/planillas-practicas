@@ -161,6 +161,6 @@ function gdAbrirFn(titulo){
 (function(){
   if(typeof showScreen !== 'function') return;
   const _s = showScreen;
-  showScreen = function(id){ const r = _s.apply(this, arguments); if(id === 'screen-admin-hub' && typeof state !== 'undefined' && state.role === 'administrador') setTimeout(()=>{ try{ gdPendientes(); }catch(_){} }, 600); return r; };
+  showScreen = function(id){ const r = _s.apply(this, arguments); if(id === 'screen-admin-hub' && typeof sb !== 'undefined' && sb) setTimeout(()=>{ try{ gdPendientes(); }catch(_){} }, 600); return r; };
 })();
-setInterval(()=>{ const hub = document.getElementById('screen-admin-hub'); if(hub && hub.classList.contains('active') && typeof state !== 'undefined' && state.role === 'administrador') gdPendientes(); }, 60000);
+setInterval(()=>{ const hub = document.getElementById('screen-admin-hub'); if(hub && hub.classList.contains('active') && typeof sb !== 'undefined' && sb) gdPendientes(); }, 60000);
