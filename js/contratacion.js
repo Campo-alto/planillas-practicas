@@ -600,6 +600,8 @@ async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de 
         sel.innerHTML = l.map(n=>'<option value="' + String(n).replace(/"/g, '&quot;') + '">' + String(n).replace(/</g, '&lt;') + '</option>').join('');
         if(g && l.includes(g)) sel.value = g;
         actualizarLink();
+        // vuelve a consultar las modalidades para reflejar al instante lo que el administrador agregó o borró
+        if(typeof loadModalidades === 'function') loadModalidades().then(()=>{ const l2 = lista(), cur = sel.value; sel.innerHTML = l2.map(n=>'<option value="' + String(n).replace(/"/g, '&quot;') + '">' + String(n).replace(/</g, '&lt;') + '</option>').join(''); sel.value = l2.includes(cur) ? cur : (l2.includes(guardado()) ? guardado() : l2[0]); actualizarLink(); });
       } else { const rl = document.getElementById('roleRegLink'); if(rl) rl.style.display = 'none'; }
     };
   }
