@@ -44,7 +44,7 @@ async function ceEstCancelar(){
     if(!card){
       const ref = _c().control; if(!ref) return _o.apply(this, arguments);
       card = document.createElement('div'); card.className = 'card'; card.id = 'estAsisCard'; card.style.display = 'none';
-      card.innerHTML = '<div class="section-bar teal">Asistencia y cambio de empresa</div><div class="subhead">Cambio de empresa</div><div id="ceEstCaja"><p style="color:var(--muted)">Cargando…</p></div><div class="subhead" style="margin-top:22px;">Asistencia a la práctica</div><div id="asisEstCont"></div>';
+      card.innerHTML = '<div class="section-bar teal">Asistencia y cambio de empresa</div><div class="subhead">Cambio de empresa</div><div id="ceEstCaja"><p style="color:var(--muted)">Cargando…</p></div><div class="subhead" style="margin-top:22px;">Asistencia a la práctica</div><div id="asisEstCont"></div><div class="subhead" style="margin-top:22px;">Actas de comité</div><div id="actasCaja-est"></div>';
       ref.insertAdjacentElement('afterend', card);
     }
     const r = _o.apply(this, arguments);
@@ -57,7 +57,7 @@ async function ceEstCancelar(){
   };
   showEstTab = function(tab){
     _s.apply(this, arguments);
-    if(tab === 'asistencia' && state.token){ ceEstCargar(); const c = document.getElementById('asisEstCont'); if(c && typeof asisPintar === 'function') asisPintar(c, 'est'); }
+    if(tab === 'asistencia' && state.token){ ceEstCargar(); const c = document.getElementById('asisEstCont'); if(c && typeof asisPintar === 'function') asisPintar(c, 'est'); if(typeof actasMiLista === 'function') actasMiLista('est'); }
   };
 })();
 
