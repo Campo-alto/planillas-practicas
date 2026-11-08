@@ -371,14 +371,14 @@ async function ieLeerArchivo(id, input){
     const res = await ds.preparar(filas);
     ieDatos = { id, ...res };
     const errHtml = res.errores.length
-      ? '<details open style="margin:8px 0;"><summary style="color:var(--danger);cursor:pointer;"><b>' + res.errores.length + ' fila(s) con error (no se importarán)</b></summary><ul style="margin:6px 0 0 18px;font-size:12.5px;">' +
-        res.errores.slice(0,50).map(e=>'<li>Fila ' + e.fila + ': ' + esc(e.msg) + '</li>').join('') + (res.errores.length>50?'<li>… y ' + (res.errores.length-50) + ' más</li>':'') + '</ul></details>' : '';
+      ? '<details open style="margin:8px 0;"><summary style="color:var(--danger);cursor:pointer;"><b>' + res.errores.length + ' fila(s) con error (no se importarán)</b></summary><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fila</th><th>Problema</th></tr></thead><tbody>' +
+        res.errores.slice(0,50).map(e=>'<tr><td>' + e.fila + '</td><td>' + esc(e.msg) + '</td></tr>').join('') + (res.errores.length>50?'<tr><td colspan="2">… y ' + (res.errores.length-50) + ' más</td></tr>':'') + '</tbody></table></div></details>' : '';
     const avHtml = (res.avisos && res.avisos.length)
-      ? '<details style="margin:8px 0;"><summary style="color:#8A5A00;cursor:pointer;"><b>' + res.avisos.length + ' fila(s) con advertencias (se importarán igual)</b></summary><ul style="margin:6px 0 0 18px;font-size:12.5px;">' +
-        res.avisos.slice(0,50).map(e=>'<li>Fila ' + e.fila + ': ' + esc(e.msg) + '</li>').join('') + (res.avisos.length>50?'<li>… y ' + (res.avisos.length-50) + ' más</li>':'') + '</ul></details>' : '';
+      ? '<details style="margin:8px 0;"><summary style="color:#8A5A00;cursor:pointer;"><b>' + res.avisos.length + ' fila(s) con advertencias (se importarán igual)</b></summary><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fila</th><th>Advertencia</th></tr></thead><tbody>' +
+        res.avisos.slice(0,50).map(e=>'<tr><td>' + e.fila + '</td><td>' + esc(e.msg) + '</td></tr>').join('') + (res.avisos.length>50?'<tr><td colspan="2">… y ' + (res.avisos.length-50) + ' más</td></tr>':'') + '</tbody></table></div></details>' : '';
     const okHtml = res.validas.length
-      ? '<p style="margin:8px 0;color:var(--teal-dark);"><b>' + res.validas.length + ' fila(s) listas para importar.</b></p><ul style="margin:0 0 8px 18px;font-size:12.5px;color:var(--muted);">' +
-        res.validas.slice(0,5).map(v=>'<li>' + esc(res.resumen(v)) + '</li>').join('') + (res.validas.length>5?'<li>… y ' + (res.validas.length-5) + ' más</li>':'') + '</ul>' +
+      ? '<p style="margin:8px 0;color:var(--teal-dark);"><b>' + res.validas.length + ' fila(s) listas para importar.</b></p><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Vista previa de las primeras filas</th></tr></thead><tbody>' +
+        res.validas.slice(0,5).map(v=>'<tr><td>' + esc(res.resumen(v)) + '</td></tr>').join('') + (res.validas.length>5?'<tr><td>… y ' + (res.validas.length-5) + ' más</td></tr>':'') + '</tbody></table></div>' +
         '<label style="font-size:13px;display:block;margin-bottom:8px;"><input type="checkbox" id="ieActualizar-' + id + '" checked> Actualizar los que ya existen (si no, se omiten)</label>' +
         '<button class="primary" onclick="ieConfirmar(\'' + id + '\')">Importar ' + res.validas.length + ' fila(s)</button>'
       : '<p style="color:var(--danger);">No hay filas válidas para importar.</p>';
@@ -397,8 +397,8 @@ async function ieConfirmar(id){
     const r = await ds.confirmar(ieDatos.validas, opts);
     ieDatos = null;
     box.innerHTML = '<p style="color:var(--teal-dark);"><b>✅ ' + esc(r.texto) + '</b></p>' + (r.extra ? '<p style="font-size:13px;">' + esc(r.extra) + '</p>' : '') +
-      (r.fallos.length ? '<details open><summary style="color:var(--danger);"><b>' + r.fallos.length + ' con problemas</b></summary><ul style="margin:6px 0 0 18px;font-size:12.5px;">' +
-        r.fallos.slice(0,50).map(f=>'<li>' + esc(f) + '</li>').join('') + '</ul></details>' : '');
+      (r.fallos.length ? '<details open><summary style="color:var(--danger);"><b>' + r.fallos.length + ' con problemas</b></summary><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Problema</th></tr></thead><tbody>' +
+        r.fallos.slice(0,50).map(f=>'<tr><td>' + esc(f) + '</td></tr>').join('') + '</tbody></table></div></details>' : '');
   }catch(e){ console.error(e); box.innerHTML = '<p style="color:var(--danger);">Error importando: ' + esc(e.message||e) + '</p>'; }
 }
 
