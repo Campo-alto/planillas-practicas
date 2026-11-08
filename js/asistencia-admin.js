@@ -32,14 +32,9 @@ async function iaCargar(){
         <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="iaResolver(${i},'justificada')">✔ Justificar</button><button class="danger" onclick="iaResolver(${i},'no_justificada')">✖ No justificar</button></div>`
       : `<div class="helptext">Decidió: ${esc(f.resuelta_por || '')}${f.observacion ? ' · ' + esc(f.observacion) : ''}</div>`}</div>`; }).join('');
 }
-async function iaVerDoc(i, j){
+function iaVerDoc(i, j){   // vista previa dentro de la página, sin descargar
   const f = iaFilas[i], d = f.docs[j];
-  const { data, error } = await sb.rpc('admin_asis_doc', { p_id: f.id, p_doc: d.id });
-  if(error){ toast(error.message, true); return; }
-  const bin = atob(data.base64), bytes = new Uint8Array(bin.length); for(let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
-  const url = URL.createObjectURL(new Blob([bytes], { type:'application/pdf' }));
-  const w = window.open(url, '_blank'); if(!w){ const a = document.createElement('a'); a.href = url; a.download = data.nombre_archivo || 'soporte.pdf'; a.click(); }
-  setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  return spaVisorPdf(d.nombre + ' · ' + f.estudiante, ()=>sb.rpc('admin_asis_doc', { p_id: f.id, p_doc: d.id }));
 }
 async function iaResolver(i, estado){
   const f = iaFilas[i]; const obs = document.getElementById('iaObs-' + i).value.trim();
