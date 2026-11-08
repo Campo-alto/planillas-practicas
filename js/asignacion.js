@@ -206,7 +206,11 @@ async function guardarEmpresa(){
   if(row.nombre.length < 2){ msg.innerHTML = '<span style="color:var(--danger)">Escribe el nombre de la empresa.</span>'; return; }
   try{
     let error;
-    if(editingEmpresaId) ({ error } = await sb.from('empresas_practica').update(row).eq('id', editingEmpresaId));
+    if(editingEmpresaId){
+      // una sola función guarda la ficha y, si es de contrato de aprendizaje, también esa empresa y su correo de ingreso
+      ({ error } = await sb.rpc('admin_empresa_actualizar', { p_id: editingEmpresaId, p_datos: row }));
+      if(error && /does not exist|Could not find/i.test(error.message)) error = { message: error.message + ' (¿ejecutaste editar-empresa-etapa38.sql en Supabase?)' };
+    }
     else ({ error } = await sb.from('empresas_practica').insert(row));
     if(error) throw error;
     const era = editingEmpresaId;
