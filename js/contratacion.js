@@ -11,7 +11,7 @@ async function caRpc(fn, args){
   const { data, error } = await sb.rpc(fn, args||{});
   if(error) throw new Error(error.message);
   // acciones que generan avisos por correo: se envían de inmediato (si falla, la cola los reintenta)
-  if(/^(ca_postular|ca_decidir|ca_emp_crear_oferta|ca_emp_tomar|ca_emp_accion|ca_registrar_empresa|admin_ca_(confirmar|empresa_estado|oferta_estado|carta_guardar)|ca_emp_carta_)/.test(fn)){
+  if(/^(ca_postular|ca_decidir|ca_emp_crear_oferta|ca_emp_tomar|ca_emp_accion|ca_registrar_empresa|admin_ca_(confirmar|empresa_estado|empresa_reenviar|oferta_estado|carta_guardar)|ca_emp_carta_)/.test(fn)){
     try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
   }
   return data;
@@ -536,6 +536,12 @@ async function caAdmEmpEliminar(id, contratados){
   try{ await caRpc('admin_ca_eliminar_empresa', { p_id: id }); toast('Empresa eliminada'); caAdmPintar(); }catch(e){ toast(e.message, true); }
 }
 async function caAdmEmpEstado(id, estado){
+  const ya = (caAdmData.emp || []).find(e=>e.id === id);
+  if(estado === 'aprobada' && ya && ya.estado === 'aprobada'){   // ya estaba aprobada: el estado no cambia, así que se reenvía el aviso
+    try{ const r = await caRpc('admin_ca_empresa_reenviar', { p_id: id }); toast('✉ Aviso de aprobación enviado a ' + (r && r.correo || 'la empresa')); }
+    catch(e){ toast(e.message + (/does not exist|Could not find/i.test(e.message) ? ' (¿ejecutaste reenviar-aviso-empresa-etapa39.sql?)' : ''), true); }
+    return;
+  }
   try{ await caRpc('admin_ca_empresa_estado', { p_id: id, p_estado: estado, p_sena: caAdmInfo('em-s-'+id).checked, p_obs: caAdmInfo('em-o-'+id).value }); toast('Empresa ' + (estado==='aprobada'?'aprobada':'rechazada')); caAdmPintar(); }catch(e){ toast(e.message, true); }
 }
 function caAdmEmpEditar(id){
