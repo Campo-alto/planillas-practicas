@@ -14,8 +14,10 @@
         { icono:'📨', clase:'estudiante', paso:1, titulo:'Solicitudes de acceso', mod:'est_registrados', desc:'Aprueba quién puede ingresar. Al aprobar, el estudiante recibe su usuario y contraseña por correo.', abrir:()=>abrirSolicitudes() },
         { icono:'📂', clase:'estudiante', paso:2, titulo:'Solicitudes de práctica', mod:'est_registrados', desc:'Revisa la modalidad, los datos y los documentos en PDF; aprueba, devuelve o rechaza.', abrir:()=>abrirSolicitudesPractica() },
         { icono:'🩺', clase:'estudiante', titulo:'Inasistencias reportadas', mod:'est_registrados', desc:'Revisa las inasistencias que reportan estudiantes y empresas, con sus incapacidades en PDF; márcalas justificadas o no.', abrir:()=>abrirInasistencias() },
+        { icono:'📝', clase:'estudiante', titulo:'Actas de comité', mod:'est_registrados', desc:'Acta para casos especiales de un estudiante: firman la empresa y todos los participantes; se envía por correo y queda archivada con sus planillas.', abrir:()=>abrirActas() },
         { icono:'🎓', clase:'estudiante', paso:3, titulo:'Estudiantes registrados', mod:'est_registrados', desc:'Consulta a cada estudiante, su planilla, sus notas y su estado. También puedes crear o inhabilitar.', abrir:()=>goRole('administrador') },
         { icono:'🤝', clase:'empresa', paso:4, titulo:'Contrato de aprendizaje', mod:'est_contrato', desc:'Verifica pagos, declara aptos, sigue los procesos y confirma contrataciones.', abrir:()=>caAbrirAdmin() },
+        { icono:'👥', clase:'empresa', titulo:'Contrato de aprendizaje · Convenio', mod:['est_contrato','est_registrados','emp_ca'], desc:'Grupos de estudiantes ya aceptados por una empresa: preinscribe (Excel o manual), envía las cartas de fechas, formaliza y habilita las planillas, que también salen por correo.', abrir:()=>abrirConvenios() },
         { icono:'⇅', clase:'administrador', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Sube estudiantes desde Excel y descarga listados en Excel o PDF.', abrir:()=>abrirImportExport() }
       ] },
     { id:'empresas', icono:'🏢', clase:'empresa', titulo:'Empresas',
