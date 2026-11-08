@@ -37,7 +37,14 @@ function requireSupabase(){
   return true;
 }
 
+/* Completa los campos que falten (estudiantes creados por otras vías pueden traer competencias/meses vacíos) para que la vista no se rompa */
 function rowToRecord(row){
+  const base = emptyRecord(row.documento);
+  const comp = (row.competencias && typeof row.competencias === 'object') ? row.competencias : {};
+  Object.keys(base.competencias).forEach(k=>{ const a = Array.isArray(comp[k]) ? comp[k].slice(0, 12) : []; while(a.length < 6) a.push(null); comp[k] = a; });
+  const meses = Array.isArray(row.meses) ? row.meses.filter(m=>m && typeof m === 'object') : [];
+  while(meses.length < 6) meses.push(Object.assign({}, base.meses[0]));
+  row = Object.assign({}, row, { competencias: comp, meses, revision_funciones: row.revision_funciones || base.revisionFunciones, datos_supervision: row.datos_supervision || base.datosSupervision });
   return {
     documento: row.documento,
     nombre: row.nombre || '', apellidos: row.apellidos || '', nombres: row.nombres || '',
