@@ -586,7 +586,7 @@ async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de 
       if(!box){
         const fr = document.querySelector('#screen-role-login .field-row'); if(!fr) return;
         box = document.createElement('div'); box.className = 'field'; box.id = 'roleTipoBox';
-        box.innerHTML = '<label>Modalidad de contratación</label><select id="roleTipo"></select>';
+        box.innerHTML = '<label>Modalidad de prácticas</label><select id="roleTipo"></select>';
         fr.insertBefore(box, fr.firstChild);
         document.getElementById('roleTipo').addEventListener('change', e=>{ try{ localStorage.setItem(LS, e.target.value); }catch(_){} actualizarLink(); });
         const card = fr.closest('.card');
