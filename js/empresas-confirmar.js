@@ -38,30 +38,43 @@ async function ecGuardarMax(){
   ecMax = data.max_lugares; toast('Límite guardado: ' + ecMax + ' lugares por estudiante');
 }
 async function ecConsultar(){
+  ecCerrar();
   const t = document.getElementById('ecLista'); if(!t) return;
   const { data, error } = await sb.rpc('admin_lugares_lista', { p_estado: ecEstado, p_texto: document.getElementById('ecTexto').value.trim() || null });
   if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste lugar-apto-etapa29.sql?)</p>'; return; }
   ecFilas = data || [];
   if(!ecFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">' + (ecEstado === 'apto' ? 'No hay lugares aptos esperando que crees el acceso de la empresa.' : 'No hay registros.') + '</p>'; return; }
-  const CONC = { apto:'✔ Apto', condiciones:'⚠ Apto con condiciones', no_apto:'✖ No apto' };
-  t.innerHTML = ecFilas.map((f,i)=>{
-    const editable = f.estado === 'pendiente' || f.estado === 'apto';
-    const campo = (k, et, ph)=>`<div class="field"><label>${et}</label><input id="ec-${k}-${i}" maxlength="${k === 'direccion' || k === 'nombre' ? 150 : 120}" value="${esc(f[k] || '')}" placeholder="${ph || ''}"${editable ? '' : ' readonly'}></div>`;
-    const c = f.concepto;
-    const acc = f.estado === 'apto' ? `<button class="primary" onclick="ecConfirmar(${i})">✔ Crear acceso y enviar correo</button><button class="ghost" onclick="ecGuardarDatos(${i})">Guardar datos</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
-      : f.estado === 'pendiente' ? `<button class="ghost" onclick="ecGuardarDatos(${i})">Guardar datos</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
-      : f.estado === 'coordinacion' ? `<button class="primary" onclick="ecCoord(${i},'otra_oportunidad')">Dar otra oportunidad</button><button class="danger" onclick="ecCoord(${i},'cerrar')">Cerrar el caso</button>` : '';
-    return `<div class="ec-card">
-      <div class="ec-head"><b>${esc(f.estudiante || '')}</b> <span class="aud-ref">Doc. ${esc(f.documento)} · ${esc(f.modalidad || '')}</span>
-        <span class="cor-est ${f.estado === 'confirmada' || f.estado === 'apto' ? 'cor-enviado' : 'cor-pendiente'}">${EC_ET[f.estado]}</span>
-        <span class="aud-ref">Lugar n.º ${f.intento} · no aptos: ${f.no_aptos} de ${f.maximo}</span></div>
-      ${c ? `<div class="note-box"><b>Concepto del supervisor (${esc(c.supervisor)}, ${esc(c.fecha)}):</b> ${esc(CONC[c.concepto] || c.concepto)}${c.observaciones ? ' — ' + esc(c.observaciones) : ''}</div>` : (f.estado === 'pendiente' ? '<div class="helptext">Esperando que el supervisor visite el lugar y dé su concepto. Aún no se puede crear el acceso de la empresa.</div>' : '')}
-      <div class="field-row">${campo('nombre','Empresa o lugar *')}${campo('contacto','Persona de contacto *')}${campo('correo','Correo (será el usuario) *','empresa@correo.com')}
-        ${campo('telefono','Teléfono')}${campo('direccion','Dirección')}${campo('ciudad','Ciudad')}${campo('nit','NIT (opcional)')}</div>
-      ${f.estado === 'devuelta' || f.estado === 'descartada' ? `<div class="note-box"><b>Motivo:</b> ${esc(f.observacion || '')}</div>` : ''}
-      ${f.estado === 'confirmada' ? `<div class="helptext">Acceso creado por ${esc(f.resuelta_por || '')} · la empresa tiene acceso a ${f.estudiantes_vinculados} estudiante(s).</div>` : ''}
-      <div class="actions-row" style="justify-content:flex-start;">${acc}</div></div>`;
-  }).join('');
+  t.innerHTML = '<div class="lista-cuenta">' + ecFilas.length + ' lugar(es)</div><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Estudiante</th><th>Modalidad</th><th>Empresa o lugar</th><th>Contacto</th><th>Correo / teléfono</th><th>Concepto del supervisor</th><th>Estado</th><th></th></tr></thead><tbody>' +
+    ecFilas.map((f,i)=>{
+      const c = f.concepto;
+      return `<tr><td><b>${esc(f.estudiante || '')}</b><br><span class="aud-ref">Doc. ${esc(f.documento)}</span></td>
+        <td>${esc(f.modalidad || '')}<br><span class="aud-ref">Lugar n.º ${f.intento} · no aptos ${f.no_aptos}/${f.maximo}</span></td>
+        <td><b>${esc(f.nombre || '—')}</b>${f.ciudad ? '<br><span class="aud-ref">' + esc(f.ciudad) + '</span>' : ''}</td><td>${esc(f.contacto || '—')}</td>
+        <td>${esc(f.correo || '—')}${f.telefono ? '<br>' + esc(f.telefono) : ''}</td>
+        <td>${c ? esc(EC_CONC[c.concepto] || c.concepto) + '<br><span class="aud-ref">' + esc(c.supervisor) + ' · ' + esc(c.fecha) + '</span>' : '<span style="color:var(--muted)">Sin visita aún</span>'}</td>
+        <td><span class="cor-est ${f.estado === 'confirmada' || f.estado === 'apto' ? 'cor-enviado' : 'cor-pendiente'}">${EC_ET[f.estado]}</span></td>
+        <td class="aud-nw"><button class="${f.estado === 'apto' ? 'primary' : 'ghost'}" onclick="ecAbrir(${i})">${f.estado === 'apto' ? 'Revisar y crear acceso' : f.estado === 'pendiente' || f.estado === 'coordinacion' ? 'Abrir' : 'Ver detalle'}</button></td></tr>`; }).join('') + '</tbody></table></div>';
+}
+const EC_CONC = { apto:'✔ Apto', condiciones:'⚠ Apto con condiciones', no_apto:'✖ No apto' };
+function ecCerrar(){ const m = document.getElementById('ecModal'); if(m) m.remove(); }
+/* Detalle del lugar en una ventana: aquí se corrigen los datos y se decide (crear acceso, devolver, coordinación) */
+function ecAbrir(i){
+  ecCerrar();
+  const f = ecFilas[i], c = f.concepto, editable = f.estado === 'pendiente' || f.estado === 'apto';
+  const campo = (k, et, ph)=>`<div class="field"><label>${et}</label><input id="ec-${k}-${i}" maxlength="${k === 'direccion' || k === 'nombre' ? 150 : 120}" value="${esc(f[k] || '')}" placeholder="${ph || ''}"${editable ? '' : ' readonly'}></div>`;
+  const acc = f.estado === 'apto' ? `<button class="primary" onclick="ecConfirmar(${i})">✔ Crear acceso y enviar correo</button><button class="ghost" onclick="ecGuardarDatos(${i})">Guardar datos</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
+    : f.estado === 'pendiente' ? `<button class="ghost" onclick="ecGuardarDatos(${i})">Guardar datos</button><button class="danger" onclick="ecDevolver(${i})">Devolver al estudiante</button>`
+    : f.estado === 'coordinacion' ? `<button class="primary" onclick="ecCoord(${i},'otra_oportunidad')">Dar otra oportunidad</button><button class="danger" onclick="ecCoord(${i},'cerrar')">Cerrar el caso</button>` : '';
+  const m = document.createElement('div'); m.id = 'ecModal'; m.className = 'cor-modal';
+  m.innerHTML = `<div class="cor-caja" role="dialog" aria-modal="true" style="max-width:820px;">
+    <div class="ec-head"><b>${esc(f.estudiante || '')}</b> <span class="aud-ref">Doc. ${esc(f.documento)} · ${esc(f.modalidad || '')}</span> <span class="cor-est ${f.estado === 'confirmada' || f.estado === 'apto' ? 'cor-enviado' : 'cor-pendiente'}">${EC_ET[f.estado]}</span></div>
+    ${c ? `<div class="note-box"><b>Concepto del supervisor (${esc(c.supervisor)}, ${esc(c.fecha)}):</b> ${esc(EC_CONC[c.concepto] || c.concepto)}${c.observaciones ? ' — ' + esc(c.observaciones) : ''}</div>` : (f.estado === 'pendiente' ? '<div class="helptext">Esperando que el supervisor visite el lugar y dé su concepto. Aún no se puede crear el acceso de la empresa.</div>' : '')}
+    <div class="field-row">${campo('nombre','Empresa o lugar *')}${campo('contacto','Persona de contacto *')}${campo('correo','Correo (será el usuario) *','empresa@correo.com')}
+      ${campo('telefono','Teléfono')}${campo('direccion','Dirección')}${campo('ciudad','Ciudad')}${campo('nit','NIT (opcional)')}</div>
+    ${f.estado === 'devuelta' || f.estado === 'descartada' ? `<div class="note-box"><b>Motivo:</b> ${esc(f.observacion || '')}</div>` : ''}
+    ${f.estado === 'confirmada' ? `<div class="helptext">Acceso creado por ${esc(f.resuelta_por || '')} · la empresa tiene acceso a ${f.estudiantes_vinculados} estudiante(s).</div>` : ''}
+    <div class="actions-row" style="justify-content:flex-start;">${acc}<button class="ghost" onclick="ecCerrar()">Cerrar</button></div></div>`;
+  document.body.appendChild(m);
 }
 async function ecGuardarDatos(i){
   const { error } = await sb.rpc('admin_lugar_datos', { p_id: ecFilas[i].id, p_datos: ecLeer(i) });
