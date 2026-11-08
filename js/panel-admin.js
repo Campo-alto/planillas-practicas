@@ -13,6 +13,7 @@
       funciones:[
         { icono:'📨', clase:'estudiante', paso:1, titulo:'Solicitudes de acceso', mod:'est_registrados', desc:'Aprueba quién puede ingresar. Al aprobar, el estudiante recibe su usuario y contraseña por correo.', abrir:()=>abrirSolicitudes() },
         { icono:'📂', clase:'estudiante', paso:2, titulo:'Solicitudes de práctica', mod:'est_registrados', desc:'Revisa la modalidad, los datos y los documentos en PDF; aprueba, devuelve o rechaza.', abrir:()=>abrirSolicitudesPractica() },
+        { icono:'🩺', clase:'estudiante', titulo:'Inasistencias reportadas', mod:'est_registrados', desc:'Revisa las inasistencias que reportan estudiantes y empresas, con sus incapacidades en PDF; márcalas justificadas o no.', abrir:()=>abrirInasistencias() },
         { icono:'🎓', clase:'estudiante', paso:3, titulo:'Estudiantes registrados', mod:'est_registrados', desc:'Consulta a cada estudiante, su planilla, sus notas y su estado. También puedes crear o inhabilitar.', abrir:()=>goRole('administrador') },
         { icono:'🤝', clase:'empresa', paso:4, titulo:'Contrato de aprendizaje', mod:'est_contrato', desc:'Verifica pagos, declara aptos, sigue los procesos y confirma contrataciones.', abrir:()=>caAbrirAdmin() },
         { icono:'⇅', clase:'administrador', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Sube estudiantes desde Excel y descarga listados en Excel o PDF.', abrir:()=>abrirImportExport() }
@@ -22,6 +23,7 @@
       funciones:[
         { icono:'✅', clase:'empresa', titulo:'Empresas por confirmar', mod:'est_registrados', desc:'Lugares que consiguieron los estudiantes de RLP y RAP: cuando el supervisor los declara aptos, crea el usuario y contraseña de la empresa. También los casos en coordinación.', abrir:()=>abrirEmpresasConfirmar() },
         { icono:'📋', clase:'empresa', titulo:'Empresas de RLP y RAP', mod:'est_registrados', desc:'Consulta todas las empresas que consiguieron los estudiantes de RLP y RAP: contacto, estudiante, supervisor y concepto de la visita. Exporta a Excel o PDF.', abrir:()=>abrirEmpresasRlpRap() },
+        { icono:'🔄', clase:'empresa', titulo:'Cambios de empresa', mod:['est_registrados','sup_asignar'], desc:'Solicitudes de los estudiantes para cambiar de empresa (todas las modalidades): opina, aprueba o rechaza.', abrir:()=>abrirCambiosEmpresa() },
         { icono:'🏢', clase:'empresa', titulo:'Empresas y cupos', mod:'emp_cupos', desc:'Administra los datos de cada empresa, sus cupos por programa y jornada, y su usuario de acceso.', abrir:()=>goAdminModule('empresas') },
         { icono:'🤝', clase:'empresa', titulo:'Empresas de contrato de aprendizaje', mod:'emp_ca', desc:'Aprueba empresas (plataforma SENA), crea sus accesos y enlázalas con Empresas.', abrir:caTab('emp') },
         { icono:'📝', clase:'empresa', titulo:'Solicitudes de aprendices', mod:'emp_solicitudes', desc:'Revisa lo que pide cada empresa y apruébalo, ciérralo o elimínalo.', abrir:caTab('ofe') },
@@ -104,7 +106,7 @@
     const grid = document.getElementById('grupoGrid'); if(!grid) return;
     const hay = typeof puede === 'function' && typeof permAdmin !== 'undefined';
     if(hay && !permAdmin.listo){ grid.innerHTML = '<p class="helptext">Cargando tus permisos…</p>'; return; }
-    const ok = f => hay ? puede(f.mod) : true;
+    const ok = f => hay ? (Array.isArray(f.mod) ? puedeAlguno(f.mod) : puede(f.mod)) : true;
     const visibles = GRUPOS.map(g=>({ g, fs: g.funciones.map((f,i)=>[f,i]).filter(([f])=>ok(f)) })).filter(x=>x.fs.length);
     const h2 = document.querySelector('#screen-admin-hub h2');
     if(h2 && hay && permAdmin.rol){
@@ -135,7 +137,7 @@
     const listo = (typeof cargarPermisos === 'function') ? cargarPermisos() : Promise.resolve();
     Promise.resolve(listo).then(()=>{ pgPintar();
       if(volver){ try{ const g = GRUPOS.find(x=>x.id===volver.gid); const f = g && g.funciones[volver.i];
-        if(f && (typeof puede !== 'function' || !f.mod || puede(f.mod))) { window.pgAbrirFuncion(volver.gid, volver.i); return; } }catch(e){ console.error('Volver a la opción:', e); } }
+        if(f && (typeof puede !== 'function' || !f.mod || (Array.isArray(f.mod) ? puedeAlguno(f.mod) : puede(f.mod)))) { window.pgAbrirFuncion(volver.gid, volver.i); return; } }catch(e){ console.error('Volver a la opción:', e); } }
       if(window.rpMostrarTarjeta && (typeof puede !== 'function' || puede('solo_admin'))) window.rpMostrarTarjeta(); });
   };
 })();
