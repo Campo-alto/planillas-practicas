@@ -21,6 +21,7 @@
       desc:'Dónde hacen la práctica: empresas, cupos disponibles y solicitudes de aprendices.',
       funciones:[
         { icono:'✅', clase:'empresa', titulo:'Empresas por confirmar', mod:'est_registrados', desc:'Lugares que consiguieron los estudiantes de RLP y RAP: cuando el supervisor los declara aptos, crea el usuario y contraseña de la empresa. También los casos en coordinación.', abrir:()=>abrirEmpresasConfirmar() },
+        { icono:'📋', clase:'empresa', titulo:'Empresas de RLP y RAP', mod:'est_registrados', desc:'Consulta todas las empresas que consiguieron los estudiantes de RLP y RAP: contacto, estudiante, supervisor y concepto de la visita. Exporta a Excel o PDF.', abrir:()=>abrirEmpresasRlpRap() },
         { icono:'🏢', clase:'empresa', titulo:'Empresas y cupos', mod:'emp_cupos', desc:'Administra los datos de cada empresa, sus cupos por programa y jornada, y su usuario de acceso.', abrir:()=>goAdminModule('empresas') },
         { icono:'🤝', clase:'empresa', titulo:'Empresas de contrato de aprendizaje', mod:'emp_ca', desc:'Aprueba empresas (plataforma SENA), crea sus accesos y enlázalas con Empresas.', abrir:caTab('emp') },
         { icono:'📝', clase:'empresa', titulo:'Solicitudes de aprendices', mod:'emp_solicitudes', desc:'Revisa lo que pide cada empresa y apruébalo, ciérralo o elimínalo.', abrir:caTab('ofe') },
