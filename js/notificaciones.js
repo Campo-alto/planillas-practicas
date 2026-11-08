@@ -7,7 +7,9 @@ function ntRol(){
   if(typeof state === 'undefined' || !state) return '';
   if(state.role === 'estudiante' && state.token) return 'est';
   if(state.role === 'empresa_ca' && state.token) return 'emp';
-  if(state.role === 'administrador' && document.getElementById('screen-admin-hub')) return 'adm';
+  // el administrador puede llegar al panel con sesión ya abierta (state.role vacío): se detecta por la pantalla
+  const lg = document.getElementById('screen-admin-login');
+  if(document.getElementById('screen-admin-hub') && (!state.role || state.role === 'administrador') && !(lg && lg.classList.contains('active')) && !document.getElementById('screen-reset-password')?.classList.contains('active')) return 'adm';
   return '';
 }
 async function ntCargar(avisar){
