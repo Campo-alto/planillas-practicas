@@ -74,13 +74,11 @@ async function asisCargar(m){
   const items = (data && data.items) || [];
   const lista = error ? '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste cambio-empresa-asistencia-etapa31.sql?)</p>'
     : !items.length ? '<p style="color:var(--muted);font-size:13.5px;">No hay inasistencias reportadas.</p>'
-    : items.map(i=>{ const e = ASIS_EST[i.estado] || [i.estado, '']; return `<div class="ec-card">
-        <div class="ec-head"><b>${asisFechaCorta(i.desde)}${i.hasta !== i.desde ? ' → ' + asisFechaCorta(i.hasta) : ''}</b> <span class="aud-ref">${esc(ASIS_TIPOS[i.tipo] || i.tipo)} · reportó ${i.reportado_por === 'empresa' ? 'la empresa' : 'el estudiante'}</span>
-          <span class="cor-est ${e[1]}">${e[0]}</span></div>
-        <div style="font-size:13.5px;">${esc(i.motivo)}</div>
-        ${i.docs.length ? '<div class="helptext">📎 ' + i.docs.map(d=>esc(d.nombre)).join(' · ') + '</div>' : '<div class="helptext">Sin soportes anexados</div>'}
-        ${i.observacion ? '<div class="note-box"><b>Respuesta:</b> ' + esc(i.observacion) + '</div>' : ''}
-        ${i.estado === 'pendiente' && m === 'est' && i.reportado_por === 'estudiante' ? `<div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="asisEliminar('${i.id}')">Quitar este reporte</button></div>` : ''}</div>`; }).join('');
+    : '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fecha</th><th>Tipo</th><th>Motivo</th><th>Reportó</th><th>Soportes</th><th>Estado</th><th>Respuesta</th><th></th></tr></thead><tbody>' + items.map(i=>{ const e = ASIS_EST[i.estado] || [i.estado, ''];
+        return `<tr><td class="aud-nw"><b>${asisFechaCorta(i.desde)}${i.hasta !== i.desde ? '<br>→ ' + asisFechaCorta(i.hasta) : ''}</b></td><td>${esc(ASIS_TIPOS[i.tipo] || i.tipo)}</td><td>${esc(i.motivo)}</td>
+          <td>${i.reportado_por === 'empresa' ? 'Empresa' : 'Estudiante'}</td><td>${i.docs.length ? i.docs.map(d=>'📎 ' + esc(d.nombre)).join('<br>') : '<span style="color:var(--muted)">Sin soportes</span>'}</td>
+          <td><span class="cor-est ${e[1]}">${e[0]}</span></td><td>${i.observacion ? esc(i.observacion) : '—'}</td>
+          <td>${i.estado === 'pendiente' && m === 'est' && i.reportado_por === 'estudiante' ? `<button class="ghost" onclick="asisEliminar('${i.id}')">Quitar</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
   caja.innerHTML = '<div class="subhead">Inasistencias reportadas</div>' + lista;
 }
 async function asisEliminar(id){
