@@ -146,8 +146,8 @@ async function doRoleLogin(){
       state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email; state.token = data.token;
       state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
       document.getElementById('rolePassword').value = ''; msg.innerHTML = '';
-      if(typeof caEmpTab !== 'undefined'){ caEmpTab = 'plan'; if(typeof caEmpAuto !== 'undefined') caEmpAuto = true; }   // directo a buscar al aprendiz y asignar notas
-      caAbrirPanel(); return;
+      if(typeof caEmpTab !== 'undefined'){ caEmpTab = 'ofertas'; if(typeof caEmpAuto !== 'undefined') caEmpAuto = false; }   // directo al formulario de solicitudes de aprendices
+      Promise.resolve(caAbrirPanel()).then(()=>{ if(typeof caIrAlFormulario === 'function') caIrAlFormulario(); }); return;
     }
     if(!data || data.role !== state.pendingRole){
       msg.innerHTML = '<span style="color:var(--danger)">Correo o contraseña incorrectos.</span>';
