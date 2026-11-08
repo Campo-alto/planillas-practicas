@@ -126,15 +126,19 @@ function spaCerrarVisor(){
 }
 function spaTeclaVisor(e){ if(e.key === 'Escape') spaCerrarVisor(); if((e.ctrlKey || e.metaKey) && ['s','p'].includes((e.key || '').toLowerCase())) e.preventDefault(); }
 async function spaVerDoc(id, req){
-  spaCerrarVisor();
   const nombre = (spaDet.requisitos.find(r=>r.id === req) || {}).nombre || 'Documento';
+  return spaVisorPdf(nombre, ()=>sb.rpc('admin_sol_pr_doc', { p_id: id, p_requisito: req }));
+}
+/* Visor de PDF dentro de la página (solo vista previa: sin botón de descarga ni menú del clic derecho). Lo usan solicitudes e inasistencias. */
+async function spaVisorPdf(nombre, cargar){
+  spaCerrarVisor();
   const v = document.createElement('div'); v.id = 'spaVisor'; v.className = 'spa-visor';
   v.innerHTML = `<div class="spa-visor-bar"><b>${esc(nombre)}</b><span class="aud-ref" id="spaVisorInfo" style="color:#cfe;">Cargando…</span>
       <button class="ghost" onclick="spaCerrarVisor()">✕ Cerrar</button></div><div class="spa-visor-cuerpo" id="spaVisorCuerpo" oncontextmenu="return false"></div>`;
   document.body.appendChild(v); document.body.style.overflow = 'hidden'; document.addEventListener('keydown', spaTeclaVisor);
   const cuerpo = document.getElementById('spaVisorCuerpo'), info = document.getElementById('spaVisorInfo');
   try{
-    const [{ data, error }] = await Promise.all([sb.rpc('admin_sol_pr_doc', { p_id: id, p_requisito: req }), spaCargarPdfJs()]);
+    const [{ data, error }] = await Promise.all([cargar(), spaCargarPdfJs()]);
     if(error) throw new Error(error.message);
     const bin = atob(data.base64), bytes = new Uint8Array(bin.length);
     for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
