@@ -196,20 +196,6 @@ async function caDecidir(id, accion){
 /* ======================================================================== */
 /* FASE 2 · EMPRESA                                                           */
 /* ======================================================================== */
-(function(){
-  if(typeof goRoleLogin !== 'function') return;
-  const _g = goRoleLogin;
-  goRoleLogin = function(role){
-    _g(role);
-    if(role === 'empresa' && !document.getElementById('caLinks')){
-      const scr = document.getElementById('screen-role-login'); if(!scr) return;
-      const d = document.createElement('div'); d.id = 'caLinks'; d.className = 'card'; d.style.marginTop = '14px';
-      d.innerHTML = `<div class="subhead" style="margin-top:0">¿Empresa de contrato de aprendizaje?</div>
-        <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caGoLogin()">Ingresar</button><button class="ghost" onclick="caGoRegistro()">Registrar mi empresa</button></div>`;
-      scr.appendChild(d);
-    }
-  };
-})();
 function caVolverLoginEmpresa(){ if(typeof goHome==='function') goHome(); else showScreen('screen-role-login'); }
 
 function caGoLogin(){
@@ -584,10 +570,14 @@ function caAdmPro(){
 async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de este estudiante? Se cerrará su proceso como contratado.')) return;
   try{ await caRpc('admin_ca_confirmar', { p_post: id }); toast('Contratación confirmada'); caAdmPintar(); }catch(e){ toast(e.message, true); } }
 
-/* ---- Acceso «Empresa»: elegir el tipo de contrato para llevar a cada quien a su lugar ---- */
+/* ---- Acceso «Empresa»: elegir el tipo de contrato (todas las modalidades) para llevar a cada quien a su lugar ---- */
 (function(){
   const LS = 'cai_tipo_empresa';
-  const guardado = ()=>{ try{ return localStorage.getItem(LS) || 'practica'; }catch(_){ return 'practica'; } };
+  const esCA = n => /contrato.*aprendizaje/i.test(String(n || ''));
+  const guardado = ()=>{ try{ return localStorage.getItem(LS) || ''; }catch(_){ return ''; } };
+  const lista = ()=>{ const l = (typeof MODALIDADES !== 'undefined' && MODALIDADES || []).map(m=>m.nombre).filter(Boolean);
+    if(!l.some(esCA)) l.push('Contrato de aprendizaje'); return l; };
+  const actualizarLink = ()=>{ const t = document.getElementById('roleTipo'), l = document.getElementById('roleRegLink'); if(t && l) l.style.display = esCA(t.value) ? '' : 'none'; };
   if(typeof goRoleLogin === 'function'){
     const _g = goRoleLogin;
     goRoleLogin = function(role){
@@ -596,19 +586,28 @@ async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de 
       if(!box){
         const fr = document.querySelector('#screen-role-login .field-row'); if(!fr) return;
         box = document.createElement('div'); box.className = 'field'; box.id = 'roleTipoBox';
-        box.innerHTML = '<label>Tipo de contrato</label><select id="roleTipo"><option value="practica">Práctica no remunerada (RLP / RAP)</option><option value="ca">Contrato de aprendizaje</option></select>';
+        box.innerHTML = '<label>Tipo de contrato</label><select id="roleTipo"></select>';
         fr.insertBefore(box, fr.firstChild);
-        document.getElementById('roleTipo').addEventListener('change', e=>{ try{ localStorage.setItem(LS, e.target.value); }catch(_){} });
+        document.getElementById('roleTipo').addEventListener('change', e=>{ try{ localStorage.setItem(LS, e.target.value); }catch(_){} actualizarLink(); });
+        const card = fr.closest('.card');
+        const l = document.createElement('div'); l.id = 'roleRegLink'; l.style.cssText = 'margin-top:10px;display:none;';
+        l.innerHTML = '¿Tu empresa aún no está registrada? <button type="button" class="linkbtn" style="padding:0;" onclick="caGoRegistro()">Registrar mi empresa</button>';
+        if(card) card.appendChild(l);
       }
       box.style.display = role === 'empresa' ? '' : 'none';
-      if(role === 'empresa') document.getElementById('roleTipo').value = guardado();
+      if(role === 'empresa'){
+        const sel = document.getElementById('roleTipo'), l = lista(), g = guardado();
+        sel.innerHTML = l.map(n=>'<option value="' + String(n).replace(/"/g, '&quot;') + '">' + String(n).replace(/</g, '&lt;') + '</option>').join('');
+        if(g && l.includes(g)) sel.value = g;
+        actualizarLink();
+      } else { const rl = document.getElementById('roleRegLink'); if(rl) rl.style.display = 'none'; }
     };
   }
   if(typeof doRoleLogin === 'function'){
     const _d = doRoleLogin;
     doRoleLogin = function(){
       const t = document.getElementById('roleTipo');
-      if(state.pendingRole === 'empresa' && t && t.value === 'ca'){
+      if(state.pendingRole === 'empresa' && t && esCA(t.value)){
         const msg = document.getElementById('roleLoginMsg'); if(msg) msg.innerHTML = '';
         return caLoginCon(document.getElementById('roleEmail').value.trim(), document.getElementById('rolePassword').value, 'roleLoginMsg', 'rolePassword');
       }
