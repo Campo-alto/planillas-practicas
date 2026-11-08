@@ -57,7 +57,7 @@ async function spCargar(){
 
 function spResumenDatos(d){
   const ks = Object.keys(d || {}); if(!ks.length) return '';
-  return '<dl class="sp-datos">' + ks.map(k=>`<div><dt>${esc(spLabel(k))}</dt><dd>${esc(d[k])}</dd></div>`).join('') + '</dl>';
+  return '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Dato</th><th>Valor</th></tr></thead><tbody>' + ks.map(k=>`<tr><td><b>${esc(spLabel(k))}</b></td><td>${esc(d[k])}</td></tr>`).join('') + '</tbody></table></div>';
 }
 
 function spRender(){
