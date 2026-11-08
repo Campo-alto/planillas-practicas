@@ -4,7 +4,7 @@ async function loadModalidades(){
   if(!sb) return;
   try{
     const { data, error } = await sb.from('modalidades').select('*').order('created_at', { ascending: true });
-    if(error || !data || !data.length) return;           // si falla, se queda con la lista de respaldo
+    if(error || !data) return;                           // si falla la consulta, se queda con la lista de respaldo (si la tabla está vacía, se respeta vacía)
     modalidadesCache = data;
     MODALIDADES = data.map(m=>({ nombre: m.nombre, meses: m.meses, es_pnr: m.es_pnr }));
   }catch(e){ console.error(e); }
