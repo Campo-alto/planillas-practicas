@@ -146,6 +146,7 @@ async function doRoleLogin(){
       state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email; state.token = data.token;
       state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
       document.getElementById('rolePassword').value = ''; msg.innerHTML = '';
+      if(typeof caEmpTab !== 'undefined') caEmpTab = 'plan';   // directo a buscar al aprendiz y asignar notas
       caAbrirPanel(); return;
     }
     if(!data || data.role !== state.pendingRole){
