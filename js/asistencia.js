@@ -105,8 +105,8 @@ function asisEmpresaMontar(){
   const pantalla = document.getElementById('screen-empresa'); if(!pantalla || !state.documento) return;
   let card = document.getElementById('empAsisCard');
   if(!card){ card = document.createElement('div'); card.className = 'card'; card.id = 'empAsisCard'; pantalla.appendChild(card); }
-  card.innerHTML = '<div class="section-bar teal">Asistencia a la práctica</div><p class="helptext" style="margin-top:-4px;">Reporta si el estudiante faltó (incapacidad, permiso, calamidad…). El estudiante anexa sus soportes en PDF y el asistente de prácticas lo revisará.</p><div id="empAsisCont"></div><div class="subhead" style="margin-top:22px;">Actas de comité</div><div id="actasCaja-emp"></div>';
-  asisPintar(document.getElementById('empAsisCont'), 'emp');
+  // La asistencia (reporte de inasistencias y soportes) la maneja únicamente el estudiante: la empresa solo ve las actas de comité
+  card.innerHTML = '<div class="section-bar teal">Actas de comité</div><div id="actasCaja-emp"></div>';
   if(typeof actasMiLista === 'function') actasMiLista('emp');
 }
 (function(){
