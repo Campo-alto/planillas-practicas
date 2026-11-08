@@ -11,7 +11,7 @@ async function caRpc(fn, args){
   const { data, error } = await sb.rpc(fn, args||{});
   if(error) throw new Error(error.message);
   // acciones que generan avisos por correo: se envían de inmediato (si falla, la cola los reintenta)
-  if(/^(ca_postular|ca_decidir|ca_emp_crear_oferta|ca_emp_tomar|ca_emp_accion|ca_registrar_empresa|admin_ca_(confirmar|empresa_estado|empresa_reenviar|oferta_estado|carta_guardar)|ca_emp_carta_)/.test(fn)){
+  if(/^(est_ca_contrato_subir|ca_postular|ca_decidir|ca_emp_crear_oferta|ca_emp_tomar|ca_emp_accion|ca_registrar_empresa|admin_ca_(confirmar|contrato_decidir|empresa_estado|empresa_reenviar|oferta_estado|carta_guardar)|ca_emp_carta_)/.test(fn)){
     try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
   }
   return data;
@@ -67,7 +67,30 @@ async function caCargarEstudiante(){
   el.innerHTML = '<p class="helptext">Cargando…</p>';
   try{ caEst = await caRpc('ca_mi_estado', { p_token: state.token }); }
   catch(e){ el.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
+  caContrato = null;
+  if(caEst && caEst.postulacion && caEst.postulacion.estado === 'seleccionado'){ try{ caContrato = await caRpc('est_ca_contrato_info', { p_token: state.token }); }catch(_){ caContrato = null; } }
   caRenderEstudiante();
+}
+var caContrato = null;
+function caLeerB64(file){ return new Promise((ok, mal)=>{ const r = new FileReader(); r.onerror = ()=>mal(new Error('No se pudo leer el archivo')); r.onload = ()=>{ const t = String(r.result || ''); ok(t.slice(t.indexOf(',') + 1)); }; r.readAsDataURL(file); }); }
+function caContratoEstHtml(){
+  const c = caContrato || { estado:'sin_subir' };
+  let h = '<div class="note-box" style="margin-top:10px"><b>📄 Contrato firmado</b><br>';
+  if(c.estado === 'pendiente') return h + 'Subiste <b>' + esc(c.nombre_archivo || 'el contrato') + '</b>. La institución lo está revisando; cuando lo acepte quedarás contratado y se habilitarán tus planillas.</div>' +
+    '<div class="actions-row" style="justify-content:flex-start;"><label class="ghost" style="cursor:pointer;padding:8px 12px;border-radius:8px;">Reemplazar archivo<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="caSubirContrato(this)"></label></div><div id="ctMsg" style="font-size:13px;"></div>';
+  h += (c.estado === 'rechazado' ? '<span style="color:var(--danger)"><b>La institución devolvió tu contrato.</b> Motivo: ' + esc(c.observacion || '—') + '</span><br>Corrígelo y súbelo de nuevo.' :
+    'La empresa te seleccionó. Para continuar, sube aquí el <b>contrato firmado por ti y por la empresa</b> (PDF, máximo 3 MB). Cuando la institución lo acepte quedarás contratado y se habilitarán tus planillas de calificaciones.') + '</div>' +
+    '<div class="actions-row" style="justify-content:flex-start;"><label class="primary" style="cursor:pointer;padding:9px 14px;border-radius:8px;display:inline-block;">⬆ Subir contrato firmado (PDF)<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="caSubirContrato(this)"></label></div><div id="ctMsg" style="font-size:13px;"></div>';
+  return h;
+}
+async function caSubirContrato(inp){
+  const f = inp.files && inp.files[0]; if(!f) return;
+  const msg = document.getElementById('ctMsg');
+  if(!/\.pdf$/i.test(f.name)){ msg.innerHTML = '<span style="color:var(--danger)">El archivo debe ser un PDF.</span>'; inp.value = ''; return; }
+  if(f.size > 3 * 1048576){ msg.innerHTML = '<span style="color:var(--danger)">El archivo pesa más de 3 MB. Comprímelo e inténtalo de nuevo.</span>'; inp.value = ''; return; }
+  msg.innerHTML = '<span style="color:var(--muted)">Subiendo…</span>';
+  try{ await caRpc('est_ca_contrato_subir', { p_token: state.token, p_nombre: f.name, p_base64: await caLeerB64(f) }); toast('Contrato enviado a la institución'); await caCargarEstudiante(); }
+  catch(e){ msg.innerHTML = '<span style="color:var(--danger)">' + esc(e.message) + (/does not exist|Could not find/i.test(e.message) ? ' (¿ejecutaste contrato-firmado-etapa40.sql?)' : '') + '</span>'; inp.value = ''; }
 }
 
 function caRenderEstudiante(){
@@ -172,7 +195,7 @@ function caProcesoEstudiante(d){
         <tr><th>Estado</th><td>${caChip(p.estado)}</td><th>Desde</th><td>${caFmt(p.desde)}</td></tr>
         <tr><th>Ciudad / jornada</th><td>${esc(p.ciudad||'—')} · ${esc(p.jornada||'—')}</td><th>Próxima decisión</th><td>${p.estado==='seleccionado'?'—':caFmt(p.proxima_decision)}</td></tr>
         <tr><th>Funciones</th><td colspan="3">${esc(p.funciones)}</td></tr></tbody></table></div>`;
-    if(p.estado==='seleccionado') h += `<div class="note-box">La empresa te seleccionó. Falta la confirmación de la institución.</div>`;
+    if(p.estado==='seleccionado') h += caContratoEstHtml();
     else if(p.puede_decidir) h += `<div class="note-box">Han pasado ${CA_DIAS_DECISION} días. Puedes <b>seguir esperando</b> a que la empresa avance, o <b>rechazar</b> esta oferta para postularte a otra (no podrás volver a esta empresa).</div>
       <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caDecidir('${p.id}','esperar')">⏳ Seguir esperando ${CA_DIAS_DECISION} días</button><button class="danger" onclick="caDecidir('${p.id}','rechazar')">✖ Rechazar y buscar otra oferta</button></div>`;
     else h += `<p class="helptext">Podrás decidir si sigues esperando o rechazas esta oferta a partir del <b>${caFmt(p.proxima_decision)}</b>.</p>`;
@@ -450,6 +473,7 @@ async function caAdmPintar(){
   showScreen('screen-admin-ca');
   const fn = { ins:'admin_ca_inscripciones', emp:'admin_ca_empresas', ofe:'admin_ca_ofertas', pro:'admin_ca_postulaciones' }[caAdmTab];
   if(caAdmTab==='pro'){ caCartasAdm = {}; try{ (await caRpc('admin_ca_cartas')).forEach(c=>{ caCartasAdm[c.post] = c; }); }catch(_){} }
+  if(caAdmTab==='pro'){ caContratosAdm = {}; try{ (await caRpc('admin_ca_contratos')).forEach(c=>{ caContratosAdm[c.post] = c; }); }catch(_){} }
   try{ caAdmData[caAdmTab] = await caRpc(fn); }catch(e){ document.getElementById('caAdmBody').innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
   ({ ins:caAdmIns, emp:caAdmEmp, ofe:caAdmOfe, pro:caAdmPro })[caAdmTab]();
   if(caAdmTab==='emp') caAdmSinAcceso();
@@ -588,16 +612,32 @@ function caAdmPro(){
   const L = caAdmData.pro; const b = caAdmInfo('caAdmBody');
   if(!L.length){ b.innerHTML = '<p class="helptext">Aún no hay postulaciones.</p>'; return; }
   const sel = L.filter(x=>x.estado==='seleccionado').length;
-  b.innerHTML = caExpBar() + (sel ? `<div class="note-box" style="margin-bottom:10px">📋 <b>${sel}</b> estudiante(s) seleccionado(s) por la empresa esperan tu confirmación.</div>` : '') +
+  b.innerHTML = caExpBar() + (sel ? `<div class="note-box" style="margin-bottom:10px">📋 <b>${sel}</b> estudiante(s) seleccionado(s) por la empresa. La contratación se confirma al <b>aceptar el contrato firmado</b> que sube cada estudiante.</div>` : '') +
     `<div class="ca-fichas">${L.map(x=>caFicha(esc(x.nombre), caChip(x.estado), [
       caFila('Estudiante', '<b>'+esc(x.nombre)+'</b>'), caFila('Documento', esc(x.documento)), caFila('Programa', esc(x.programa||'—')),
       caFila('Empresa', esc(x.empresa)), caFila('Cargo', esc(x.cargo)),
       caFila('Origen', x.origen==='estudiante'?'Se postuló':'La empresa lo llamó'), caFila('Fecha', caFmt(x.desde)), caFila('Carta de fechas', caCartaAdmHtml(x))],
-      (x.estado==='seleccionado'?`<button class="primary" onclick="caAdmConfirmar('${x.id}')">Confirmar contratación</button> `:'') +
+      (x.estado==='seleccionado' ? caContratoAdmHtml(x) : '') +
       `<button class="ghost" style="color:var(--danger)" onclick="caAdmEliminar('proceso','${x.id}',${x.estado==='contratado'})">🗑 ${x.estado==='contratado'?'Quitar contratación':'Eliminar'}</button>`)).join('')}</div>`;
 }
-async function caAdmConfirmar(id){ if(!confirm('¿Confirmar la contratación de este estudiante? Se cerrará su proceso como contratado.')) return;
-  try{ await caRpc('admin_ca_confirmar', { p_post: id }); toast('Contratación confirmada'); caAdmPintar(); }catch(e){ toast(e.message, true); } }
+var caContratosAdm = {};
+function caContratoAdmHtml(x){
+  const c = caContratosAdm[x.id];
+  if(!c) return '<span class="helptext" style="display:block;margin:4px 0;">⏳ Esperando el contrato firmado del estudiante.</span>';
+  const ver = `<button class="ghost" onclick="caAdmVerContrato('${x.id}')">📄 Ver contrato</button> `;
+  if(c.estado === 'pendiente') return ver + `<button class="primary" onclick="caAdmContratoDecidir('${x.id}', true)">✔ Aceptar y confirmar contratación</button> <button class="danger" onclick="caAdmContratoDecidir('${x.id}', false)">↩ Devolver</button> `;
+  if(c.estado === 'rechazado') return ver + '<span class="helptext" style="display:block;margin:4px 0;">↩ Devuelto: ' + esc(c.observacion || '') + ' — esperando el contrato corregido.</span>';
+  return ver;
+}
+function caAdmVerContrato(id){ return spaVisorPdf('Contrato firmado', ()=>sb.rpc('admin_ca_contrato_doc', { p_post: id })); }
+async function caAdmContratoDecidir(id, aceptar){
+  let obs = '';
+  if(aceptar){ if(!confirm('¿Aceptar el contrato firmado? El estudiante quedará contratado y se habilitarán sus planillas de calificaciones.')) return; }
+  else { obs = prompt('Motivo para devolver el contrato al estudiante (por ejemplo: falta la firma de la empresa):'); if(obs === null) return; if(obs.trim().length < 5){ toast('Escribe el motivo (mínimo 5 caracteres)', true); return; } }
+  try{ await caRpc('admin_ca_contrato_decidir', { p_post: id, p_aceptar: aceptar, p_obs: obs }); toast(aceptar ? 'Contrato aceptado: contratación confirmada y planillas habilitadas' : 'Contrato devuelto al estudiante'); caAdmPintar(); }
+  catch(e){ toast(e.message + (/does not exist|Could not find/i.test(e.message) ? ' (¿ejecutaste contrato-firmado-etapa40.sql?)' : ''), true); }
+}
+async function caAdmConfirmar(id){ toast('La contratación se confirma al aceptar el contrato firmado del estudiante.', true); }
 
 /* ---- Acceso «Empresa»: elegir el tipo de contrato (todas las modalidades) para llevar a cada quien a su lugar ---- */
 (function(){
