@@ -23,23 +23,23 @@ async function iaCargar(){
   if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste cambio-empresa-asistencia-etapa31.sql?)</p>'; return; }
   iaFilas = data || [];
   if(!iaFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">No hay inasistencias con ese filtro.</p>'; return; }
-  t.innerHTML = iaFilas.map((f,i)=>{ const e = ASIS_EST[f.estado] || [f.estado, ''];
-    return `<div class="ec-card"><div class="ec-head"><b>${esc(f.estudiante)}</b> <span class="aud-ref">Doc. ${esc(f.documento)} · ${esc(f.programa || '')} · ${esc(f.modalidad || '')}</span> <span class="cor-est ${e[1]}">${e[0]}</span></div>
-      <div class="helptext">📅 <b>${asisFechaCorta(f.desde)}${f.hasta !== f.desde ? ' → ' + asisFechaCorta(f.hasta) : ''}</b> · ${esc(ASIS_TIPOS[f.tipo] || f.tipo)} · Reportó ${f.reportado_por === 'empresa' ? 'la empresa' : 'el estudiante'} (${esc(f.reportante)})${f.empresa ? ' · 🏢 ' + esc(f.empresa) : ''}</div>
-      <div class="note-box">${esc(f.motivo)}</div>
-      <div class="helptext">${f.docs.length ? '📎 ' + f.docs.map((d,j)=>`<a href="#" onclick="iaVerDoc(${i},${j});return false;">${esc(d.nombre)}</a> (${Math.round(d.tamano / 1024)} KB)`).join(' · ') : 'Sin soportes anexados'}</div>
-      ${f.estado === 'pendiente' ? `<div class="field"><label>Observación (obligatoria si no se justifica)</label><input id="iaObs-${i}" maxlength="500"></div>
-        <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="iaResolver(${i},'justificada')">✔ Justificar</button><button class="danger" onclick="iaResolver(${i},'no_justificada')">✖ No justificar</button></div>`
-      : `<div class="helptext">Decidió: ${esc(f.resuelta_por || '')}${f.observacion ? ' · ' + esc(f.observacion) : ''}</div>`}</div>`; }).join('');
+  t.innerHTML = '<div class="lista-cuenta">' + iaFilas.length + ' reporte(s)</div><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Estudiante</th><th>Programa · Modalidad</th><th>Empresa</th><th>Fecha(s)</th><th>Tipo</th><th>Motivo</th><th>Reportó</th><th>Soportes (vista previa)</th><th>Estado</th><th></th></tr></thead><tbody>' + iaFilas.map((f,i)=>{ const e = ASIS_EST[f.estado] || [f.estado, ''];
+    return `<tr><td><b>${esc(f.estudiante)}</b><br><span class="aud-ref">Doc. ${esc(f.documento)}</span></td><td>${esc(f.programa || '—')}<br><span class="aud-ref">${esc(f.modalidad || '')}</span></td><td>${f.empresa ? esc(f.empresa) : '—'}</td>
+      <td class="aud-nw"><b>${asisFechaCorta(f.desde)}${f.hasta !== f.desde ? '<br>→ ' + asisFechaCorta(f.hasta) : ''}</b></td><td>${esc(ASIS_TIPOS[f.tipo] || f.tipo)}</td><td>${esc(f.motivo)}</td>
+      <td>${f.reportado_por === 'empresa' ? 'Empresa' : 'Estudiante'}<br><span class="aud-ref">${esc(f.reportante)}</span></td>
+      <td>${f.docs.length ? f.docs.map((d,j)=>`<a href="#" onclick="iaVerDoc(${i},${j});return false;">📎 ${esc(d.nombre)}</a>`).join('<br>') : '<span style="color:var(--muted)">Sin soportes</span>'}</td>
+      <td><span class="cor-est ${e[1]}">${e[0]}</span>${f.estado !== 'pendiente' ? '<br><span class="aud-ref">' + esc(f.resuelta_por || '') + '</span>' + (f.observacion ? '<br>' + esc(f.observacion) : '') : ''}</td>
+      <td class="aud-nw">${f.estado === 'pendiente' ? `<button class="primary" onclick="iaResolver(${i},'justificada')">✔ Justificar</button> <button class="danger" onclick="iaResolver(${i},'no_justificada')">✖ No justificar</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
 }
 function iaVerDoc(i, j){   // vista previa dentro de la página, sin descargar
   const f = iaFilas[i], d = f.docs[j];
   return spaVisorPdf(d.nombre + ' · ' + f.estudiante, ()=>sb.rpc('admin_asis_doc', { p_id: f.id, p_doc: d.id }));
 }
 async function iaResolver(i, estado){
-  const f = iaFilas[i]; const obs = document.getElementById('iaObs-' + i).value.trim();
+  const f = iaFilas[i];
+  let obs = prompt(estado === 'justificada' ? 'Observación para ' + f.estudiante + ' (opcional). Al aceptar se justifica y se le envía un correo:' : 'Motivo por el que NO se justifica (se le enviará a ' + f.estudiante + '):', '');
+  if(obs === null) return; obs = obs.trim();
   if(estado === 'no_justificada' && obs.length < 3){ toast('Escribe el motivo por el que no se justifica', true); return; }
-  if(!confirm((estado === 'justificada' ? '¿Justificar' : '¿Marcar como NO justificada') + ' la inasistencia de ' + f.estudiante + '? Se le enviará un correo.')) return;
   const { error } = await sb.rpc('admin_asis_resolver', { p_id: f.id, p_estado: estado, p_obs: obs });
   if(error){ toast(error.message, true); return; }
   try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
