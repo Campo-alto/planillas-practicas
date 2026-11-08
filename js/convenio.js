@@ -286,6 +286,7 @@ async function cvFormalizar(){
   if(!confirm('¿Formalizar a ' + sel.length + ' estudiante(s)? Quedan contratados con ' + cvDet.empresa.nombre + ' y se HABILITAN sus planillas.')) return;
   const { data, error } = await sb.rpc('admin_convenio_formalizar', { p_id: cvDet.convenio.id, p_docs: sel.map(x=>x.documento) });
   if(error){ toast(cvErr(error), true); return; }
+  try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
   const om = data.omitidos || [];
   toast('Formalizados: ' + data.formalizados.length + (om.length ? ' · Omitidos: ' + om.length : ''), !data.formalizados.length);
   if(om.length) alert('No se formalizaron:\n' + om.map(o=>'• ' + o.documento + ': ' + o.motivo).join('\n'));
