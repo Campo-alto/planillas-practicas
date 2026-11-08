@@ -52,13 +52,31 @@ let caEst = null, caHv = { formacion:[], experiencia:[] }, caHvEditando = false;
       const b = document.createElement('button'); b.className = 'tab'; b.id = 'estTab-ca'; b.textContent = 'Contrato de aprendizaje';
       b.onclick = ()=>showEstTab('ca'); bar.appendChild(b);
     }
+    // En contrato de aprendizaje, «Mis notas» y «Control y firma» solo existen cuando la institución aceptó el contrato firmado (contratado)
+    if(rec && _ca_modalidad(rec.modalidad)){
+      if(caGateDoc !== state.documento){ caGateDoc = state.documento; caGateOk = null; }
+      if(caGateOk !== true){
+        ['notas','control'].forEach(k=>{ const t = document.getElementById('estTab-' + k); if(t) t.remove(); });
+        if(estTabActual === 'notas' || estTabActual === 'control') estTabActual = 'ca';
+        if(caGateOk === null) caVerGate();
+      }
+    }
     // "Asignación de práctica no remunerada" solo aplica a Prácticas No Remuneradas: en otras modalidades se oculta
     if(rec && estNoPNR(rec)){ const t = document.getElementById('estTab-asig'); if(t) t.remove(); if(estTabActual==='asig') estTabActual = _ca_modalidad(rec.modalidad) ? 'ca' : 'datos'; }
     showEstTab(estTabActual);
   };
   const _show = showEstTab;
-  showEstTab = function(tab){ if(tab === 'asig' && state.record && estNoPNR(state.record)) tab = _ca_modalidad(state.record.modalidad) ? 'ca' : 'datos'; _show(tab); if(tab === 'ca') caCargarEstudiante(); };
+  showEstTab = function(tab){ if((tab === 'notas' || tab === 'control') && state.record && _ca_modalidad(state.record.modalidad) && caGateOk !== true) tab = 'ca'; if(tab === 'asig' && state.record && estNoPNR(state.record)) tab = _ca_modalidad(state.record.modalidad) ? 'ca' : 'datos'; _show(tab); if(tab === 'ca') caCargarEstudiante(); };
 })();
+var caGateOk = null, caGateDoc = null, caGateBusy = false;
+// ¿ya está contratado? (contrato firmado aceptado por la institución, o formalizado en un convenio)
+async function caVerGate(){
+  if(caGateBusy) return; caGateBusy = true;
+  try{ const d = await caRpc('ca_mi_estado', { p_token: state.token }); caEst = d; caGateOk = !!(d && d.aplica && d.inscripcion && d.inscripcion.estado === 'contratado'); }
+  catch(_){ caGateOk = false; }
+  caGateBusy = false;
+  if(caGateOk === true && typeof organizarPestanasEstudiante === 'function') organizarPestanasEstudiante();   // ya puede ver sus notas y firmas
+}
 function estNoPNR(rec){ return !!(rec && rec.modalidad && typeof esModalidadPNR==='function' && !esModalidadPNR(rec.modalidad)); }
 function _ca_modalidad(m){ return /contrato.*aprendizaje/i.test(m||''); }
 
@@ -67,6 +85,8 @@ async function caCargarEstudiante(){
   el.innerHTML = '<p class="helptext">Cargando…</p>';
   try{ caEst = await caRpc('ca_mi_estado', { p_token: state.token }); }
   catch(e){ el.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
+  const antes = caGateOk; caGateOk = !!(caEst && caEst.aplica && caEst.inscripcion && caEst.inscripcion.estado === 'contratado');
+  if(antes !== true && caGateOk === true && typeof organizarPestanasEstudiante === 'function'){ setTimeout(()=>{ organizarPestanasEstudiante(); showEstTab('ca'); }, 0); }
   caContrato = null;
   if(caEst && caEst.postulacion && caEst.postulacion.estado === 'seleccionado'){ try{ caContrato = await caRpc('est_ca_contrato_info', { p_token: state.token }); }catch(_){ caContrato = null; } }
   caRenderEstudiante();
