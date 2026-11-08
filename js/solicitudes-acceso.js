@@ -42,15 +42,14 @@ async function saConsultar(){
   document.getElementById('saResumen').textContent = (r.pendiente||0) + ' pendientes · ' + (r.aprobada||0) + ' aprobadas · ' + (r.rechazada||0) + ' rechazadas' + (data.total > saFilas.length ? ' · mostrando ' + saFilas.length + ' de ' + data.total : '');
   if(!saFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">No hay solicitudes con estos filtros.</p>'; return; }
   const f = iso => iso ? new Date(iso).toLocaleString('es-CO', { timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) : '—';
-  t.innerHTML = '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Correo / teléfono</th><th>Programa</th><th>Estado</th><th></th></tr></thead><tbody>' +
+  t.innerHTML = '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Correo / teléfono</th><th>Estado</th><th></th></tr></thead><tbody>' +
     saFilas.map((s,i)=>{
       const aviso = s.estado === 'pendiente' && s.ya_existe ? '<div class="aud-ref" style="color:#8A5A00;">Ya existe en la plataforma' + (s.tiene_acceso ? ' y ya tiene acceso' : '') + (s.correo_actual && s.correo_actual.toLowerCase() !== s.correo.toLowerCase() ? ' · correo registrado: ' + esc(s.correo_actual) : '') + '</div>' : '';
       const est = s.estado === 'aprobada' ? '<span class="cor-est cor-enviado">Aprobada</span>' : s.estado === 'rechazada' ? '<span class="cor-est cor-error">Rechazada</span>' : '<span class="cor-est cor-pendiente">Pendiente</span>';
       const det = [s.sede && 'Sede: ' + s.sede, s.semestre && 'Semestre: ' + s.semestre, s.modalidad && 'Modalidad: ' + s.modalidad, s.periodo && 'Periodo: ' + s.periodo, s.jornada && 'Jornada: ' + s.jornada].filter(Boolean).join(' · ');
       return `<tr><td class="aud-nw">${f(s.creado)}</td>
-        <td><b>${esc(s.apellidos + ' ' + s.nombres)}</b><br><span class="aud-ref">Doc. ${esc(s.documento)}</span>${aviso}</td>
+        <td><b>${esc(s.apellidos + ' ' + s.nombres)}</b><br><span class="aud-ref">Doc. ${esc(s.documento)}</span>${det ? '<div class="aud-ref">' + esc(det) + '</div>' : ''}${aviso}</td>
         <td>${esc(s.correo)}${s.telefono ? '<br><span class="aud-ref">' + esc(s.telefono) + '</span>' : ''}</td>
-        <td>${esc(s.programa || '—')}${det ? '<div class="aud-ref">' + esc(det) + '</div>' : ''}</td>
         <td>${est}${s.estado !== 'pendiente' ? '<div class="aud-ref">' + esc(s.resuelto_por || '') + ' · ' + f(s.resuelto_en) + (s.motivo ? '<br>Motivo: ' + esc(s.motivo) : '') + '</div>' : ''}</td>
         <td class="aud-nw">${s.estado === 'pendiente' ? `<button class="primary" style="padding:5px 10px;font-size:12px;" onclick="saAprobar(${i},this)">Aprobar</button> <button class="danger" style="padding:5px 10px;font-size:12px;" onclick="saRechazar(${i},this)">Rechazar</button>` : ''}</td></tr>`;
     }).join('') + '</tbody></table></div>';
