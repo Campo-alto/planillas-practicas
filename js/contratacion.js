@@ -232,6 +232,7 @@ async function caLogin(){
     state.token = data.token; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
     state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email;
     document.getElementById('caPass').value = '';
+    caEmpTab = 'plan';          // al ingresar: directo a buscar al aprendiz y asignar notas
     caAbrirPanel();
   }catch(e){ caMsg('caLoginMsg', e.message); }
 }
