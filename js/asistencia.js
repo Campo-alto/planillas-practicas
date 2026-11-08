@@ -76,7 +76,7 @@ async function asisCargar(m){
     : !items.length ? '<p style="color:var(--muted);font-size:13.5px;">No hay inasistencias reportadas.</p>'
     : '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fecha</th><th>Tipo</th><th>Motivo</th><th>Reportó</th><th>Soportes</th><th>Estado</th><th>Respuesta</th><th></th></tr></thead><tbody>' + items.map(i=>{ const e = ASIS_EST[i.estado] || [i.estado, ''];
         return `<tr><td class="aud-nw"><b>${asisFechaCorta(i.desde)}${i.hasta !== i.desde ? '<br>→ ' + asisFechaCorta(i.hasta) : ''}</b></td><td>${esc(ASIS_TIPOS[i.tipo] || i.tipo)}</td><td>${esc(i.motivo)}</td>
-          <td>${i.reportado_por === 'empresa' ? 'Empresa' : 'Estudiante'}</td><td>${i.docs.length ? i.docs.map(d=>'📎 ' + esc(d.nombre)).join('<br>') : '<span style="color:var(--muted)">Sin soportes</span>'}</td>
+          <td>${i.reportado_por === 'empresa' ? 'Empresa' : 'Estudiante'}</td><td>${i.docs.length ? (m === 'emp' ? '📎 Soporte anexado por el estudiante' : i.docs.map(d=>'📎 ' + esc(d.nombre)).join('<br>')) : '<span style="color:var(--muted)">Sin soportes</span>'}</td>
           <td><span class="cor-est ${e[1]}">${e[0]}</span></td><td>${i.observacion ? esc(i.observacion) : '—'}</td>
           <td>${i.estado === 'pendiente' && m === 'est' && i.docs.length < 5 ? `<label class="ghost" style="cursor:pointer;padding:5px 9px;border-radius:8px;font-size:12px;display:inline-block;">📎 Anexar soporte<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="asisAnexar('${i.id}', this)"></label> ` : ''}${i.estado === 'pendiente' && m === 'est' && i.reportado_por === 'estudiante' ? `<button class="ghost" onclick="asisEliminar('${i.id}')">Quitar</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
   caja.innerHTML = '<div class="subhead">Inasistencias reportadas</div>' + lista;
@@ -105,8 +105,8 @@ function asisEmpresaMontar(){
   const pantalla = document.getElementById('screen-empresa'); if(!pantalla || !state.documento) return;
   let card = document.getElementById('empAsisCard');
   if(!card){ card = document.createElement('div'); card.className = 'card'; card.id = 'empAsisCard'; pantalla.appendChild(card); }
-  // La asistencia (reporte de inasistencias y soportes) la maneja únicamente el estudiante: la empresa solo ve las actas de comité
-  card.innerHTML = '<div class="section-bar teal">Actas de comité</div><div id="actasCaja-emp"></div>';
+  card.innerHTML = '<div class="section-bar teal">Asistencia a la práctica</div><p class="helptext" style="margin-top:-4px;">Reporta si el estudiante faltó (incapacidad, permiso, calamidad…). Los soportes en PDF los anexa el estudiante; el asistente de prácticas lo revisa.</p><div id="empAsisCont"></div><div class="subhead" style="margin-top:22px;">Actas de comité</div><div id="actasCaja-emp"></div>';
+  asisPintar(document.getElementById('empAsisCont'), 'emp');
   if(typeof actasMiLista === 'function') actasMiLista('emp');
 }
 (function(){
