@@ -622,3 +622,11 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 /* ===== Empresas por confirmar ===== */
 .ec-card{border:1px solid var(--line,#d9dee5);border-radius:10px;padding:12px;margin:0 0 12px;background:var(--card,#fff)}
 .ec-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+
+/* Acceso Empresa/Supervisor: enlaces de ayuda más grandes y fáciles de ver */
+#screen-role-login .card > .linkbtn,
+#screen-role-login #roleRegLink,
+#screen-role-login #roleRegLink .linkbtn { font-size: 17px; font-weight: 600; line-height: 1.5; }
+#screen-role-login #roleRegLink { margin-top: 14px; color: var(--ink, inherit); }
+#screen-role-login #roleRegLink .linkbtn { text-decoration: underline; }
+#screen-role-login .card > .linkbtn { margin-top: 14px; text-decoration: underline; }
