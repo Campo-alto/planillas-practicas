@@ -232,7 +232,7 @@ async function caLogin(){
     state.token = data.token; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
     state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email;
     document.getElementById('caPass').value = '';
-    caEmpTab = 'plan';          // al ingresar: directo a buscar al aprendiz y asignar notas
+    caEmpTab = 'plan'; caEmpAuto = true;   // al ingresar: directo a las planillas (si no tiene aprendices, abre «Mis solicitudes»)
     caAbrirPanel();
   }catch(e){ caMsg('caLoginMsg', e.message); }
 }
@@ -267,6 +267,7 @@ async function caRegistrar(){
   }catch(e){ caMsg('rgMsg', e.message); }
 }
 
+let caEmpAuto = false;   // true = pestaña elegida automáticamente al ingresar
 let caEmp = null, caEmpTab = 'ofertas', caEmpProcesos = [], caEmpCand = null;
 async function caAbrirPanel(){
   try{ caEmp = await caRpc('ca_emp_mi', { p_token: state.token }); }
@@ -287,7 +288,7 @@ async function caPintarPanel(){
   showScreen('screen-ca-panel');
   if(caEmpTab==='ofertas') caPintarOfertas(); else if(caEmpTab==='cand') caPintarCandidatos(); else if(caEmpTab==='plan') await caPintarPlanillas(); else await caPintarProcesos();
 }
-function caEmpIr(t){ caEmpTab = t; caPintarPanel(); }
+function caEmpIr(t){ caEmpAuto = false; caEmpTab = t; caPintarPanel(); }
 
 async function caPintarOfertas(){
   const body = document.getElementById('caEmpBody'); const aprobada = caEmp.empresa.estado==='aprobada';
@@ -383,6 +384,7 @@ async function caPintarPlanillas(){
   body.innerHTML = '<p class="helptext">Cargando…</p>';
   try{ caPlanLista = await caRpc('ca_emp_planillas', { p_token: state.token }); }
   catch(e){ body.innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
+  if(caEmpAuto){ caEmpAuto = false; if(!(caPlanLista||[]).length){ caEmpTab = 'ofertas'; return caPintarPanel(); } }
   caPlanQ = '';
   body.innerHTML = `<div class="section-bar teal">Planillas de calificaciones de tus aprendices</div><p class="helptext">Se habilitan cuando la institución confirma la contratación del estudiante. Aquí calificas las competencias y diligencias el control mensual, igual que las demás empresas.</p>
     ${caPlanLista.length ? `<div class="field" style="max-width:420px"><label>Buscar por documento, nombre, programa o cargo</label><input id="caPlanBuscar" type="search" placeholder="Escribe para filtrar…" oninput="caPlanFiltrar(this.value)" autocomplete="off"></div>` : ''}
