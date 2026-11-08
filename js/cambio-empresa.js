@@ -17,8 +17,7 @@ async function ceEstCargar(){
       <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="ceEstSolicitar()">Solicitar cambio de empresa</button><span id="ceMsg"></span></div>`
     : pend ? '<div class="note-box">Tu solicitud está <b>en revisión</b>. Te avisaremos cuando tenga respuesta.</div><div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="ceEstCancelar()">Cancelar mi solicitud</button></div>'
     : '<div class="note-box">Para pedir el cambio primero necesitas tener una modalidad de práctica activa.</div>'}
-    ${(data.solicitudes || []).length ? '<div class="subhead">Mis solicitudes</div>' + data.solicitudes.map(s=>{ const e = CE_ET[s.estado] || [s.estado, '']; return `<div class="ec-card"><div class="ec-head"><b>${asisFechaCorta(s.creado)}</b> <span class="aud-ref">${s.empresa ? esc(s.empresa) : 'Sin empresa registrada'}</span> <span class="cor-est ${e[1]}">${e[0]}</span></div>
-        <div style="font-size:13.5px;">${esc(s.motivo)}</div>${s.respuesta ? '<div class="note-box"><b>Respuesta:</b> ' + esc(s.respuesta) + '</div>' : ''}</div>`; }).join('') : ''}`;
+    ${(data.solicitudes || []).length ? '<div class="subhead">Mis solicitudes</div><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fecha</th><th>Empresa</th><th>Motivo</th><th>Estado</th><th>Respuesta</th></tr></thead><tbody>' + data.solicitudes.map(s=>{ const e = CE_ET[s.estado] || [s.estado, '']; return `<tr><td class="aud-nw">${asisFechaCorta(s.creado)}</td><td>${s.empresa ? esc(s.empresa) : '—'}</td><td>${esc(s.motivo)}</td><td><span class="cor-est ${e[1]}">${e[0]}</span></td><td>${s.respuesta ? esc(s.respuesta) : '—'}</td></tr>`; }).join('') + '</tbody></table></div>' : ''}`;
 }
 async function ceEstSolicitar(){
   const m = document.getElementById('ceMotivo').value.trim(); const msg = document.getElementById('ceMsg');
@@ -83,18 +82,17 @@ async function ceAdmCargar(){
   if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste cambio-empresa-asistencia-etapa31.sql?)</p>'; return; }
   ceAdmFilas = data || [];
   if(!ceAdmFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">No hay solicitudes.</p>'; return; }
-  t.innerHTML = ceAdmFilas.map((f,i)=>{ const e = CE_ET[f.estado] || [f.estado, '']; const pend = f.estado === 'pendiente';
-    return `<div class="ec-card"><div class="ec-head"><b>${esc(f.estudiante)}</b> <span class="aud-ref">Doc. ${esc(f.documento)} · ${esc(f.modalidad)} · ${esc(f.programa || '')}</span> <span class="cor-est ${e[1]}">${e[0]}</span></div>
-      <div class="helptext">🏢 Empresa actual: <b>${f.empresa ? esc(f.empresa) : 'sin empresa registrada'}</b>${f.supervisor ? ' · Supervisor: ' + esc(f.supervisor) : ''} · Solicitada el ${asisFechaCorta(f.creado)}</div>
-      <div class="note-box"><b>Motivo del estudiante:</b> ${esc(f.motivo)}</div>
-      ${f.opinion ? `<div class="note-box"><b>Opinión (${esc(f.opinion_por)}):</b> ${esc(f.opinion)}</div>` : ''}
-      ${f.respuesta ? `<div class="note-box"><b>Respuesta (${esc(f.resuelta_por)}):</b> ${esc(f.respuesta)}</div>` : ''}
-      ${pend ? `<div class="field"><label>Mi opinión / comentario</label><textarea id="ceOp-${i}" rows="2" maxlength="1500">${esc(f.opinion || '')}</textarea></div>
-        <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="ceAdmOpinar(${i})">Guardar mi opinión</button>
-        ${f.puede_resolver ? `<button class="primary" onclick="ceAdmResolver(${i},'aprobar')">✔ Aprobar cambio</button><button class="danger" onclick="ceAdmResolver(${i},'rechazar')">✖ Rechazar</button>` : '<span class="helptext">La decisión la toma el asistente o el administrador.</span>'}</div>` : ''}</div>`; }).join('');
+  t.innerHTML = '<div class="lista-cuenta">' + ceAdmFilas.length + ' solicitud(es)</div><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Solicitada</th><th>Estudiante</th><th>Modalidad</th><th>Empresa actual / supervisor</th><th>Motivo</th><th>Opinión</th><th>Estado</th><th></th></tr></thead><tbody>' + ceAdmFilas.map((f,i)=>{
+    const e = CE_ET[f.estado] || [f.estado, '']; const pend = f.estado === 'pendiente';
+    return `<tr><td class="aud-nw">${asisFechaCorta(f.creado)}</td><td><b>${esc(f.estudiante)}</b><br><span class="aud-ref">Doc. ${esc(f.documento)} · ${esc(f.programa || '')}</span></td><td>${esc(f.modalidad)}</td>
+      <td>${f.empresa ? esc(f.empresa) : '<span style="color:var(--muted)">Sin empresa registrada</span>'}${f.supervisor ? '<br><span class="aud-ref">Supervisor: ' + esc(f.supervisor) + '</span>' : ''}</td>
+      <td>${esc(f.motivo)}</td><td>${f.opinion ? esc(f.opinion) + '<br><span class="aud-ref">' + esc(f.opinion_por) + '</span>' : '—'}</td>
+      <td><span class="cor-est ${e[1]}">${e[0]}</span>${f.respuesta ? '<br>' + esc(f.respuesta) + '<br><span class="aud-ref">' + esc(f.resuelta_por) + '</span>' : ''}</td>
+      <td class="aud-nw">${pend ? `<button class="ghost" onclick="ceAdmOpinar(${i})">Opinar</button>${f.puede_resolver ? ` <button class="primary" onclick="ceAdmResolver(${i},'aprobar')">✔ Aprobar</button> <button class="danger" onclick="ceAdmResolver(${i},'rechazar')">✖ Rechazar</button>` : ''}` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
 }
 async function ceAdmOpinar(i){
-  const { error } = await sb.rpc('admin_cambio_opinar', { p_id: ceAdmFilas[i].id, p_opinion: document.getElementById('ceOp-' + i).value });
+  const op = prompt('Tu opinión sobre este cambio de empresa:', ceAdmFilas[i].opinion || ''); if(op === null) return;
+  const { error } = await sb.rpc('admin_cambio_opinar', { p_id: ceAdmFilas[i].id, p_opinion: op });
   if(error){ toast(error.message, true); return; }
   toast('Opinión guardada'); ceAdmCargar();
 }
