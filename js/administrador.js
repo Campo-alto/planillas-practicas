@@ -120,9 +120,9 @@ async function mostrarEmpresaAsignada(){
       html += '<div id="admNuevaEmpresa" style="margin-top:8px;"></div>';
     }
     if(previas.length){
-      html += '<details style="margin-top:8px;font-size:13px;"><summary style="cursor:pointer;color:var(--muted);">Historial de empresas ('+previas.length+' anterior'+(previas.length>1?'es':'')+')</summary><ul style="margin:6px 0 0 18px;padding:0;">'+
-        previas.map(p=>'<li>'+esc(p.empresa)+' · '+esc(p.jornada)+' · '+new Date(p.desde).toLocaleDateString()+' → '+(p.hasta?new Date(p.hasta).toLocaleDateString():'—')+(p.meses_restantes!=null?' · quedaban '+textoMeses(p.meses_restantes):'')+(p.motivo?' · <i>'+esc(p.motivo)+'</i>':'')+'</li>').join('')+
-        '</ul></details>';
+      html += '<details style="margin-top:8px;font-size:13px;"><summary style="cursor:pointer;color:var(--muted);">Historial de empresas ('+previas.length+' anterior'+(previas.length>1?'es':'')+')</summary><div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Empresa</th><th>Jornada</th><th>Desde</th><th>Hasta</th><th>Tiempo que quedaba</th><th>Motivo</th></tr></thead><tbody>'+
+        previas.map(p=>'<tr><td>'+esc(p.empresa)+'</td><td>'+esc(p.jornada)+'</td><td class="aud-nw">'+new Date(p.desde).toLocaleDateString()+'</td><td class="aud-nw">'+(p.hasta?new Date(p.hasta).toLocaleDateString():'—')+'</td><td>'+(p.meses_restantes!=null?textoMeses(p.meses_restantes):'—')+'</td><td>'+(p.motivo?esc(p.motivo):'—')+'</td></tr>').join('')+
+        '</tbody></table></div></details>';
     }
     box.innerHTML = html;
     if(!act) cargarOpcionesNuevaEmpresa();
