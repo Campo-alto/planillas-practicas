@@ -20,6 +20,7 @@ function renderRoleAccountsTable(){
     <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
     <td style="white-space:nowrap;">
       <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editRoleAccount('${escapeAttr(u.email)}', '${escapeAttr(u.nombre||'')}')">Editar</button>
+      <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="cambiarCorreoCuenta('${u.id}')">Cambiar correo</button>
       ${typeof inhabBoton==='function' ? inhabBoton('cuenta', u.id, u.nombre||u.email, u.role) : ''}
       <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="deleteRoleAccount('${u.id}')">Eliminar</button>
     </td>
@@ -55,6 +56,29 @@ async function saveRoleAccount(){
     renderRoleAccounts();
     if(password && typeof correoOfrecerClaveCuenta === 'function') correoOfrecerClaveCuenta(email, nombre, role, password);
   }catch(e){ console.error(e); msg.innerHTML = '<span style="color:var(--danger)">Error: '+e.message+'</span>'; }
+}
+function cambiarCorreoCuenta(id){
+  const u = roleAccountsCache.find(x=>x.id === id); if(!u) return;
+  const prev = document.getElementById('ccModal'); if(prev) prev.remove();
+  const m = document.createElement('div'); m.id = 'ccModal'; m.className = 'cor-modal';
+  m.innerHTML = '<div class="cor-caja" role="dialog" aria-modal="true" style="max-width:480px;"><h3 style="margin:0 0 4px;">Cambiar correo de acceso</h3>' +
+    '<p class="helptext" style="margin:0 0 10px;">Usuario: <b>' + escapeAttr(u.nombre || u.email) + '</b><br>Correo actual: <b>' + escapeAttr(u.email) + '</b><br>La contraseña no cambia. Si la persona tiene la sesión abierta, tendrá que ingresar de nuevo con el correo nuevo.</p>' +
+    '<div class="field"><label>Correo nuevo</label><input type="email" id="ccCorreo" maxlength="120" autocomplete="off" value="' + escapeAttr(u.email) + '"></div>' +
+    '<div id="ccMsg" style="margin-top:8px;font-size:13px;"></div>' +
+    '<div class="actions-row" style="justify-content:flex-end;margin-top:12px;"><button class="ghost" type="button" onclick="document.getElementById(\'ccModal\').remove()">Cancelar</button><button class="primary" type="button" id="ccGuardar" onclick="guardarCorreoCuenta(\'' + id + '\')">Guardar correo</button></div></div>';
+  document.body.appendChild(m); const i = document.getElementById('ccCorreo'); i.focus(); i.select();
+}
+async function guardarCorreoCuenta(id){
+  if(!requireSupabase()) return;
+  const v = document.getElementById('ccCorreo').value.trim().toLowerCase(), msg = document.getElementById('ccMsg'), btn = document.getElementById('ccGuardar');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ msg.innerHTML = '<span style="color:var(--danger)">Escribe un correo válido.</span>'; return; }
+  btn.disabled = true;
+  const { data, error } = await sb.rpc('admin_role_account_correo', { p_id: id, p_correo: v });
+  btn.disabled = false;
+  if(error){ msg.innerHTML = '<span style="color:var(--danger)">' + error.message + (/function .* does not exist|Could not find/i.test(error.message) ? ' (¿ejecutaste cambiar-correo-etapa37.sql?)' : '') + '</span>'; return; }
+  document.getElementById('ccModal').remove();
+  toast(data && data.sin_cambios ? 'El correo es el mismo' : 'Correo actualizado. Ahora debe ingresar con: ' + v);
+  renderRoleAccounts();
 }
 async function deleteRoleAccount(userId){
   if(!requireSupabase()) return;
