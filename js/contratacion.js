@@ -223,6 +223,11 @@ async function caLogin(){
   if(!email || !pass){ caMsg('caLoginMsg','Escribe correo y contraseña.'); return; }
   try{
     const data = await caRpc('login_role_account', { p_email: email, p_password: pass });
+    if(data && data.role === 'empresa' && data.token){   // es una empresa de prácticas (no contrato de aprendizaje): la llevamos a su acceso
+      state.token = data.token; state.role = 'empresa'; state.pendingRole = 'empresa';
+      state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email;
+      document.getElementById('caPass').value = ''; goRole('empresa'); return;
+    }
     if(!data || data.role !== 'empresa_ca'){ caMsg('caLoginMsg','Correo o contraseña incorrectos.'); return; }
     state.token = data.token; state.role = 'empresa_ca'; state.pendingRole = 'empresa_ca';
     state.currentUserNombre = data.nombre || ''; state.currentUserEmail = data.email || email;
