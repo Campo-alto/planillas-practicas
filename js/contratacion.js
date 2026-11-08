@@ -502,7 +502,7 @@ function caAdmEmp(){
   b.innerHTML = caExpBar() + masivo + form + (L.length ? `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Contacto</th><th>Origen</th><th>Estado</th><th>Plataforma SENA y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
     <td class="cp-prog"><b>${esc(x.razon_social)}</b><br><small>NIT ${esc(x.nit)} · ${esc(x.ciudad||'')}</small><br><small>${x.ficha?'🔗 Enlazada con Empresas: '+esc(x.ficha):'Sin enlazar a Empresas (se enlaza al aprobarla)'}</small><br><small>${x.ofertas} solicitud(es) · ${x.contratados} contratado(s)</small></td><td>${esc(x.contacto||'—')}<br><small>${esc(x.email)} ${esc(x.telefono||'')}</small></td><td>${x.origen==='autoregistro'?'Se registró sola':'Creada por la institución'}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="em-s-${x.id}" ${x.sena?'checked':''}> En plataforma SENA</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="em-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
-    <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmEmpEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmEmpEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEmpEliminar('${x.id}', ${x.contratados})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">No hay empresas registradas.</p>');
+    <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmEmpEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmEmpEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmEmpEditar('${x.id}')">✏ Editar datos</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEmpEliminar('${x.id}', ${x.contratados})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">No hay empresas registradas.</p>');
 }
 async function caAdmSinAcceso(){
   const box = caAdmInfo('caSinAcceso'); if(!box) return;
@@ -537,6 +537,29 @@ async function caAdmEmpEliminar(id, contratados){
 }
 async function caAdmEmpEstado(id, estado){
   try{ await caRpc('admin_ca_empresa_estado', { p_id: id, p_estado: estado, p_sena: caAdmInfo('em-s-'+id).checked, p_obs: caAdmInfo('em-o-'+id).value }); toast('Empresa ' + (estado==='aprobada'?'aprobada':'rechazada')); caAdmPintar(); }catch(e){ toast(e.message, true); }
+}
+function caAdmEmpEditar(id){
+  const x = (caAdmData.emp || []).find(e=>e.id === id); if(!x) return;
+  const prev = document.getElementById('ceModal'); if(prev) prev.remove();
+  const m = document.createElement('div'); m.id = 'ceModal'; m.className = 'cor-modal';
+  const f = (k, et, v, ml, tipo)=>'<div class="field"><label>' + et + '</label><input id="ce-' + k + '" type="' + (tipo || 'text') + '" maxlength="' + ml + '" value="' + escapeAttr(v || '') + '"></div>';
+  m.innerHTML = '<div class="cor-caja" role="dialog" aria-modal="true" style="max-width:640px;"><h3 style="margin:0 0 4px;">Editar datos de la empresa</h3>' +
+    '<p class="helptext" style="margin:0 0 10px;">Los cambios también se aplican en el módulo <b>Empresas</b>. El <b>correo</b> es el de ingreso de la empresa: si lo cambia, la empresa debe entrar con el correo nuevo (la contraseña no cambia).</p>' +
+    '<div class="field-row">' + f('razon', 'Razón social *', x.razon_social, 160) + f('nit', 'NIT *', x.nit, 30) + f('email', 'Correo de acceso *', x.email, 120, 'email') + f('contacto', 'Persona de contacto', x.contacto, 120) +
+    f('tel', 'Teléfono', x.telefono, 40) + f('ciudad', 'Ciudad', x.ciudad, 80) + f('dir', 'Dirección', x.direccion, 200) + '</div>' +
+    '<div id="ceMsg" style="margin-top:8px;font-size:13px;"></div>' +
+    '<div class="actions-row" style="justify-content:flex-end;margin-top:12px;"><button class="ghost" type="button" onclick="document.getElementById(\'ceModal\').remove()">Cancelar</button><button class="primary" type="button" id="ceGuardar" onclick="caAdmEmpGuardar(\'' + id + '\')">Guardar cambios</button></div></div>';
+  document.body.appendChild(m);
+}
+async function caAdmEmpGuardar(id){
+  const g = k=>document.getElementById('ce-' + k).value.trim(), msg = document.getElementById('ceMsg'), btn = document.getElementById('ceGuardar');
+  if(g('razon').length < 2 || !g('nit')){ msg.innerHTML = '<span style="color:var(--danger)">Escribe la razón social y el NIT.</span>'; return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('email'))){ msg.innerHTML = '<span style="color:var(--danger)">Escribe un correo válido.</span>'; return; }
+  btn.disabled = true;
+  try{
+    await caRpc('admin_ca_empresa_editar', { p_id: id, p_datos: { nombre: g('razon'), nit: g('nit'), correo: g('email'), contacto: g('contacto'), telefono: g('tel'), ciudad: g('ciudad'), direccion: g('dir') } });
+    document.getElementById('ceModal').remove(); toast('Empresa actualizada'); caAdmPintar();
+  }catch(e){ btn.disabled = false; msg.innerHTML = '<span style="color:var(--danger)">' + esc(e.message) + (/does not exist|Could not find/i.test(e.message) ? ' (¿ejecutaste editar-empresa-etapa38.sql?)' : '') + '</span>'; }
 }
 async function caAdmCrearEmpresa(){
   try{ await caRpc('admin_ca_guardar_empresa', { p_email: val('ne-email'), p_password: caAdmInfo('ne-pass').value, p_razon: val('ne-razon'), p_nit: val('ne-nit'), p_contacto: val('ne-cont'), p_telefono: val('ne-tel'), p_direccion: val('ne-dir'), p_ciudad: val('ne-ciu'), p_sitio: '', p_sena: caAdmInfo('ne-sena').checked });
