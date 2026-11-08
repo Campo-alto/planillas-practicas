@@ -142,6 +142,13 @@ async function gdPendientes(){
   await Promise.all(GD_PROCESOS.flatMap(p=>p.it).map(async it=>{
     if(it[2]){ try{ const r = await sb.rpc(it[2]); vals[it[0]] = r.error ? null : r.data; }catch(_){ vals[it[0]] = null; } } else vals[it[0]] = ex[it[0]];
   }));
+  // numerito rojo en las tarjetas del panel que tienen algo pendiente
+  const poner = (titulo, n, tip)=>{ const c = [...document.querySelectorAll('.fn-card')].find(x=>x.getAttribute('data-fn') === titulo); const sl = c && c.querySelector('.fn-badge'); if(sl) sl.innerHTML = n ? '<span class="sa-badge" title="' + tip + '">' + n + '</span>' : ''; };
+  const v = k => Number(vals[k]) || 0;
+  poner('Empresas de contrato de aprendizaje', v('ca_empresas'), 'Empresas esperando aprobación');
+  poner('Solicitudes de aprendices', v('ca_ofertas'), 'Solicitudes esperando aprobación');
+  poner('Contrato de aprendizaje', v('ca_inscripciones') + v('ca_confirmar') + v('ca_cartas'), 'Inscripciones, confirmaciones y cartas por atender');
+  poner('Contrato de aprendizaje · Convenio', v('convenio_cartas') + v('convenio_formalizar'), 'Cartas por enviar y estudiantes por formalizar');
   const grupos = GD_PROCESOS.map(p=>({ n:p.n, it:p.it.filter(i=>vals[i[0]] !== null && vals[i[0]] !== undefined) })).filter(g=>g.it.length);
   const total = grupos.reduce((a, g)=>a + g.it.reduce((b, i)=>b + (Number(vals[i[0]]) || 0), 0), 0);
   box.innerHTML = '<div class="section-bar teal">Pendientes por proceso</div><p class="helptext">' + (total ? 'Tienes <b>' + total + '</b> pendiente(s). Están en el orden en que ocurren los procesos; pulsa uno para atenderlo.' : '🎉 No hay pendientes por atender.') + '</p>' +
@@ -156,3 +163,4 @@ function gdAbrirFn(titulo){
   const _s = showScreen;
   showScreen = function(id){ const r = _s.apply(this, arguments); if(id === 'screen-admin-hub' && typeof state !== 'undefined' && state.role === 'administrador') setTimeout(()=>{ try{ gdPendientes(); }catch(_){} }, 600); return r; };
 })();
+setInterval(()=>{ const hub = document.getElementById('screen-admin-hub'); if(hub && hub.classList.contains('active') && typeof state !== 'undefined' && state.role === 'administrador') gdPendientes(); }, 60000);
