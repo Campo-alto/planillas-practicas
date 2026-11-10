@@ -114,7 +114,7 @@ async function cvNuevo(){
     <h2 style="margin:12px 0 4px;">Nuevo convenio</h2>
     <div class="card"><div class="section-bar deep">Datos del convenio</div>
       <div class="field-row"><div class="field"><label>Nombre del grupo *</label><input id="cv-nombre" maxlength="160" placeholder="Ej. Auxiliares de enfermería – Clínica X 2026-2"></div>
-        <div class="field"><label>Empresa (aprobada) *</label><select id="cv-empresa"><option value="">— Elige —</option>${cvOpc.empresas.map(e=>`<option value="${e.id}">${esc(e.nombre)} · NIT ${esc(e.nit)}</option>`).join('')}</select></div></div>
+        <div class="field"><label>Empresa (aprobada) *</label><select id="cv-empresa" onchange="cvEmpresaElegida()"><option value="">— Elige —</option>${cvOpc.empresas.map(e=>`<option value="${e.id}">${e.convenio ? '🤝 ' : ''}${esc(e.nombre)} · NIT ${esc(e.nit)}${e.convenio ? ' · Convenio: ' + esc(e.convenio) : ''}</option>`).join('')}</select></div></div>
       ${cvOpc.empresas.length ? '' : '<p class="helptext" style="color:var(--danger)">No hay empresas aprobadas. Apruébalas primero en «Empresas de contrato de aprendizaje».</p>'}
       <div class="field-row"><div class="field"><label>Modalidad</label><select id="cv-modalidad">${cvOpc.modalidades.length ? cvOpc.modalidades.map(m=>`<option>${esc(m)}</option>`).join('') : '<option value="">(crea una modalidad «Contrato de aprendizaje convenio» en Modalidades)</option>'}</select></div>
         <div class="field"><label>Ciudad</label><input id="cv-ciudad" maxlength="100" placeholder="Bogotá D.C."></div></div>
@@ -125,6 +125,12 @@ async function cvNuevo(){
     <div class="card">${cvPickerHtml()}</div>
     <div class="actions-row"><button class="primary" id="cvCrearBtn" onclick="cvCrear()">Crear convenio y preinscribir</button></div>`;
   showScreen('screen-admin-convenio'); cvPintarSel();
+}
+function cvEmpresaElegida(){          // al elegir una empresa con convenio, propone el nombre del convenio como nombre del grupo
+  const id = (document.getElementById('cv-empresa') || {}).value, n = document.getElementById('cv-nombre');
+  const e = ((cvOpc && cvOpc.empresas) || []).find(x=>x.id === id);
+  if(e && e.convenio && n && !n.value.trim()) n.value = e.convenio;
+  const c = document.getElementById('cv-ciudad'); if(e && e.ciudad && c && !c.value.trim()) c.value = e.ciudad;
 }
 async function cvCrear(){
   const g = id => (document.getElementById(id) || {}).value || '';
@@ -156,7 +162,8 @@ async function cvDetalle(id){
       <div class="cor-aviso" style="margin:6px 0;font-size:13px;">1) Selecciona y <b>envía las cartas de fechas</b> · 2) cada estudiante debe <b>completar su hoja de vida</b> (en su pestaña «Contrato de aprendizaje») · 3) cuando el contrato esté firmado, <b>formaliza</b> (se habilitan las planillas) · 4) las planillas se envían por correo.</div>
       <div class="actions-row" style="justify-content:flex-start;flex-wrap:wrap;gap:10px;align-items:center;">
         <label style="font-size:13px;"><input type="checkbox" id="cvEnvEmp" checked> Enviar a la empresa</label>
-        <label style="font-size:13px;"><input type="checkbox" id="cvEnvEst" checked> Enviar a cada estudiante</label></div>
+        <label style="font-size:13px;"><input type="checkbox" id="cvEnvEst" checked> Enviar a cada estudiante</label>
+        <label style="font-size:13px;"><input type="checkbox" id="cvEnvPanel" checked> Dejarlas disponibles en el panel de la empresa</label></div>
       <div class="actions-row" style="justify-content:flex-start;flex-wrap:wrap;">
         <button class="primary" onclick="cvEnviarCartas()">📨 Generar y enviar cartas</button>
         <button class="ghost" onclick="cvDescargarCartas()">⬇ Solo descargar cartas</button>
@@ -243,11 +250,18 @@ async function cvDescargarCartas(){
 }
 async function cvEnviarCartas(){
   const sel = cvElegidos(['preinscrito', 'carta_enviada']); if(!sel.length) return;
-  const aEmp = document.getElementById('cvEnvEmp').checked, aEst = document.getElementById('cvEnvEst').checked;
-  if(!aEmp && !aEst){ toast('Elige a quién enviar', true); return; }
+  const aEmp = document.getElementById('cvEnvEmp').checked, aEst = document.getElementById('cvEnvEst').checked, aPanel = !!(document.getElementById('cvEnvPanel') || {}).checked;
+  if(!aEmp && !aEst && !aPanel){ toast('Elige a quién enviar', true); return; }
+  if(!aEmp && !aEst && aPanel){          // solo dejarlas en el panel de la empresa: no hace falta generar ni enviar correos
+    if(!confirm('Se dejarán disponibles ' + sel.length + ' carta(s) en el panel de la empresa (' + cvDet.empresa.nombre + ') y se le avisará. ¿Continuar?')) return;
+    const { error } = await sb.rpc('admin_convenio_carta_enviada', { p_id: cvDet.convenio.id, p_docs: sel.map(x=>x.documento) });
+    if(error){ toast(cvErr(error), true); return; }
+    try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}
+    toast('✔ ' + sel.length + ' carta(s) disponibles en el panel de la empresa'); cvDetalle(cvDet.convenio.id); return;
+  }
   const correoEmp = cvDet.empresa.correo;
   if(aEmp && !corEmailOk(correoEmp)){ toast('La empresa no tiene un correo válido', true); return; }
-  if(!confirm('Se generarán ' + sel.length + ' carta(s) de fechas' + (aEmp ? ' y se enviarán a la empresa (' + correoEmp + ')' : '') + (aEst ? ' y a cada estudiante' : '') + '. ¿Continuar?')) return;
+  if(!confirm('Se generarán ' + sel.length + ' carta(s) de fechas' + (aEmp ? ' y se enviarán a la empresa (' + correoEmp + ')' : '') + (aEst ? ' y a cada estudiante' : '') + (aPanel ? ' y quedarán disponibles en el panel de la empresa' : '') + '. ¿Continuar?')) return;
   try{
     toast('Generando cartas…'); const pdfs = await cvPdfsCartas(sel);
     const emp = cvDet.empresa.nombre; let errores = [], okEmp = !aEmp, enviados = 0;
@@ -271,11 +285,11 @@ async function cvEnviarCartas(){
         enviados += r.enviados; errores = errores.concat(r.errores); n++; if(n % 5 === 0) toast('Enviando… ' + n + '/' + pdfs.length);
       }
     }
-    if(okEmp && enviados){
+    if(aPanel || (okEmp && enviados)){
       const { error } = await sb.rpc('admin_convenio_carta_enviada', { p_id: cvDet.convenio.id, p_docs: sel.map(x=>x.documento) });
       if(error) toast(cvErr(error), true);
     }
-    toast('✉ ' + enviados + ' correo(s) enviado(s)' + (errores.length ? ' · ' + errores.length + ' con error: ' + (errores[0].to || '') + ' — ' + (errores[0].error || '') : '') + (okEmp ? '' : ' · No se marcaron como enviadas: reintenta'), !!errores.length);
+    toast('✉ ' + enviados + ' correo(s) enviado(s)' + (errores.length ? ' · ' + errores.length + ' con error: ' + (errores[0].to || '') + ' — ' + (errores[0].error || '') : '') + ((okEmp || aPanel) ? '' : ' · No se marcaron como enviadas: reintenta'), !!errores.length);
     cvDetalle(cvDet.convenio.id);
   }catch(e){ console.error(e); toast(e.message, true); }
 }
