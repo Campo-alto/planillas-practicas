@@ -286,6 +286,7 @@ function caGoRegistro(){
         <div class="field"><label>Ciudad</label><input id="rgCiudad" maxlength="80"></div>
         <div class="field"><label>Dirección</label><input id="rgDir" maxlength="160"></div>
         <div class="field"><label>Sitio web</label><input id="rgWeb" maxlength="160"></div>
+        <div class="field"><label>Convenio (solo si tu empresa tiene convenio con la institución)</label><input id="rgConvenio" maxlength="160" placeholder="Escribe el nombre del convenio"></div>
         <div class="field"><label>Correo de acceso *</label><input id="rgEmail" type="email" maxlength="120" autocomplete="username"></div>
         <div class="field"><label>Contraseña * (mínimo 8)</label><input id="rgPass" type="password" maxlength="100" autocomplete="new-password"></div>
       </div>
@@ -299,7 +300,7 @@ async function caRegistrar(){
   if(!document.getElementById('rgAcepto').checked){ caMsg('rgMsg','Debes aceptar el tratamiento de datos.'); return; }
   try{
     await caRpc('ca_registrar_empresa', { p_email: val('rgEmail'), p_password: document.getElementById('rgPass').value, p_razon: val('rgRazon'), p_nit: val('rgNit'),
-      p_contacto: val('rgContacto'), p_telefono: val('rgTel'), p_direccion: val('rgDir'), p_ciudad: val('rgCiudad'), p_sitio: val('rgWeb') });
+      p_contacto: val('rgContacto'), p_telefono: val('rgTel'), p_direccion: val('rgDir'), p_ciudad: val('rgCiudad'), p_sitio: val('rgWeb'), p_convenio: val('rgConvenio') });
     caMsg('rgMsg','Registro enviado. La institución lo revisará; cuando lo apruebe podrás ingresar con tu correo y contraseña.', true);
     document.getElementById('rgPass').value = '';
   }catch(e){ caMsg('rgMsg', e.message); }
@@ -310,6 +311,7 @@ let caEmp = null, caEmpTab = 'ofertas', caEmpProcesos = [], caEmpCand = null;
 async function caAbrirPanel(){
   try{ caEmp = await caRpc('ca_emp_mi', { p_token: state.token }); }
   catch(e){ toast(e.message, true); caSalir(); return; }
+  await caCargarConvEmp();
   await caPintarPanel();
 }
 function caSalir(){ state.caMode = false; if(sb && state.token){ sb.rpc('role_logout', { p_token: state.token }); } if(typeof _ssClear==='function') _ssClear(); state.token = null; state.role = null; state.pendingRole = null; goHome(); }
@@ -321,10 +323,57 @@ async function caPintarPanel(){
     <div class="tabs"><button class="tab ${caEmpTab==='ofertas'?'active':''}" onclick="caEmpIr('ofertas')">Mis solicitudes</button>
       <button class="tab ${caEmpTab==='cand'?'active':''}" onclick="caEmpIr('cand')">Candidatos</button>
       <button class="tab ${caEmpTab==='proc'?'active':''}" onclick="caEmpIr('proc')">Procesos</button>
-      <button class="tab ${caEmpTab==='plan'?'active':''}" onclick="caEmpIr('plan')">Planillas de calificaciones</button></div>
+      <button class="tab ${caEmpTab==='plan'?'active':''}" onclick="caEmpIr('plan')">Planillas de calificaciones</button>${caConvVisible() ? `<button class="tab ${caEmpTab==='conv'?'active':''}" onclick="caEmpIr('conv')">Cartas de convenio</button>` : ''}</div>
     <div class="card" id="caEmpBody"></div>`);
   showScreen('screen-ca-panel');
-  if(caEmpTab==='ofertas') caPintarOfertas(); else if(caEmpTab==='cand') caPintarCandidatos(); else if(caEmpTab==='plan') await caPintarPlanillas(); else await caPintarProcesos();
+  if(caEmpTab==='ofertas') caPintarOfertas(); else if(caEmpTab==='cand') caPintarCandidatos(); else if(caEmpTab==='plan') await caPintarPlanillas(); else if(caEmpTab==='conv') await caPintarConvenios(); else await caPintarProcesos();
+}
+
+/* ---------- Cartas de convenio (empresa) ---------- */
+let caEmpConv = null;
+async function caCargarConvEmp(){
+  caEmpConv = null;
+  try{ caEmpConv = await caRpc('ca_emp_convenios', { p_token: state.token }); }catch(_){ caEmpConv = null; }   // si aún no se ejecutó la etapa 43, la pestaña simplemente no aparece
+}
+function caConvVisible(){ return !!(caEmpConv && caEmp && caEmp.empresa.estado === 'aprobada' && ((caEmpConv.convenios || []).length || caEmpConv.convenio_nombre)); }
+function caConvF(d){ if(!d) return '—'; const [y, m, dd] = String(d).slice(0, 10).split('-'); return dd + '/' + m + '/' + y; }
+async function caPintarConvenios(){
+  await caCargarConvEmp();
+  const b = document.getElementById('caEmpBody'); if(!b) return;
+  const L = (caEmpConv && caEmpConv.convenios) || [];
+  b.innerHTML = '<div class="section-bar teal">Cartas de fechas de tus estudiantes de convenio</div>' +
+    (caEmpConv && caEmpConv.convenio_nombre ? '<p class="helptext">Tu convenio: <b>' + esc(caEmpConv.convenio_nombre) + '</b></p>' : '') +
+    '<p class="helptext">Aquí aparecen las cartas que la institución dejó disponibles para tu empresa. Descarga la de cada estudiante o todas juntas en un solo PDF.</p>' +
+    (L.length ? L.map(c=>{
+      const E = c.estudiantes || [];
+      return '<div class="subhead" style="margin-top:14px;">' + esc(c.nombre) + (c.ciudad ? ' · ' + esc(c.ciudad) : '') + '</div>' +
+        (E.length ? '<div class="actions-row" style="justify-content:flex-start;margin:6px 0;"><button class="primary" onclick="caConvDescargar(\'' + c.id + '\', null)">⬇ Descargar todas (' + E.length + ')</button></div>' +
+          '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Documento</th><th>Estudiante</th><th>Programa</th><th>Etapa lectiva</th><th>Etapa productiva</th><th></th></tr></thead><tbody>' +
+          E.map(x=>'<tr><td>' + esc(x.documento) + '</td><td>' + esc(x.nombre) + '</td><td>' + esc(x.programa || '') + '</td><td>' + caConvF(x.lectiva_ini) + ' – ' + caConvF(x.lectiva_fin) + '</td><td>' + caConvF(x.prod_ini) + ' – ' + caConvF(x.prod_fin) + '</td><td><button class="ghost" onclick="caConvDescargar(\'' + c.id + '\', \'' + esc(x.documento) + '\')">⬇ Carta</button></td></tr>').join('') + '</tbody></table></div>'
+          : '<p class="helptext">Aún no hay cartas disponibles en este convenio. Cuando la institución las deje listas, te avisamos por correo y en la campana.</p>');
+    }).join('') : '<p class="helptext">Todavía no hay un convenio asignado a tu empresa. Cuando la institución lo cree y deje disponibles las cartas, aparecerán aquí.</p>');
+}
+async function caConvDescargar(idConv, doc){
+  try{
+    if(typeof PDFLib === 'undefined') throw new Error('No cargó la librería de PDF (revisa tu conexión)');
+    const c = ((caEmpConv && caEmpConv.convenios) || []).find(x=>x.id === idConv); if(!c) throw new Error('Convenio no encontrado');
+    const docs = doc ? [doc] : (c.estudiantes || []).map(x=>x.documento);
+    toast('Generando carta(s)…'); const pdfs = [];
+    for(const d of docs){
+      const r = await caRpc('ca_emp_convenio_carta', { p_token: state.token, p_id: idConv, p_documento: d });
+      pdfs.push(await generarCartaFechasPdf(Object.assign({}, r, { fecha: new Date() })));
+    }
+    let bytes = pdfs[0];
+    if(pdfs.length > 1){
+      const out = await PDFLib.PDFDocument.create();
+      for(const b of pdfs){ const src = await PDFLib.PDFDocument.load(b); (await out.copyPages(src, src.getPageIndices())).forEach(pg=>out.addPage(pg)); }
+      bytes = await out.save();
+    }
+    const nom = String(c.nombre || 'convenio').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'convenio';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    a.download = doc ? 'carta-fechas-' + doc + '.pdf' : 'cartas-fechas-' + nom + '.pdf';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  }catch(e){ toast(e.message, true); }
 }
 function caEmpIr(t){ caEmpAuto = false; caEmpTab = t; caPintarPanel(); }
 
@@ -544,9 +593,14 @@ function caAdmEmp(){
     <div id="iePrev-ca_empresas" style="margin-top:10px;font-size:13.5px"></div></details>
     <div id="caSinAcceso"></div>`;
   b.innerHTML = caExpBar() + masivo + form + (L.length ? `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Contacto</th><th>Origen</th><th>Estado</th><th>Plataforma SENA y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
-    <td class="cp-prog"><b>${esc(x.razon_social)}</b><br><small>NIT ${esc(x.nit)} · ${esc(x.ciudad||'')}</small><br><small>${x.ficha?'🔗 Enlazada con Empresas: '+esc(x.ficha):'Sin enlazar a Empresas (se enlaza al aprobarla)'}</small><br><small>${x.ofertas} solicitud(es) · ${x.contratados} contratado(s)</small></td><td>${esc(x.contacto||'—')}<br><small>${esc(x.email)} ${esc(x.telefono||'')}</small></td><td>${x.origen==='autoregistro'?'Se registró sola':'Creada por la institución'}</td><td>${caChip(x.estado)}</td>
+    <td class="cp-prog"><b>${esc(x.razon_social)}</b><br><small>NIT ${esc(x.nit)} · ${esc(x.ciudad||'')}</small><br><small>${x.ficha?'🔗 Enlazada con Empresas: '+esc(x.ficha):'Sin enlazar a Empresas (se enlaza al aprobarla)'}</small><br><small>${x.ofertas} solicitud(es) · ${x.contratados} contratado(s)</small><br><small>🤝 Convenio: ${x.convenio ? '<b>' + esc(x.convenio) + '</b>' : 'sin convenio'} · <a href="#" onclick="caAdmEmpConvenio('${x.id}', ${JSON.stringify(x.convenio || '').replace(/"/g, '&quot;')});return false;">cambiar</a></small></td><td>${esc(x.contacto||'—')}<br><small>${esc(x.email)} ${esc(x.telefono||'')}</small></td><td>${x.origen==='autoregistro'?'Se registró sola':'Creada por la institución'}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="em-s-${x.id}" ${x.sena?'checked':''}> En plataforma SENA</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="em-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
     <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmEmpEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmEmpEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmEmpEditar('${x.id}')">✏ Editar datos</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEmpEliminar('${x.id}', ${x.contratados})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>` : '<p class="helptext">No hay empresas registradas.</p>');
+}
+async function caAdmEmpConvenio(id, actual){
+  const n = prompt('Nombre del convenio de esta empresa (déjalo vacío si no tiene convenio):', actual || ''); if(n === null) return;
+  try{ await caRpc('admin_ca_empresa_convenio', { p_id: id, p_nombre: n.trim() }); toast('Convenio actualizado'); caAdmPintar(); }
+  catch(e){ toast(e.message, true); }
 }
 async function caAdmSinAcceso(){
   const box = caAdmInfo('caSinAcceso'); if(!box) return;
