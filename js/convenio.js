@@ -51,11 +51,31 @@ function cvPickerHtml(){
 function cvPintarSel(){
   const b = document.getElementById('cvSelBox'); if(!b) return;
   if(!cvSel.size){ b.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">Todavía no has elegido estudiantes.</p>'; return; }
-  b.innerHTML = '<div class="lista-cuenta">' + cvSel.size + ' estudiante(s) por preinscribir</div><div class="cupos-wrap"><table class="cupos-table aud-tabla" style="min-width:600px"><thead><tr><th>Documento</th><th>Nombre</th><th>Fechas propias</th><th></th></tr></thead><tbody>' +
-    [...cvSel.entries()].map(([d, x])=>`<tr><td>${esc(d)}</td><td>${esc(x.nombre || '—')}</td><td>${x.fechas && Object.keys(x.fechas).length ? 'Sí (del Excel)' : 'Las del grupo'}</td><td><button class="danger" type="button" onclick="cvQuitarSel('${esc(d)}')">Quitar</button></td></tr>`).join('') + '</tbody></table></div>';
+  const nuevos = [...cvSel.values()].filter(x=>x.reg === false).length;
+  b.innerHTML = '<div class="lista-cuenta">' + cvSel.size + ' estudiante(s) por preinscribir' + (nuevos ? ' · <b>' + nuevos + ' nuevo(s)</b> (se crearán con los datos del Excel)' : '') + '</div><div class="cupos-wrap"><table class="cupos-table aud-tabla" style="min-width:860px"><thead><tr><th>Documento</th><th>Nombre</th><th>Programa</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Fechas propias</th><th></th></tr></thead><tbody>' +
+    [...cvSel.entries()].map(([d, x])=>{
+      const dt = x.datos || {}, nom = x.nombre || (dt.nombre || [dt.nombres, dt.apellidos].filter(Boolean).join(' ')) || '';
+      const falta = x.reg === false && !nom;
+      return `<tr><td>${esc(d)}</td><td>${esc(nom || '—')}</td><td>${esc(dt.programa || x.programa || '—')}</td><td>${esc(dt.correo || x.correo || '—')}</td><td>${esc(dt.telefono || x.telefono || '—')}</td>
+      <td>${x.reg === true ? '✔ Registrado' : x.reg === false ? (falta ? '<span style="color:var(--danger)">Sin datos: no se podrá crear</span>' : '🆕 Nuevo') : '…'}</td>
+      <td>${x.fechas && Object.keys(x.fechas).length ? 'Sí (del Excel)' : 'Las del grupo'}</td><td><button class="danger" type="button" onclick="cvQuitarSel('${esc(d)}')">Quitar</button></td></tr>`;
+    }).join('') + '</tbody></table></div>';
+}
+// Consulta a los que aún no se sabe si están registrados y trae sus datos para mostrarlos
+async function cvCompletar(){
+  const pend = [...cvSel.entries()].filter(([, x])=>x.reg === undefined).map(([d])=>d); if(!pend.length) return;
+  for(let i = 0; i < pend.length; i += 150){
+    const lote = pend.slice(i, i + 150);
+    const { data, error } = await sb.from('students').select('documento,nombre,programa,correo,telefono').in('documento', lote);
+    if(error){ toast('No se pudo consultar a los estudiantes: ' + error.message, true); return; }
+    const mapa = new Map((data || []).map(x=>[x.documento, x]));
+    lote.forEach(d=>{ const x = cvSel.get(d); if(!x) return; const r = mapa.get(d);
+      if(r){ x.reg = true; x.nombre = x.nombre || r.nombre || ''; x.programa = r.programa || ''; x.correo = r.correo || ''; x.telefono = r.telefono || ''; } else x.reg = false; });
+  }
+  cvPintarSel();
 }
 function cvQuitarSel(d){ cvSel.delete(d); cvPintarSel(); }
-function cvAgregarSel(d, nombre, fechas){ d = String(d || '').trim(); if(!d || d.length > 30) return; const p = cvSel.get(d) || {}; cvSel.set(d, { nombre: nombre || p.nombre || '', fechas: fechas || p.fechas || null }); }
+function cvAgregarSel(d, nombre, fechas, datos){ d = String(d || '').trim(); if(!d || d.length > 30) return; const p = cvSel.get(d) || {}; cvSel.set(d, { nombre: nombre || p.nombre || '', fechas: fechas || p.fechas || null, datos: datos || p.datos || null, reg: p.reg, programa: p.programa, correo: p.correo, telefono: p.telefono }); }
 async function cvBuscar(){
   const q = (document.getElementById('cvBuscar').value || '').trim().replace(/[%,()]/g, ' ');
   const box = document.getElementById('cvResBusca'); if(q.length < 2){ toast('Escribe al menos 2 caracteres', true); return; }
@@ -64,17 +84,18 @@ async function cvBuscar(){
   if(error){ box.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + '</p>'; return; }
   if(!(data || []).length){ box.innerHTML = '<p style="color:var(--muted)">Sin resultados.</p>'; return; }
   box.innerHTML = '<div class="cupos-wrap"><table class="cupos-table aud-tabla" style="min-width:560px"><thead><tr><th>Documento</th><th>Nombre</th><th>Programa</th><th></th></tr></thead><tbody>' +
-    data.map(s=>`<tr><td>${esc(s.documento)}</td><td>${esc(s.nombre)}</td><td>${esc(s.programa || '')}</td><td><button class="ghost" type="button" onclick="cvAgregarSel('${esc(s.documento)}','${esc(s.nombre).replace(/'/g, '&#39;')}');cvPintarSel()">+ Agregar</button></td></tr>`).join('') + '</tbody></table></div>';
+    data.map(s=>`<tr><td>${esc(s.documento)}</td><td>${esc(s.nombre)}</td><td>${esc(s.programa || '')}</td><td><button class="ghost" type="button" onclick="cvAgregarSel('${esc(s.documento)}','${esc(s.nombre).replace(/'/g, '&#39;')}');cvPintarSel();cvCompletar()">+ Agregar</button></td></tr>`).join('') + '</tbody></table></div>';
 }
 function cvPegarDocs(){
   const t = document.getElementById('cvPegar'); const docs = (t.value || '').split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
   if(!docs.length){ toast('Pega al menos un documento', true); return; }
-  docs.forEach(d=>cvAgregarSel(d)); t.value = ''; cvPintarSel(); toast(docs.length + ' documento(s) agregado(s)');
+  docs.forEach(d=>cvAgregarSel(d)); t.value = ''; cvPintarSel(); toast(docs.length + ' documento(s) agregado(s)'); cvCompletar();
 }
 function cvPlantilla(){
   if(typeof ieDescargarXlsx !== 'function'){ toast('No está disponible la descarga de Excel', true); return; }
-  ieDescargarXlsx('plantilla-convenio', ['documento', 'lectiva_inicio', 'lectiva_fin', 'productiva_inicio', 'productiva_fin'],
-    [['1020304050', '', '', '', ''], ['1020304051', '2026-01-15', '2026-04-15', '2026-04-16', '2026-10-16']], 'Convenio', false);
+  ieDescargarXlsx('plantilla-convenio', ['documento', 'nombres', 'apellidos', 'correo', 'telefono', 'programa', 'sede', 'semestre', 'periodo', 'lectiva_inicio', 'lectiva_fin', 'productiva_inicio', 'productiva_fin'],
+    [['1020304050', 'Ana María', 'Pérez Gómez', 'ana@correo.com', '3001234567', 'Auxiliar Administrativo en Salud', 'Bogotá', '1', '2026-2', '', '', '', ''],
+     ['1020304051', 'Luis', 'Rojas Díaz', 'luis@correo.com', '3009876543', 'Auxiliar Administrativo en Salud', 'Bogotá', '1', '2026-2', '2026-01-15', '2026-04-15', '2026-04-16', '2026-10-16']], 'Convenio', false);
 }
 async function cvLeerExcel(input){
   const file = input.files && input.files[0]; if(!file) return;
@@ -92,17 +113,21 @@ async function cvLeerExcel(input){
       const f = { lectiva_ini: cvNormFecha(k.lectivainicio || k.lectivaini), lectiva_fin: cvNormFecha(k.lectivafin), prod_ini: cvNormFecha(k.productivainicio || k.prodini), prod_fin: cvNormFecha(k.productivafin || k.prodfin) };
       if(Object.values(f).includes('ERR')){ malas++; return; }
       Object.keys(f).forEach(x=>{ if(!f[x]) delete f[x]; });
-      cvAgregarSel(doc, '', Object.keys(f).length ? f : null); n++;
+      const dt = { nombres: String(k.nombres || k.nombre || '').trim(), apellidos: String(k.apellidos || '').trim(), correo: String(k.correo || k.email || k.correoelectronico || '').trim(), telefono: String(k.telefono || k.celular || '').trim(),
+        programa: String(k.programa || '').trim(), sede: String(k.sede || '').trim(), semestre: String(k.semestre || '').trim(), periodo: String(k.periodo || k.periodoacademico || '').trim() };
+      if(!k.apellidos && dt.nombres){ dt.nombre = dt.nombres; delete dt.nombres; }     // si solo hay una columna «nombre», es el nombre completo
+      Object.keys(dt).forEach(x=>{ if(!dt[x]) delete dt[x]; });
+      cvAgregarSel(doc, '', Object.keys(f).length ? f : null, Object.keys(dt).length ? dt : null); n++;
     });
-    cvPintarSel(); toast(n + ' estudiante(s) leído(s) del Excel' + (malas ? ' · ' + malas + ' fila(s) con fechas inválidas (use AAAA-MM-DD o DD/MM/AAAA)' : ''), !n);
+    cvPintarSel(); cvCompletar(); toast(n + ' estudiante(s) leído(s) del Excel' + (malas ? ' · ' + malas + ' fila(s) con fechas inválidas (use AAAA-MM-DD o DD/MM/AAAA)' : ''), !n);
   }catch(e){ toast(e.message, true); }
   input.value = '';
 }
-const cvEstLista = () => [...cvSel.entries()].map(([d, x])=>Object.assign({ documento: d }, x.fechas || {}));
+const cvEstLista = () => [...cvSel.entries()].map(([d, x])=>Object.assign({ documento: d }, x.datos || {}, x.fechas || {}));
 function cvMostrarOmitidos(r){
   const om = (r && r.omitidos) || [];
   if(!om.length) return;
-  alert('Se agregaron ' + r.agregados + ' estudiante(s). No se pudieron agregar ' + om.length + ':\n\n' + om.slice(0, 40).map(o=>'• ' + o.documento + ': ' + o.motivo).join('\n') + (om.length > 40 ? '\n…' : ''));
+  alert('Se agregaron ' + r.agregados + ' estudiante(s)' + (r.creados ? ' (' + r.creados + ' nuevo(s) creado(s) con los datos del Excel)' : '') + '. No se pudieron agregar ' + om.length + ':\n\n' + om.slice(0, 40).map(o=>'• ' + o.documento + ': ' + o.motivo).join('\n') + (om.length > 40 ? '\n…' : ''));
 }
 
 /* ---------------- Nuevo convenio ---------------- */
@@ -141,7 +166,7 @@ async function cvCrear(){
   const { data, error } = await sb.rpc('admin_convenio_crear', { p_datos: { nombre: g('cv-nombre').trim(), empresa_id: g('cv-empresa'), modalidad: g('cv-modalidad'), ciudad: g('cv-ciudad').trim(), lectiva_ini: g('cv-li'), lectiva_fin: g('cv-lf'), prod_ini: g('cv-pi'), prod_fin: g('cv-pf'), observacion: g('cv-obs').trim() }, p_est: cvEstLista() });
   btn.disabled = false;
   if(error){ toast(cvErr(error), true); return; }
-  toast('Convenio creado · ' + data.agregados + ' estudiante(s) preinscrito(s)'); cvMostrarOmitidos(data); cvSel = new Map(); cvDetalle(data.id);
+  toast('Convenio creado · ' + data.agregados + ' estudiante(s) preinscrito(s)' + (data.creados ? ' · ' + data.creados + ' nuevo(s) creado(s)' : '')); cvMostrarOmitidos(data); cvSel = new Map(); cvDetalle(data.id);
 }
 
 /* ---------------- Detalle ---------------- */
@@ -198,7 +223,7 @@ async function cvAgregar(){
   if(!cvSel.size){ toast('Elige al menos un estudiante', true); return; }
   const { data, error } = await sb.rpc('admin_convenio_agregar', { p_id: cvDet.convenio.id, p_est: cvEstLista() });
   if(error){ toast(cvErr(error), true); return; }
-  toast(data.agregados + ' estudiante(s) agregado(s)'); cvMostrarOmitidos(data); cvDetalle(cvDet.convenio.id);
+  toast(data.agregados + ' estudiante(s) agregado(s)' + (data.creados ? ' · ' + data.creados + ' nuevo(s) creado(s)' : '')); cvMostrarOmitidos(data); cvDetalle(cvDet.convenio.id);
 }
 async function cvRetirar(doc){
   const m = prompt('Motivo del retiro de ' + doc + ' (se registra):'); if(m === null) return;
