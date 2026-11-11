@@ -108,18 +108,9 @@ async function svGuardarFecha(doc, tomar){
   const { data, error } = await sb.rpc(tomar ? 'sup_visita_tomar' : 'sup_visita_fecha', { p_token: state.token, p_documento: doc, p_visita: visita, p_fecha: fecha, p_hora: hora || '' });
   if(error){ btn.disabled = false; msg.innerHTML = '<span style="color:var(--danger)">' + esc(error.message) + (/does not exist|Could not find/i.test(error.message) ? ' (¿ejecutaste visitas-fechas-etapa42.sql?)' : '') + '</span>'; if(tomar) svDisponibles(); return; }
   document.getElementById('svModal').remove();
-  if(!data.aviso_correo){ toast('Visita programada, pero el estudiante no tiene un correo válido: avísale tú.', true); svCargar(); return; }
-  // envía el correo al estudiante y dice la verdad: enviado o en cola (con el motivo)
-  let ok = false, motivo = '';
-  try{
-    const r = await sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } });
-    if(r.error){ motivo = r.error.message || 'no se pudo llamar a la función de correo'; }
-    else if(r.data && r.data.error){ motivo = r.data.error; }
-    else if(r.data && Number(r.data.enviados) > 0){ ok = true; }
-    else { motivo = 'la función de correo no envió nada (revisa que esté actualizada y que los correos estén habilitados)'; }
-  }catch(e){ motivo = (e && e.message) || 'error de red'; }
-  if(ok) toast('✉ Visita ' + visita + ' programada. Correo enviado al estudiante.');
-  else toast('Visita ' + visita + ' programada. El correo quedó en cola y NO se envió ahora: ' + motivo + '. Avísale al estudiante.', true);
+  if(!data.aviso_correo){ toast('Visita ' + visita + ' programada, pero el estudiante no tiene un correo válido: avísale tú.', true); svCargar(); return; }
+  // El aviso por correo queda en cola; la plataforma te pregunta «¿Enviar el correo ahora?» (js/correos-pregunta.js)
+  toast('Visita ' + visita + ' programada. El aviso al estudiante está listo para enviar.');
   svCargar();
 }
 
