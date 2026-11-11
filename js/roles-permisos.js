@@ -93,6 +93,11 @@ function rpermPintar(){
   el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <h2 style="margin:12px 0 4px;">Roles y permisos</h2>
     <p class="helptext" style="text-align:justify;">Habilita o inhabilita cada función para los roles del personal. El cambio se guarda al instante y se aplica la próxima vez que la persona abra el panel (o al actualizar la página). El <b>Administrador</b> siempre tiene acceso total y es el único que gestiona al personal, esta pantalla, el registro de auditoría y el reinicio de la plataforma.</p>
+    <div class="card" style="margin-bottom:12px;">
+      <div style="font-weight:700;margin-bottom:4px;">👁 Vista previa por rol</div>
+      <p class="helptext" style="margin:0 0 8px;">Mira, en tiempo real, exactamente qué funciones ve cada rol con los permisos que tiene hoy. Es solo una vista: no entras con la cuenta de nadie ni se modifica nada.</p>
+      <div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">${ROLES_CONFIGURABLES.map(r=>'<button class="ghost" type="button" onclick="rpermVista(\'' + r + '\')">👁 ' + esc(ROL_NOMBRES[r]) + '</button>').join('')}</div>
+    </div>
     <div class="card">
       <div class="cupos-wrap"><table class="rperm-table">
         <thead><tr><th>Función</th><th class="rperm-c">${esc(ROL_NOMBRES.administrador)}</th>${ROLES_CONFIGURABLES.map(r=>'<th class="rperm-c">' + esc(ROL_NOMBRES[r]) + '</th>').join('')}</tr></thead>
@@ -114,6 +119,7 @@ async function rpermCambiar(rol, modulo, input){
   const p = rpermDatos.permisos.find(x=>x.rol === rol && x.modulo === modulo);
   if(p) p.habilitado = nuevo; else rpermDatos.permisos.push({ rol, modulo, habilitado: nuevo });
   const t = input.parentElement.querySelector('.rperm-txt'); if(t) t.textContent = nuevo ? 'Habilitada' : 'Inhabilitada';
+  if(rpermVistaRol === rol) rpermVista(rol, true);    // la vista previa abierta se actualiza al instante
   toast((nuevo ? 'Habilitada' : 'Inhabilitada') + ': ' + (rpermDatos.catalogo.find(c=>c.modulo === modulo) || {}).titulo + ' · ' + ROL_NOMBRES[rol]);
 }
 async function rpermRestaurar(){
@@ -122,3 +128,32 @@ async function rpermRestaurar(){
   if(error){ toast('No se pudo restablecer: ' + error.message, true); return; }
   toast('Permisos restablecidos'); abrirPermisos();
 }
+
+/* ---------- Vista previa por rol: qué ve cada rol, en tiempo real (solo lectura) ---------- */
+let rpermVistaRol = null;
+function rpermVista(rol, refrescar){
+  if(!rpermDatos || typeof pgGrupos !== 'function') return;
+  const e = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const mods = (rpermDatos.permisos || []).filter(p=>p.rol === rol && p.habilitado).map(p=>p.modulo);
+  const ok = f => Array.isArray(f.mod) ? f.mod.some(m=>m !== 'solo_admin' && mods.indexOf(m) >= 0) : (f.mod !== 'solo_admin' && mods.indexOf(f.mod) >= 0);
+  const G = pgGrupos(); let vis = 0, ocultas = [];
+  const secciones = G.map(g=>{
+    const fs = g.funciones.filter(f=>{ const v = ok(f); if(v) vis++; else ocultas.push(f.titulo); return v; });
+    if(!fs.length) return '';
+    return '<section class="fn-seccion ' + g.clase + '"><div class="fn-sec-cab"><span class="fn-sec-ico">' + g.icono + '</span><div><h3>' + e(g.titulo) + '</h3></div></div><div class="fn-grid">' +
+      fs.map(f=>'<div class="fn-card ' + f.clase + '" style="cursor:default;"><span class="fn-ico">' + f.icono + '</span><span class="fn-txt"><span class="fn-tit">' + e(f.titulo) + '</span></span></div>').join('') + '</div></section>';
+  }).join('');
+  const campana = mods.some(m=>['est_contrato', 'emp_ca', 'est_registrados'].indexOf(m) >= 0);
+  let m = document.getElementById('rpermVistaModal');
+  if(!m){ m = document.createElement('div'); m.id = 'rpermVistaModal'; m.className = 'home-modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); document.body.appendChild(m); m.addEventListener('click', ev=>{ if(ev.target === m) rpermVistaCerrar(); }); }
+  rpermVistaRol = rol;
+  m.innerHTML = '<div class="home-modal-box" style="max-width:860px;width:96%;max-height:88vh;overflow:auto;">' +
+    '<div class="home-modal-head"><span class="home-modal-ico">👁</span><h3>Vista previa: ' + e(ROL_NOMBRES[rol]) + '</h3></div>' +
+    '<div class="note-box" style="margin:0 0 10px;"><b>Solo vista.</b> Así se vería el panel de este rol con los permisos de hoy. Si cambias un permiso en la tabla, esta vista se actualiza sola.</div>' +
+    '<p style="margin:0 0 8px;font-size:14px;"><b>' + vis + '</b> función(es) visible(s) · <b>' + ocultas.length + '</b> oculta(s) · Campana de avisos del panel: <b>' + (campana ? 'sí' : 'no') + '</b></p>' +
+    '<div class="fn-hub">' + (secciones || '<div class="note-box">Este rol no tiene funciones habilitadas: al entrar vería un mensaje para pedirle al administrador que le habilite alguna.</div>') + '</div>' +
+    (ocultas.length ? '<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:13.5px;">Lo que este rol <b>no</b> ve (' + ocultas.length + ')</summary><ul style="font-size:13px;margin:6px 0 0 18px;">' + ocultas.map(t=>'<li>' + e(t) + '</li>').join('') + '</ul></details>' : '') +
+    '<p class="helptext" style="margin-top:10px;">Los «Pendientes por proceso» de este rol solo incluyen las funciones que ve. La base de datos además rechaza cualquier función fuera de su permiso, aunque alguien la llame a mano.</p>' +
+    '<div class="home-modal-acc"><button class="primary" type="button" onclick="rpermVistaCerrar()">Cerrar vista previa</button></div></div>';
+}
+function rpermVistaCerrar(){ const m = document.getElementById('rpermVistaModal'); if(m) m.remove(); rpermVistaRol = null; }
