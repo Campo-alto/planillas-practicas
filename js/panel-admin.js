@@ -61,6 +61,7 @@
       ] }
   ];
 
+  window.pgGrupos = function(){ return GRUPOS; };   // lo usa «Vista previa por rol» (roles-permisos.js)
   function pantalla(id, html){
     let el = document.getElementById(id);
     if(!el){ const hub = document.getElementById('screen-admin-hub'); if(!hub) return null;
