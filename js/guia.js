@@ -135,6 +135,7 @@ const GD_PROCESOS = [
 ];
 async function gdPendientes(){
   const hub = document.getElementById('screen-admin-hub'); if(!hub) return;
+  if(typeof permAdmin !== 'undefined' && !permAdmin.listo){ setTimeout(gdPendientes, 1500); return; }   // espera a conocer los permisos del rol
   let box = document.getElementById('gdPend');
   if(!box){ box = document.createElement('div'); box.id = 'gdPend'; box.className = 'card gd-caja'; const h2 = hub.querySelector('h2'); if(h2) h2.insertAdjacentElement('afterend', box); else hub.insertBefore(box, hub.firstChild); }
   const ex = {}; try{ const r = await sb.rpc('admin_ruta_pendientes'); if(!r.error && r.data) Object.assign(ex, r.data); }catch(_){}
@@ -149,7 +150,9 @@ async function gdPendientes(){
   poner('Solicitudes de aprendices', v('ca_ofertas'), 'Solicitudes esperando aprobación');
   poner('Contrato de aprendizaje', v('ca_inscripciones') + v('ca_confirmar') + v('ca_cartas'), 'Inscripciones, confirmaciones y cartas por atender');
   poner('Contrato de aprendizaje · Convenio', v('convenio_cartas') + v('convenio_formalizar'), 'Cartas por enviar y estudiantes por formalizar');
-  const grupos = GD_PROCESOS.map(p=>({ n:p.n, it:p.it.filter(i=>vals[i[0]] !== null && vals[i[0]] !== undefined) })).filter(g=>g.it.length);
+  // SEGURIDAD DE LA VISTA: un pendiente solo se muestra si la tarjeta de su función es visible para este rol (si no la ve, tampoco ve el pendiente)
+  const tarjetaVisible = i=>{ const t = i[3] || i[1]; return [...document.querySelectorAll('.fn-card')].some(x=>{ const d = x.getAttribute('data-fn') || ''; return d === t || d.indexOf(t) === 0; }); };
+  const grupos = GD_PROCESOS.map(p=>({ n:p.n, it:p.it.filter(i=>vals[i[0]] !== null && vals[i[0]] !== undefined && tarjetaVisible(i)) })).filter(g=>g.it.length);
   const total = grupos.reduce((a, g)=>a + g.it.reduce((b, i)=>b + (Number(vals[i[0]]) || 0), 0), 0);
   box.innerHTML = '<div class="section-bar teal">Pendientes por proceso</div><p class="helptext">' + (total ? 'Tienes <b>' + total + '</b> pendiente(s). Están en el orden en que ocurren los procesos; pulsa uno para atenderlo.' : '🎉 No hay pendientes por atender.') + '</p>' +
     grupos.map(g=>'<div class="gd-grupo"><div class="gd-grupo-t">' + gdE(g.n) + '</div><div class="gd-chips">' + g.it.map(i=>{ const v = Number(vals[i[0]]) || 0; return '<button type="button" class="gd-chip ' + (v ? 'on' : '') + '" onclick="gdAbrirFn(\'' + gdE(i[3] || i[1]).replace(/'/g, '&#39;') + '\')"><b>' + v + '</b><span>' + gdE(i[1]) + '</span></button>'; }).join('') + '</div></div>').join('');
