@@ -51,6 +51,7 @@
       desc:'Quién puede entrar, qué puede hacer cada rol y el registro de lo que ocurre en el sistema.',
       funciones:[
         { icono:'Ad', clase:'administrador', titulo:'Personal y roles', mod:'solo_admin', desc:'Crea al personal (administradores, coordinadores, asistentes) y asígnale su rol.', abrir:()=>goAdminModule('administradores') },
+        { icono:'✍️', clase:'administrador', titulo:'Firma de la carta de fechas', mod:'solo_admin', desc:'Cambia el nombre, cargo, teléfono y correo que firman la carta de fechas.', abrir:()=>abrirFirmaCarta() },
         { icono:'🔑', clase:'administrador', titulo:'Roles y permisos', mod:'solo_admin', desc:'Activa o desactiva las funciones que puede usar cada rol.', abrir:()=>abrirPermisos() },
         { icono:'🛡', clase:'administrador', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Mira quién creó, cambió, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() }
       ] },
