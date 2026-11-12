@@ -33,7 +33,7 @@
                   'Aprendices por confirmar':'🤝', 'Cartas de fechas por definir':'📅', 'Cartas de convenio por enviar':'✉️', 'Estudiantes por formalizar':'🎓',
                   'Notas por subir al sistema':'📤', 'Empresas por confirmar':'✅', 'Estudiantes esperando supervisor':'🧭', 'Cambios de empresa':'🔄', 'Inasistencias por revisar':'🩺' };
   const expandidas = new Set();
-  let activo = 'dash', chips = [];
+  let activo = 'dash', chips = [], vista = null;   // vista = sección abierta por separado desde la barra lateral (null = panel completo)
 
   const enHub = () => { const h = document.getElementById('screen-admin-hub'); return !!(h && h.classList.contains('active')); };
   const hayBuscador = () => !!((document.getElementById('fnBuscar') || {}).value || '').trim();
@@ -71,14 +71,24 @@
     }catch(_){}
   }
   window.pmIr = function(id){
-    activo = id;
-    const ir = () => {
-      if(id === 'dash'){ window.scrollTo({ top:0, behavior:'smooth' }); }
-      else { const s = document.getElementById('grupoSec-' + id); if(s){ expandidas.add(id); pmCortas(); s.scrollIntoView({ behavior:'smooth', block:'start' }); } }
-      pintarBarra();
-    };
+    activo = id; vista = id === 'dash' ? null : id;
+    const ir = () => { aplicarVista(); window.scrollTo({ top:0, behavior:'smooth' }); pintarBarra(); };
     if(!enHub()){ showScreen('screen-admin-hub'); setTimeout(ir, 350); } else ir();
   };
+  // Muestra SOLO las funciones de la sección elegida (o el panel completo si vista es null)
+  function aplicarVista(){
+    document.body.classList.toggle('pm-vista', !!vista);
+    document.querySelectorAll('#grupoGrid .fn-seccion').forEach(sec=>{ sec.classList.toggle('pm-oculta', !!vista && sec.id !== 'grupoSec-' + vista); });
+    const grid = document.getElementById('grupoGrid'); if(!grid) return;
+    let mig = grid.querySelector('.pm-mig');
+    if(vista){
+      const g = (typeof window.pgGrupos === 'function' ? window.pgGrupos() : []).find(x=>x.id === vista);
+      if(!g || !document.getElementById('grupoSec-' + vista)){ vista = null; activo = 'dash'; return aplicarVista(); }   // la sección ya no está disponible para este rol
+      if(!mig){ mig = document.createElement('div'); mig.className = 'pm-mig'; grid.insertBefore(mig, grid.firstChild); }
+      mig.innerHTML = '<button type="button" onclick="pmIr(\'dash\')">← Volver al panel</button><span>/</span><b>' + e(g.titulo) + '</b>';
+    } else if(mig) mig.remove();
+    pmCortas();
+  }
   window.pmAyuda = function(){
     if(document.getElementById('pmAyuda')) return;
     const m = document.createElement('div'); m.id = 'pmAyuda'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
@@ -132,10 +142,10 @@
     const buscando = hayBuscador();
     document.querySelectorAll('#grupoGrid .fn-seccion').forEach(sec=>{
       const id = sec.id.replace('grupoSec-', ''), n = sec.querySelectorAll('.fn-card').length;
-      const larga = n > 4, abierta = expandidas.has(id) || buscando;
+      const larga = n > 4, abierta = expandidas.has(id) || buscando || vista === id;
       sec.classList.toggle('pm-corta', larga && !abierta);
       let b = sec.querySelector('.pm-vermas');
-      if(larga && !buscando){
+      if(larga && !buscando && !vista){
         if(!b){ b = document.createElement('button'); b.type = 'button'; b.className = 'pm-vermas'; b.onclick = ()=>pmVerMas(id); sec.querySelector('.fn-sec-cab').appendChild(b); }
         b.textContent = abierta ? 'Ver menos ↑' : 'Ver más (' + (n - 4) + ') →'; b.setAttribute('aria-expanded', abierta ? 'true' : 'false');
       } else if(b) b.remove();
@@ -153,14 +163,14 @@
       inp.placeholder = 'Busca una función… (ej. correo, empresa)';
       if(!inp.parentElement.querySelector('.pm-kbd')){ const k = document.createElement('span'); k.className = 'pm-kbd'; k.setAttribute('aria-hidden', 'true'); k.textContent = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent) ? '⌘ K' : 'Ctrl K'; inp.parentElement.appendChild(k); }
     }
-    pmCortas(); pintarBarra();
+    aplicarVista(); pintarBarra();
   }
   // El panel vuelve a pintar las tarjetas cada vez que se muestra o llegan los permisos: se reaplica el diseño
   (function(){
     const g = document.getElementById('grupoGrid'); if(!g || typeof MutationObserver === 'undefined') return;
     new MutationObserver(()=>{ mejorarCatalogo(); }).observe(g, { childList:true });
   })();
-  if(typeof window.pgFiltrar === 'function'){ const _f = window.pgFiltrar; window.pgFiltrar = function(){ const r = _f.apply(this, arguments); pmCortas(); return r; }; }
+  if(typeof window.pgFiltrar === 'function'){ const _f = window.pgFiltrar; window.pgFiltrar = function(){ if(vista && hayBuscador()){ vista = null; activo = 'dash'; aplicarVista(); pintarBarra(); } const r = _f.apply(this, arguments); pmCortas(); return r; }; }
   document.addEventListener('keydown', ev=>{
     if((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === 'k' && enHub()){ const i = document.getElementById('fnBuscar'); if(i){ ev.preventDefault(); i.scrollIntoView({ behavior:'smooth', block:'center' }); i.focus(); i.select(); } }
     if(ev.key === 'Escape') pmAyudaCerrar();
@@ -173,7 +183,8 @@
     const conBarra = SIN_BARRA.indexOf(id) < 0 && !!document.getElementById(id);
     document.body.classList.toggle('pm-side', conBarra);
     document.body.classList.toggle('pm-on', id === 'screen-admin-hub');
-    if(conBarra){ if(id !== 'screen-admin-hub') activo = ''; else if(!activo) activo = 'dash'; pintarBarra(); }
+    if(SIN_BARRA.indexOf(id) >= 0){ vista = null; activo = 'dash'; }
+    if(conBarra){ if(id !== 'screen-admin-hub') activo = ''; else activo = vista || 'dash'; pintarBarra(); }
     if(id === 'screen-admin-hub'){ pintarResumen(); mejorarCatalogo(); }
     return r;
   };
