@@ -5,12 +5,12 @@
 const CARTA_FECHAS_FIRMA = ['Yaneth Gomez', 'Coordinadora de Prácticas', 'Campoalto Acesalud S.A.S', 'PBX 7441441 Ext. 1224.', 'gestionpracticas@campoalto.edu.co'];
 
 /* Firma editable (la define el administrador). Si no se puede leer, se usa la de arriba. */
-let cartaFirmaCache = null;
+let cartaFirmaCache = null, cartaFirmaImg = '';
 async function cartaFirmaCargar(forzar){
   if(cartaFirmaCache && !forzar) return cartaFirmaCache;
   try{
     const { data, error } = await sb.rpc('carta_firma_obtener');
-    if(!error && data && data.nombre){ cartaFirmaCache = [data.nombre, data.cargo, data.institucion, data.telefono, data.correo]; return cartaFirmaCache; }
+    if(!error && data && data.nombre){ cartaFirmaCache = [data.nombre, data.cargo, data.institucion, data.telefono, data.correo]; cartaFirmaImg = data.firma_img || ''; return cartaFirmaCache; }
   }catch(e){}
   return CARTA_FECHAS_FIRMA;
 }
@@ -72,6 +72,14 @@ async function generarCartaFechasPdf(d){
   });
   y = ty - 30;
   txt('Cordialmente,', X, y);
+  if(cartaFirmaImg){                                     // firma manuscrita sobre el nombre
+    try{
+      const img = /image\/png/.test(cartaFirmaImg.slice(0, 30)) ? await pdf.embedPng(Uint8Array.from(atob(cartaFirmaImg.split(',')[1]), c=>c.charCodeAt(0)))
+                                                                 : await pdf.embedJpg(Uint8Array.from(atob(cartaFirmaImg.split(',')[1]), c=>c.charCodeAt(0)));
+      const esc2 = Math.min(150 / img.width, 55 / img.height);
+      p.drawImage(img, { x: X, y: y - 56, width: img.width * esc2, height: img.height * esc2 });
+    }catch(e){ console.warn('firma no válida', e); }
+  }
   y -= 60;
   firma.forEach((ln, i)=>{ txt(ln, X, y - i * 14); });
 
@@ -130,7 +138,7 @@ async function caCartaDescargar(id, admin){
 /* ---------- Administrador: editar firma y teléfono de la carta ---------- */
 async function abrirFirmaCarta(){
   if(!requireSupabase()) return;
-  const f = await cartaFirmaCargar(true);
+  const f = await cartaFirmaCargar(true); cfNueva = null;
   const v = i => esc(f[i] || '');
   const old = document.getElementById('cfModal'); if(old) old.remove();
   const m = document.createElement('div'); m.id = 'cfModal';
@@ -143,15 +151,36 @@ async function abrirFirmaCarta(){
     <label>Institución<input id="cfIns" maxlength="80" value="${v(2)}"></label>
     <label>Teléfono<input id="cfTel" maxlength="60" value="${v(3)}"></label>
     <label>Correo<input id="cfCor" type="email" maxlength="120" value="${v(4)}"></label>
+    <label>Firma (imagen PNG o JPG, de preferencia con fondo transparente)<input id="cfImg" type="file" accept="image/png,image/jpeg" onchange="cfElegirImg(this)"></label>
+    <div style="margin:6px 0;min-height:60px;border:1px dashed #bbb;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;">
+      <img id="cfPrev" alt="Firma" style="max-width:200px;max-height:70px;${cartaFirmaImg ? '' : 'display:none;'}" ${cartaFirmaImg ? `src="${cartaFirmaImg}"` : ''}>
+      <span id="cfSin" style="color:#888;font-size:13px;${cartaFirmaImg ? 'display:none;' : ''}">Sin firma: la carta saldrá sin imagen</span></div>
+    <button class="ghost" type="button" onclick="cfQuitarImg()">Quitar la firma</button>
     <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
       <button class="ghost" onclick="document.getElementById('cfModal').remove()">Cancelar</button>
       <button class="primary" id="cfGuardar" onclick="guardarFirmaCarta()">Guardar</button></div></div>`;
   document.body.appendChild(m);
 }
+let cfNueva = null;   // null = sin cambios · '' = quitar · dataURL = nueva
+function cfMostrar(u){ const i = document.getElementById('cfPrev'), t = document.getElementById('cfSin'); if(u){ i.src = u; i.style.display = ''; t.style.display = 'none'; } else { i.removeAttribute('src'); i.style.display = 'none'; t.style.display = ''; } }
+function cfQuitarImg(){ cfNueva = ''; document.getElementById('cfImg').value = ''; cfMostrar(''); }
+function cfElegirImg(inp){
+  const f = inp.files && inp.files[0]; if(!f) return;
+  if(!/^image\/(png|jpeg)$/.test(f.type)){ toast('Usa una imagen PNG o JPG.', true); inp.value = ''; return; }
+  if(f.size > 5 * 1024 * 1024){ toast('La imagen pesa demasiado (máximo 5 MB).', true); inp.value = ''; return; }
+  const r = new FileReader();
+  r.onload = () => { const im = new Image(); im.onload = () => {            // se reduce para que sea liviana
+    const k = Math.min(1, 500 / im.width, 200 / im.height), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    cfNueva = c.toDataURL('image/png'); cfMostrar(cfNueva); };
+    im.onerror = () => toast('No se pudo leer la imagen.', true); im.src = r.result; };
+  r.readAsDataURL(f);
+}
 async function guardarFirmaCarta(){
   const g = id => document.getElementById(id).value;
   const b = document.getElementById('cfGuardar'); b.disabled = true;
-  const { error } = await sb.rpc('admin_carta_firma_guardar', { p_nombre: g('cfNom'), p_cargo: g('cfCar'), p_institucion: g('cfIns'), p_telefono: g('cfTel'), p_correo: g('cfCor') });
+  const { error } = await sb.rpc('admin_carta_firma_guardar', { p_nombre: g('cfNom'), p_cargo: g('cfCar'), p_institucion: g('cfIns'), p_telefono: g('cfTel'), p_correo: g('cfCor'), p_firma: cfNueva });
   b.disabled = false;
   if(error){ toast(error.message, true); return; }
   cartaFirmaCache = null; await cartaFirmaCargar(true);
