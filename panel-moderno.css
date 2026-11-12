@@ -105,11 +105,27 @@ body.pm-on .fn-go{position:absolute;right:12px;top:50%;transform:translateY(-50%
 body.pm-on .fn-badge{position:absolute;top:-8px;right:-6px;}
 body.pm-on .fn-badge .sa-badge{min-width:26px;height:26px;line-height:26px;font-size:13px;border:2px solid #fff;border-radius:13px;box-shadow:0 2px 6px rgba(192,57,43,.35);}
 
+/* ---------- Panel central: solo el resumen; las funciones aparecen al elegir una sección o al buscar ---------- */
+body.pm-on:not(.pm-vista):not(.pm-buscando) #grupoGrid{display:none;}
+body.pm-buscando #pmResumen{display:none;}
+body.pm-on .fn-buscar{display:none;}
+#pmTop{margin:0 0 16px;}
+.pm-bus{position:relative;max-width:560px;}
+.pm-bus svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:20px;height:20px;stroke:#5B8A8F;fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;}
+.pm-bus input{width:100%;border:1.5px solid #B9D5D8;border-radius:14px;padding:12px 78px 12px 44px;font:500 15px/1.2 'Inter',system-ui,sans-serif;background:#fff;box-shadow:0 2px 8px rgba(11,61,61,.07);}
+.pm-bus input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,124,134,.18);}
+body:not(.pm-on) #pmTop{display:none;}
+/* Campana de notificaciones (arriba a la derecha) */
+#pmCampana{display:none;position:relative;width:46px;height:46px;border-radius:50%;border:1px solid #BFDDE0;background:#fff;color:var(--teal-dark);cursor:pointer;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(11,61,61,.12);margin-left:12px;}
+#pmCampana svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+#pmCampana:hover{background:#E3F1F2;} #pmCampana:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+body.pm-side #pmCampana.on{display:flex;}
+#pmCampana .pm-cn{position:absolute;top:-6px;right:-6px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:#C0392B;color:#fff;font:700 12px/22px 'Inter',system-ui,sans-serif;text-align:center;border:2px solid #fff;}
+body.pm-side #ntBell{display:none !important;}
+
 /* ---------- Sección abierta por separado (desde la barra lateral) ---------- */
 body.pm-vista #pmResumen{display:none;}
 body.pm-vista .fn-seccion.pm-oculta{display:none !important;}
-body.pm-vista .pm-cat-head h3{display:none;}
-body.pm-vista .pm-cat-head{justify-content:flex-end;}
 .pm-mig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;color:var(--muted);margin:2px 0 -4px;}
 .pm-mig button{border:1px solid #BFDDE0;background:#fff;color:var(--teal-dark);font:700 13.5px/1 'Inter',system-ui,sans-serif;padding:9px 14px;border-radius:999px;cursor:pointer;}
 .pm-mig button:hover{background:#E3F1F2;} .pm-mig button:focus-visible{outline:2px solid var(--teal);}
