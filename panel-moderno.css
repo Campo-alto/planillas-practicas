@@ -105,6 +105,18 @@ body.pm-on .fn-go{position:absolute;right:12px;top:50%;transform:translateY(-50%
 body.pm-on .fn-badge{position:absolute;top:-8px;right:-6px;}
 body.pm-on .fn-badge .sa-badge{min-width:26px;height:26px;line-height:26px;font-size:13px;border:2px solid #fff;border-radius:13px;box-shadow:0 2px 6px rgba(192,57,43,.35);}
 
+/* ---------- Sección abierta por separado (desde la barra lateral) ---------- */
+body.pm-vista #pmResumen{display:none;}
+body.pm-vista .fn-seccion.pm-oculta{display:none !important;}
+body.pm-vista .pm-cat-head h3{display:none;}
+body.pm-vista .pm-cat-head{justify-content:flex-end;}
+.pm-mig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;color:var(--muted);margin:2px 0 -4px;}
+.pm-mig button{border:1px solid #BFDDE0;background:#fff;color:var(--teal-dark);font:700 13.5px/1 'Inter',system-ui,sans-serif;padding:9px 14px;border-radius:999px;cursor:pointer;}
+.pm-mig button:hover{background:#E3F1F2;} .pm-mig button:focus-visible{outline:2px solid var(--teal);}
+.pm-mig b{font:700 26px/1.1 'Zilla Slab',Georgia,serif;font-style:italic;color:var(--deep);}
+body.pm-vista .fn-seccion:not(.pm-oculta){padding-top:16px;}
+body.pm-vista .fn-seccion:not(.pm-oculta) .fn-sec-cab h3{display:none;}
+
 /* ---------- Ayuda ---------- */
 #pmAyuda{position:fixed;inset:0;z-index:2100;background:rgba(10,30,32,.55);display:flex;align-items:center;justify-content:center;padding:16px;}
 #pmAyuda .caja{background:#fff;border-radius:16px;max-width:520px;width:100%;padding:22px 24px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:88vh;overflow:auto;}
