@@ -2,7 +2,16 @@
    Al entrar como supervisor se ve la lista de estudiantes que el supervisor general le asignó. Mientras una visita está a su cargo,
    ningún otro supervisor puede abrir a ese estudiante (lo impone la base de datos). Al terminar, «Finalizar seguimiento» la cierra.
    Requiere visitas-supervisor-general-etapa25.sql. */
-let svVisitas = [], svFechas = {}, svDisp = [];
+let svVisitas = [], svFechas = {}, svDisp = [], svPerms = null;
+/* Funciones habilitadas al rol «Supervisor» en Roles y permisos (null = aún no se sabe; antes de la etapa 54 todo está permitido salvo el reporte).
+   Esto solo ordena lo que se VE: la base de datos rechaza cualquier función sin permiso (rol-supervisor-etapa54.sql). */
+function svPuede(m){ return svPerms === null ? m !== 'supv_reporte' : svPerms.indexOf(m) >= 0; }
+async function svPermisos(){
+  if(typeof state === 'undefined' || !state.token){ return; }
+  const { data, error } = await sb.rpc('sup_mis_permisos', { p_token: state.token });
+  if(error){ svPerms = /PGRST202|42883|Could not find the function|does not exist/i.test(String(error.message) + ' ' + String(error.code)) ? null : []; }
+  else svPerms = data || [];
+}
 
 function svTarjeta(){
   let c = document.getElementById('svVisitasCard');
@@ -30,7 +39,7 @@ async function svCargar(){
         <td>${esc(v.modalidad)}</td>
         <td>${l ? '<b>' + esc(l.nombre) + '</b>' + (l.intento > 1 ? ' <span class="aud-ref">(lugar n.º ' + l.intento + ')</span>' : '') + '<br><span class="aud-ref">' + esc([l.direccion, l.ciudad].filter(Boolean).join(', ') || '—') + '<br>Contacto: ' + esc(l.contacto || '—') + (l.telefono ? ' · ' + esc(l.telefono) : '') + '</span><br>' + etq(l) + (l.observaciones ? '<br><i>' + esc(l.observaciones) + '</i>' : '') : esc(v.sitio || '—')}</td>
         <td class="aud-nw">${f(v.asignada)}<br>${svFechasHtml(v.documento)}</td>
-        <td><button class="primary" onclick="svAbrir(${i})">Abrir</button> <button class="ghost" onclick="svFechaModal('${esc(v.documento)}', null)">📅 Fecha de visita</button> ${l && l.estado === 'pendiente' ? `<button class="primary" onclick="svConcepto(${i})">Concepto del lugar</button>` : ''} <button class="ghost" onclick="svFinalizar(${i})">Finalizar seguimiento</button></td></tr>`; }).join('') + '</tbody></table></div>'
+        <td>${svPuede('supv_registrar') || svPuede('supv_mis_visitas') ? `<button class="primary" onclick="svAbrir(${i})">Abrir</button>` : ''} ${svPuede('supv_fechas') ? `<button class="ghost" onclick="svFechaModal('${esc(v.documento)}', null)">📅 Fecha de visita</button>` : ''} ${svPuede('supv_registrar') && l && l.estado === 'pendiente' ? `<button class="primary" onclick="svConcepto(${i})">Concepto del lugar</button>` : ''} ${svPuede('supv_registrar') ? `<button class="ghost" onclick="svFinalizar(${i})">Finalizar seguimiento</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>'
     : '<p style="color:var(--muted);font-size:13.5px;">No tienes visitas asignadas por ahora. Cuando el supervisor general te asigne una, la verás aquí y recibirás un correo.</p>');
 }
 /* Concepto sobre el lugar de prácticas, después de visitarlo */
@@ -157,3 +166,77 @@ async function svFinalizar(i){
     return r;
   };
 })();
+
+
+/* ---- Rol «Supervisor» (etapa 54): oculta lo que el administrador no habilitó y ofrece el reporte de visitas (solo lectura) ---- */
+(function(){
+  const _dis = svDisponibles;
+  svDisponibles = async function(){
+    const c = document.getElementById('svDispCard');
+    if(!svPuede('supv_disponibles')){ if(c) c.style.display = 'none'; return; }
+    return _dis.apply(this, arguments);
+  };
+  const _car = svCargar;
+  svCargar = async function(){
+    if(typeof state === 'undefined' || state.role !== 'supervisor' || !state.token) return;
+    await svPermisos();
+    const lk = document.querySelector('#screen-lookup .card'); if(lk) lk.style.display = svPuede('supv_consultar') ? '' : 'none';
+    if(!svPuede('supv_mis_visitas')){
+      const c = svTarjeta(); if(c) c.style.display = 'none';
+      try{ await svDisponibles(); }catch(_){}
+    } else {
+      await _car.apply(this, arguments);
+    }
+    svReporteTarjeta();
+    const nada = ['supv_mis_visitas', 'supv_disponibles', 'supv_consultar', 'supv_reporte'].every(m=>!svPuede(m));
+    let av = document.getElementById('svSinPermisos');
+    if(nada){
+      if(!av){ av = document.createElement('div'); av.id = 'svSinPermisos'; av.className = 'note-box'; const l = document.getElementById('screen-lookup'); if(l) l.appendChild(av); }
+      av.textContent = 'Tu rol de supervisor no tiene funciones habilitadas por ahora. Pídele al administrador que las habilite en «Roles y permisos».'; av.style.display = '';
+    } else if(av) av.style.display = 'none';
+  };
+})();
+
+// Al entrar con otro rol (la pantalla de búsqueda es la misma) se esconde todo lo del supervisor y se devuelve la búsqueda
+(function(){
+  if(typeof goRole !== 'function') return;
+  const _go = goRole;
+  goRole = function(role){
+    const r = _go.apply(this, arguments);
+    if(role !== 'supervisor'){
+      ['svReporteCard', 'svSinPermisos', 'svDispCard'].forEach(id=>{ const e = document.getElementById(id); if(e) e.style.display = 'none'; });
+      const lk = document.querySelector('#screen-lookup .card'); if(lk) lk.style.display = '';
+    }
+    return r;
+  };
+})();
+
+let svRepDatos = [];
+function svReporteTarjeta(){
+  let c = document.getElementById('svReporteCard');
+  if(!svPuede('supv_reporte')){ if(c) c.style.display = 'none'; return; }
+  if(!c){
+    const lk = document.getElementById('screen-lookup'); if(!lk) return;
+    c = document.createElement('div'); c.className = 'card'; c.id = 'svReporteCard'; lk.appendChild(c);
+    c.innerHTML = '<div class="section-bar deep">Reporte de visitas</div><p class="helptext">Consulta, solo para lectura, las visitas asignadas a todos los supervisores. No incluye datos de contacto de los estudiantes.</p><div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="svReporteCargar()">Ver / actualizar el reporte</button></div><div id="svReporteLista"></div>';
+  }
+  c.style.display = 'block';
+}
+async function svReporteCargar(){
+  const l = document.getElementById('svReporteLista'); if(!l) return;
+  l.innerHTML = '<p style="color:var(--muted)">Cargando…</p>';
+  const { data, error } = await sb.rpc('sup_reporte_visitas', { p_token: state.token });
+  if(error){ l.innerHTML = '<p style="color:var(--danger);font-size:13px;">' + esc(error.message) + '</p>'; return; }
+  svRepDatos = data || []; svReportePintar();
+}
+function svReportePintar(){
+  const l = document.getElementById('svReporteLista'); if(!l) return;
+  const q = ((document.getElementById('svRepQ') || {}).value || '').toLowerCase();
+  const fil = svRepDatos.filter(r=>!q || [r.documento, r.nombre, r.supervisor, r.sitio, r.modalidad].join(' ').toLowerCase().indexOf(q) >= 0);
+  const f = x => x ? String(x).slice(0,10).split('-').reverse().join('/') : '—';
+  const v = (fecha, hecha) => hecha ? '✔ hecha' : f(fecha);
+  l.innerHTML = '<div class="lista-top"><input type="search" id="svRepQ" class="lista-busca" placeholder="🔎 Buscar por estudiante, supervisor o lugar…" value="' + esc(q) + '" oninput="svReportePintar()"></div>' +
+    (fil.length ? '<div class="cupos-wrap"><table class="cupos-table"><thead><tr><th>Estudiante</th><th>Modalidad / programa</th><th>Lugar</th><th>Supervisor</th><th>Visita 1</th><th>Visita 2</th><th>Estado</th></tr></thead><tbody>' +
+      fil.map(r=>'<tr><td><b>' + esc(r.nombre || '') + '</b><br><span class="aud-ref">Doc. ' + esc(r.documento) + '</span></td><td>' + esc(r.modalidad || '—') + '<br><span class="aud-ref">' + esc(r.programa || '') + '</span></td><td>' + esc(r.sitio || '—') + '</td><td>' + esc(r.supervisor || '—') + '</td><td>' + v(r.fecha1, r.hecha1) + '</td><td>' + v(r.fecha2, r.hecha2) + '</td><td>' + (r.estado === 'activa' ? 'En seguimiento' : 'Finalizada') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<p style="color:var(--muted);font-size:13.5px;">No hay visitas para mostrar.</p>');
+}
