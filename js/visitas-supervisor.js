@@ -5,7 +5,7 @@
 let svVisitas = [], svFechas = {}, svDisp = [], svPerms = null;
 /* Funciones habilitadas al rol «Supervisor» en Roles y permisos (null = aún no se sabe; antes de la etapa 54 todo está permitido salvo el reporte).
    Esto solo ordena lo que se VE: la base de datos rechaza cualquier función sin permiso (rol-supervisor-etapa54.sql). */
-function svPuede(m){ return svPerms === null ? m !== 'supv_reporte' : svPerms.indexOf(m) >= 0; }
+function svPuede(m){ return svPerms === null ? (m !== 'supv_reporte' && m.indexOf('supa_') !== 0) : svPerms.indexOf(m) >= 0; }
 async function svPermisos(){
   if(typeof state === 'undefined' || !state.token){ return; }
   const { data, error } = await sb.rpc('sup_mis_permisos', { p_token: state.token });
