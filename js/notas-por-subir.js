@@ -36,7 +36,7 @@ async function npMarcar(i){
   if(!confirm('¿Confirmas que ya subiste al sistema ' + (x.meses.length === 1 ? 'el mes ' : 'los meses ') + x.meses.join(', ') + ' de ' + x.nombre + '?')) return;
   const { error } = await sb.rpc('admin_notas_marcar_subidas', { p_documento: x.documento, p_meses: x.meses });
   if(error){ toast(error.message, true); return; }
-  toast('Marcadas como subidas'); abrirNotasPorSubir(); if(typeof gdPendientes === 'function') gdPendientes(); if(typeof ntCargar === 'function') ntCargar(false);
+  toast('Marcadas como subidas'); if(gdNotasAbierto) npInline(true); else abrirNotasPorSubir(); if(typeof gdPendientes === 'function') gdPendientes(); if(typeof ntCargar === 'function') ntCargar(false);
 }
 
 /* Campana del administrador: aviso fijo mientras haya notas por subir (al pulsar, abre la lista) */
@@ -68,4 +68,34 @@ let ntNotas = 0;
         d.onclick = () => { ntCerrar(); abrirNotasPorSubir(); }; head.insertAdjacentElement('afterend', d); }
     }
   };
+})();
+
+
+/* ===== Dentro de «Pendientes por proceso»: al pulsar el chip se despliega la lista de estudiantes ===== */
+let gdNotasAbierto = false;
+async function npInline(forzar){
+  const box = document.getElementById('gdPend'); if(!box) return;
+  let d = document.getElementById('gdNotasInline');
+  if(d && !forzar){ d.remove(); gdNotasAbierto = false; return; }       // segundo clic: se cierra
+  gdNotasAbierto = true;
+  if(!d){ d = document.createElement('div'); d.id = 'gdNotasInline'; d.style.cssText = 'margin-top:12px;border-top:1px dashed var(--line,#ddd);padding-top:10px;'; box.appendChild(d); }
+  d.innerHTML = '<p style="color:var(--muted)">Cargando notas por subir…</p>';
+  const { data, error } = await sb.rpc('admin_notas_por_subir');
+  if(error){ d.innerHTML = '<p style="color:var(--danger)">No se pudo cargar: ' + npE(error.message) + '</p>'; return; }
+  npLista = data || [];
+  d.innerHTML = '<div class="gd-grupo-t">📤 Notas por subir al sistema (' + npLista.length + ')</div>' + (npLista.length ?
+    '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Documento</th><th>Estudiante</th><th>Meses por subir</th><th></th></tr></thead><tbody>' +
+    npLista.map((x, i) => '<tr><td>' + npE(x.documento) + '</td><td><b>' + npE(x.nombre) + '</b><br><span class="aud-ref">' + npE(x.modalidad || '') + '</span></td><td>' +
+      (x.meses || []).map(m => '<span class="cor-est cor-pendiente">Mes ' + m + '</span>').join(' ') + '</td><td class="aud-nw"><button class="ghost" onclick="npVer(\'' + npE(x.documento) + '\')">Ver planilla</button> <button class="primary" onclick="npMarcar(' + i + ')">Ya las subí</button></td></tr>').join('') +
+    '</tbody></table></div>' : '<p>🎉 No hay notas pendientes por subir.</p>');
+}
+(function(){
+  if(typeof gdAbrirFn === 'function'){
+    const _a = gdAbrirFn;
+    gdAbrirFn = function(titulo){ if(titulo === 'Notas por subir al sistema'){ npInline(); return; } return _a.apply(this, arguments); };
+  }
+  if(typeof gdPendientes === 'function'){
+    const _p = gdPendientes;
+    gdPendientes = async function(){ const r = await _p.apply(this, arguments); if(gdNotasAbierto) npInline(true); return r; };
+  }
 })();
