@@ -4,7 +4,19 @@
    Usa pdf-lib (PDFLib) y los helpers de carta.js. */
 const CARTA_FECHAS_FIRMA = ['Yaneth Gomez', 'Coordinadora de Prácticas', 'Campoalto Acesalud S.A.S', 'PBX 7441441 Ext. 1224.', 'gestionpracticas@campoalto.edu.co'];
 
+/* Firma editable (la define el administrador). Si no se puede leer, se usa la de arriba. */
+let cartaFirmaCache = null;
+async function cartaFirmaCargar(forzar){
+  if(cartaFirmaCache && !forzar) return cartaFirmaCache;
+  try{
+    const { data, error } = await sb.rpc('carta_firma_obtener');
+    if(!error && data && data.nombre){ cartaFirmaCache = [data.nombre, data.cargo, data.institucion, data.telefono, data.correo]; return cartaFirmaCache; }
+  }catch(e){}
+  return CARTA_FECHAS_FIRMA;
+}
+
 async function generarCartaFechasPdf(d){
+  const firma = await cartaFirmaCargar();
   const { PDFDocument, StandardFonts, rgb, setWordSpacing } = PDFLib;
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -61,7 +73,7 @@ async function generarCartaFechasPdf(d){
   y = ty - 30;
   txt('Cordialmente,', X, y);
   y -= 60;
-  CARTA_FECHAS_FIRMA.forEach((ln, i)=>{ txt(ln, X, y - i * 14); });
+  firma.forEach((ln, i)=>{ txt(ln, X, y - i * 14); });
 
   pdf.setTitle('Carta de fechas ' + d.documento);
   pdf.setAuthor('Politécnico Campoalto');
@@ -112,4 +124,37 @@ async function caCartaDescargar(id, admin){
     const d = admin ? await caRpc('admin_ca_carta_datos', { p_post: id }) : await caRpc('ca_emp_carta_datos', { p_token: state.token, p_post: id });
     await descargarCartaFechas(d);
   }catch(e){ toast(e.message, true); }
+}
+
+
+/* ---------- Administrador: editar firma y teléfono de la carta ---------- */
+async function abrirFirmaCarta(){
+  if(!requireSupabase()) return;
+  const f = await cartaFirmaCargar(true);
+  const v = i => esc(f[i] || '');
+  const old = document.getElementById('cfModal'); if(old) old.remove();
+  const m = document.createElement('div'); m.id = 'cfModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  m.innerHTML = `<div class="card" style="max-width:460px;width:100%;max-height:92vh;overflow:auto;">
+    <div class="section-bar deep">Firma y teléfono de la carta de fechas</div>
+    <p class="helptext" style="text-align:justify;">Lo que escribas aquí sale impreso al pie de <b>todas</b> las cartas de fechas que se generen desde ahora (empresas, convenios e institución).</p>
+    <label>Nombre de quien firma<input id="cfNom" maxlength="80" value="${v(0)}"></label>
+    <label>Cargo<input id="cfCar" maxlength="80" value="${v(1)}"></label>
+    <label>Institución<input id="cfIns" maxlength="80" value="${v(2)}"></label>
+    <label>Teléfono<input id="cfTel" maxlength="60" value="${v(3)}"></label>
+    <label>Correo<input id="cfCor" type="email" maxlength="120" value="${v(4)}"></label>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+      <button class="ghost" onclick="document.getElementById('cfModal').remove()">Cancelar</button>
+      <button class="primary" id="cfGuardar" onclick="guardarFirmaCarta()">Guardar</button></div></div>`;
+  document.body.appendChild(m);
+}
+async function guardarFirmaCarta(){
+  const g = id => document.getElementById(id).value;
+  const b = document.getElementById('cfGuardar'); b.disabled = true;
+  const { error } = await sb.rpc('admin_carta_firma_guardar', { p_nombre: g('cfNom'), p_cargo: g('cfCar'), p_institucion: g('cfIns'), p_telefono: g('cfTel'), p_correo: g('cfCor') });
+  b.disabled = false;
+  if(error){ toast(error.message, true); return; }
+  cartaFirmaCache = null; await cartaFirmaCargar(true);
+  document.getElementById('cfModal').remove();
+  toast('Firma y teléfono actualizados. Las próximas cartas saldrán con estos datos.');
 }
