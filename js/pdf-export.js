@@ -53,6 +53,12 @@ async function downloadPdf(){
       pages[pi].drawText(t,{x, y:H-yTop, size:sz, font:f, color:ink});
     }
 
+    // oscurece un recuadro que no se diligencia (columnas o meses que la modalidad no usa)
+    function oscurecer(pi, x0, x1, t0, t1){
+      pages[pi].drawRectangle({x:x0, y:H-t1, width:x1-x0, height:t1-t0, color:rgb(0.38,0.38,0.38)});
+    }
+    const nMeses = Math.min(6, Math.max(1, (typeof mesesPorModalidad==='function') ? mesesPorModalidad(rec.modalidad) : 6));
+
     // bloque de texto multilínea con ajuste de palabras; reduce el tamaño hasta que quepa
     function block(pi, text, x0, x1, t0, t1, maxSize){
       const raw = clean(text).trim(); if(!raw) return;
@@ -136,6 +142,9 @@ async function downloadPdf(){
       }
     });
 
+    // columnas de notas que esta modalidad no usa: quedan oscuras
+    for(let c=nMeses;c<6;c++) oscurecer(0, colsX[c]+0.6, colsX[c+1]-0.6, rowsY[0]-16.4, rowsY[4]-0.6);
+
     // ================= PÁGINA 2: control de cumplimiento mensual =================
     strip(1);
     for(let i=0;i<6;i++){
@@ -148,6 +157,7 @@ async function downloadPdf(){
       block(1, m.observaciones, 50.8, 477.4, top+32.5, top+65.3, 7.5);
       await sig(1, m.firmaEmpresa,    477.4, 598.5, top, top+44.4);
       await sig(1, m.firmaEstudiante, 598.5, 741.2, top, top+44.4);
+      if(i>=nMeses) oscurecer(1, 50.8, 741.2, top+1.5, top+66.5);   // mes que esta modalidad no usa
     }
 
     // ================= PÁGINA 3: revisión de funciones y actividades =================
