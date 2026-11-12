@@ -36,7 +36,8 @@
   let activo = 'dash', chips = [], vista = null;   // vista = sección abierta por separado desde la barra lateral (null = panel completo)
 
   const enHub = () => { const h = document.getElementById('screen-admin-hub'); return !!(h && h.classList.contains('active')); };
-  const hayBuscador = () => !!((document.getElementById('fnBuscar') || {}).value || '').trim();
+  const valorBusca = () => String((document.getElementById('pmBuscar') || {}).value || '').trim();
+  const hayBuscador = () => !!valorBusca();
 
   /* ---------- Barra lateral ---------- */
   function crearBarra(){
@@ -72,6 +73,7 @@
   }
   window.pmIr = function(id){
     activo = id; vista = id === 'dash' ? null : id;
+    const bi = document.getElementById('pmBuscar'); if(bi && bi.value){ bi.value = ''; if(typeof pgFiltrar === 'function') pgFiltrar(''); document.body.classList.remove('pm-buscando'); }
     const ir = () => { aplicarVista(); window.scrollTo({ top:0, behavior:'smooth' }); pintarBarra(); };
     if(!enHub()){ showScreen('screen-admin-hub'); setTimeout(ir, 350); } else ir();
   };
@@ -81,12 +83,18 @@
     document.querySelectorAll('#grupoGrid .fn-seccion').forEach(sec=>{ sec.classList.toggle('pm-oculta', !!vista && sec.id !== 'grupoSec-' + vista); });
     const grid = document.getElementById('grupoGrid'); if(!grid) return;
     let mig = grid.querySelector('.pm-mig');
+    const buscando = hayBuscador();
+    document.body.classList.toggle('pm-buscando', buscando);
+    let migHtml = '';
     if(vista){
       const g = (typeof window.pgGrupos === 'function' ? window.pgGrupos() : []).find(x=>x.id === vista);
       if(!g || !document.getElementById('grupoSec-' + vista)){ vista = null; activo = 'dash'; return aplicarVista(); }   // la sección ya no está disponible para este rol
-      if(!mig){ mig = document.createElement('div'); mig.className = 'pm-mig'; grid.insertBefore(mig, grid.firstChild); }
-      mig.innerHTML = '<button type="button" onclick="pmIr(\'dash\')">← Volver al panel</button><span>/</span><b>' + e(g.titulo) + '</b>';
-    } else if(mig) mig.remove();
+      migHtml = '<button type="button" onclick="pmIr(\'dash\')">← Volver al panel</button><span>/</span><b>' + e(g.titulo) + '</b>';
+    } else if(buscando){
+      migHtml = '<button type="button" onclick="pmLimpiar()">← Volver al panel</button><span>/</span><b>Resultados de la búsqueda</b>';
+    }
+    if(migHtml){ if(!mig){ mig = document.createElement('div'); mig.className = 'pm-mig'; grid.insertBefore(mig, grid.firstChild); } if(mig.innerHTML !== migHtml) mig.innerHTML = migHtml; }
+    else if(mig) mig.remove();
     pmCortas();
   }
   window.pmAyuda = function(){
@@ -152,19 +160,47 @@
     });
   }
   function mejorarCatalogo(){
-    const grid = document.getElementById('grupoGrid'); if(!grid) return;
-    const bus = grid.querySelector('.fn-buscar');
-    if(bus && !grid.querySelector('.pm-cat-head')){
-      const head = document.createElement('div'); head.className = 'pm-cat-head'; head.innerHTML = '<h3>' + LUPA + 'Catálogo de funciones</h3>';
-      grid.insertBefore(head, grid.firstChild); head.appendChild(bus);
-    }
-    const inp = document.getElementById('fnBuscar');
-    if(inp){
-      inp.placeholder = 'Busca una función… (ej. correo, empresa)';
-      if(!inp.parentElement.querySelector('.pm-kbd')){ const k = document.createElement('span'); k.className = 'pm-kbd'; k.setAttribute('aria-hidden', 'true'); k.textContent = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent) ? '⌘ K' : 'Ctrl K'; inp.parentElement.appendChild(k); }
-    }
-    aplicarVista(); pintarBarra();
+    if(!document.getElementById('grupoGrid')) return;
+    crearTop(); aplicarVista(); pintarBarra();
   }
+  /* Buscador del panel (arriba): al escribir se muestran, de todo el catálogo, solo las funciones que coinciden */
+  function crearTop(){
+    if(document.getElementById('pmTop')) return;
+    const hub = document.getElementById('screen-admin-hub'); if(!hub) return;
+    const t = document.createElement('div'); t.id = 'pmTop';
+    t.innerHTML = '<div class="pm-bus"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>' +
+      '<input type="search" id="pmBuscar" placeholder="Busca una función… (ej. correo, empresa, notas)" autocomplete="off" aria-label="Buscar una función" oninput="pmBuscar(this.value)">' +
+      '<span class="pm-kbd" aria-hidden="true">' + (/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent) ? '⌘ K' : 'Ctrl K') + '</span></div>';
+    const h2 = hub.querySelector('h2'); if(h2) h2.insertAdjacentElement('afterend', t); else hub.insertBefore(t, hub.firstChild);
+  }
+  window.pmBuscar = function(v){
+    if(vista){ vista = null; activo = 'dash'; }
+    if(typeof pgFiltrar === 'function') pgFiltrar(v);
+    aplicarVista(); pintarBarra(); pmCortas();
+  };
+  window.pmLimpiar = function(){ const i = document.getElementById('pmBuscar'); if(i) i.value = ''; pmBuscar(''); };
+
+  /* ---------- Campana de notificaciones (🔔): la misma de siempre, ahora arriba a la derecha ---------- */
+  function crearCampana(){
+    if(document.getElementById('pmCampana')) return;
+    const top = document.querySelector('.topbar'); if(!top) return;
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'pmCampana'; b.setAttribute('aria-label', 'Notificaciones');
+    b.innerHTML = SVG('<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>') + '<span class="pm-cn" style="display:none"></span>';
+    b.onclick = () => { if(typeof ntAbrir === 'function') ntAbrir(); };
+    top.appendChild(b);
+  }
+  function espejoCampana(){
+    crearCampana();
+    const b = document.getElementById('pmCampana'); if(!b) return;
+    const f = document.getElementById('ntBell');                       // la campana original (queda oculta en este diseño)
+    const visible = !!f && f.style.display !== 'none';
+    b.classList.toggle('on', visible);
+    const sp = f && f.querySelector('span'), n = sp ? String(sp.textContent).trim() : '';
+    const c = b.querySelector('.pm-cn'); if(c){ c.textContent = n; c.style.display = n ? '' : 'none'; }
+    b.setAttribute('aria-label', n ? 'Notificaciones: ' + n + ' sin leer' : 'Notificaciones');
+  }
+  if(typeof ntPintarBell === 'function'){ const _n = ntPintarBell; ntPintarBell = function(){ const r = _n.apply(this, arguments); try{ espejoCampana(); }catch(_){} return r; }; }
+  setInterval(espejoCampana, 2000);
   // El panel vuelve a pintar las tarjetas cada vez que se muestra o llegan los permisos: se reaplica el diseño
   (function(){
     const g = document.getElementById('grupoGrid'); if(!g || typeof MutationObserver === 'undefined') return;
@@ -172,7 +208,7 @@
   })();
   if(typeof window.pgFiltrar === 'function'){ const _f = window.pgFiltrar; window.pgFiltrar = function(){ if(vista && hayBuscador()){ vista = null; activo = 'dash'; aplicarVista(); pintarBarra(); } const r = _f.apply(this, arguments); pmCortas(); return r; }; }
   document.addEventListener('keydown', ev=>{
-    if((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === 'k' && enHub()){ const i = document.getElementById('fnBuscar'); if(i){ ev.preventDefault(); i.scrollIntoView({ behavior:'smooth', block:'center' }); i.focus(); i.select(); } }
+    if((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === 'k' && enHub()){ const i = document.getElementById('pmBuscar'); if(i){ ev.preventDefault(); window.scrollTo({ top:0, behavior:'smooth' }); i.focus(); i.select(); } }
     if(ev.key === 'Escape') pmAyudaCerrar();
   });
 
