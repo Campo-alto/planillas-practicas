@@ -13,6 +13,10 @@ const ROL_NOMBRES = {
   sup_general: 'Supervisor general'
 };
 const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente', 'sup_general'];
+// En la matriz también va el «Supervisor (visitas)»: el que entra por la pantalla de supervisor (no es del personal del panel)
+const ROL_SUP = 'supervisor', AREA_SUP = 'Supervisor (visitas)';
+const ROL_NOMBRES_MATRIZ = Object.assign({}, ROL_NOMBRES, { supervisor: 'Supervisor (visitas)' });
+const ROLES_MATRIZ = ROLES_CONFIGURABLES.concat([ROL_SUP]);
 
 let permAdmin = { listo:false, rol:null, total:false, modulos:[], uid:null };
 
@@ -84,8 +88,9 @@ function rpermPintar(){
   let areaActual = '';
   const filas = cat.map(c=>{
     let cab = '';
-    if(c.area !== areaActual){ areaActual = c.area; cab = '<tr class="rperm-area"><td colspan="5">' + esc(c.area) + '</td></tr>'; }
-    const celdas = ROLES_CONFIGURABLES.map(r=>`<td class="rperm-c"><label class="rperm-sw" title="${esc(ROL_NOMBRES[r])} · ${esc(c.titulo)}">
+    if(c.area !== areaActual){ areaActual = c.area; cab = '<tr class="rperm-area"><td colspan="' + (ROLES_MATRIZ.length + 2) + '">' + esc(c.area) + '</td></tr>'; }
+    const esSup = c.area === AREA_SUP;
+    const celdas = ROLES_MATRIZ.map(r=>(r === ROL_SUP) !== esSup ? '<td class="rperm-c rperm-fijo" title="No aplica a este rol">—</td>' : `<td class="rperm-c"><label class="rperm-sw" title="${esc(ROL_NOMBRES_MATRIZ[r])} · ${esc(c.titulo)}">
         <input type="checkbox" ${rpermValor(r, c.modulo) ? 'checked' : ''} onchange="rpermCambiar('${r}','${c.modulo}',this)">
         <span class="rperm-knob"></span><span class="rperm-txt">${rpermValor(r, c.modulo) ? 'Habilitada' : 'Inhabilitada'}</span></label></td>`).join('');
     return cab + `<tr><td class="rperm-f">${esc(c.titulo)}</td><td class="rperm-c rperm-fijo">✔ Siempre</td>${celdas}</tr>`;
@@ -96,11 +101,11 @@ function rpermPintar(){
     <div class="card" style="margin-bottom:12px;">
       <div style="font-weight:700;margin-bottom:4px;">👁 Vista previa por rol</div>
       <p class="helptext" style="margin:0 0 8px;">Mira, en tiempo real, exactamente qué funciones ve cada rol con los permisos que tiene hoy. Es solo una vista: no entras con la cuenta de nadie ni se modifica nada.</p>
-      <div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">${ROLES_CONFIGURABLES.map(r=>'<button class="ghost" type="button" onclick="rpermVista(\'' + r + '\')">👁 ' + esc(ROL_NOMBRES[r]) + '</button>').join('')}</div>
+      <div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">${ROLES_MATRIZ.map(r=>'<button class="ghost" type="button" onclick="rpermVista(\'' + r + '\')">👁 ' + esc(ROL_NOMBRES_MATRIZ[r]) + '</button>').join('')}</div>
     </div>
     <div class="card">
       <div class="cupos-wrap"><table class="rperm-table">
-        <thead><tr><th>Función</th><th class="rperm-c">${esc(ROL_NOMBRES.administrador)}</th>${ROLES_CONFIGURABLES.map(r=>'<th class="rperm-c">' + esc(ROL_NOMBRES[r]) + '</th>').join('')}</tr></thead>
+        <thead><tr><th>Función</th><th class="rperm-c">${esc(ROL_NOMBRES.administrador)}</th>${ROLES_MATRIZ.map(r=>'<th class="rperm-c">' + esc(ROL_NOMBRES_MATRIZ[r]) + '</th>').join('')}</tr></thead>
         <tbody>${filas}</tbody>
       </table></div>
       <div class="actions-row" style="justify-content:flex-start;margin-top:14px;">
@@ -108,7 +113,7 @@ function rpermPintar(){
       </div>
       <div id="rpermMsg" style="font-size:13px;margin-top:8px;"></div>
     </div>
-    <div class="note-box">Los valores iniciales son: <b>Coordinador de prácticas</b> = Estudiantes y Supervisores · <b>Coordinador de gestión empresarial</b> = Estudiantes y Empresas · <b>Asistente</b> = solo Estudiantes. Para asignar el rol a una persona, ve a «Personal y roles».</div>`;
+    <div class="note-box">Los valores iniciales son: <b>Coordinador de prácticas</b> = Estudiantes y Supervisores · <b>Coordinador de gestión empresarial</b> = Estudiantes y Empresas · <b>Asistente</b> = solo Estudiantes. <b>Supervisor (visitas)</b> es el supervisor que entra por la pantalla de supervisor, con sus propias funciones (todas activas salvo el reporte de visitas); sus cuentas se crean en «Usuarios de supervisores». Para asignar un rol del personal a una persona, ve a «Personal y roles».</div>`;
 }
 async function rpermCambiar(rol, modulo, input){
   const nuevo = input.checked;
@@ -120,7 +125,7 @@ async function rpermCambiar(rol, modulo, input){
   if(p) p.habilitado = nuevo; else rpermDatos.permisos.push({ rol, modulo, habilitado: nuevo });
   const t = input.parentElement.querySelector('.rperm-txt'); if(t) t.textContent = nuevo ? 'Habilitada' : 'Inhabilitada';
   if(rpermVistaRol === rol) rpermVista(rol, true);    // la vista previa abierta se actualiza al instante
-  toast((nuevo ? 'Habilitada' : 'Inhabilitada') + ': ' + (rpermDatos.catalogo.find(c=>c.modulo === modulo) || {}).titulo + ' · ' + ROL_NOMBRES[rol]);
+  toast((nuevo ? 'Habilitada' : 'Inhabilitada') + ': ' + (rpermDatos.catalogo.find(c=>c.modulo === modulo) || {}).titulo + ' · ' + ROL_NOMBRES_MATRIZ[rol]);
 }
 async function rpermRestaurar(){
   if(!confirm('¿Restablecer los permisos iniciales de TODOS los roles? Se perderán los cambios que hayas hecho.')) return;
@@ -134,6 +139,7 @@ let rpermVistaRol = null;
 function rpermVista(rol, refrescar){
   if(!rpermDatos || typeof pgGrupos !== 'function') return;
   const e = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  if(rol === ROL_SUP) return rpermVistaSup(refrescar, e);
   const mods = (rpermDatos.permisos || []).filter(p=>p.rol === rol && p.habilitado).map(p=>p.modulo);
   const ok = f => Array.isArray(f.mod) ? f.mod.some(m=>m !== 'solo_admin' && mods.indexOf(m) >= 0) : (f.mod !== 'solo_admin' && mods.indexOf(f.mod) >= 0);
   const G = pgGrupos(); let vis = 0, ocultas = [];
@@ -148,7 +154,7 @@ function rpermVista(rol, refrescar){
   if(!m){ m = document.createElement('div'); m.id = 'rpermVistaModal'; m.className = 'home-modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); document.body.appendChild(m); m.addEventListener('click', ev=>{ if(ev.target === m) rpermVistaCerrar(); }); }
   rpermVistaRol = rol;
   m.innerHTML = '<div class="home-modal-box" style="max-width:860px;width:96%;max-height:88vh;overflow:auto;">' +
-    '<div class="home-modal-head"><span class="home-modal-ico">👁</span><h3>Vista previa: ' + e(ROL_NOMBRES[rol]) + '</h3></div>' +
+    '<div class="home-modal-head"><span class="home-modal-ico">👁</span><h3>Vista previa: ' + e(ROL_NOMBRES_MATRIZ[rol]) + '</h3></div>' +
     '<div class="note-box" style="margin:0 0 10px;"><b>Solo vista.</b> Así se vería el panel de este rol con los permisos de hoy. Si cambias un permiso en la tabla, esta vista se actualiza sola.</div>' +
     '<p style="margin:0 0 8px;font-size:14px;"><b>' + vis + '</b> función(es) visible(s) · <b>' + ocultas.length + '</b> oculta(s) · Campana de avisos del panel: <b>' + (campana ? 'sí' : 'no') + '</b></p>' +
     '<div class="fn-hub">' + (secciones || '<div class="note-box">Este rol no tiene funciones habilitadas: al entrar vería un mensaje para pedirle al administrador que le habilite alguna.</div>') + '</div>' +
@@ -157,3 +163,20 @@ function rpermVista(rol, refrescar){
     '<div class="home-modal-acc"><button class="primary" type="button" onclick="rpermVistaCerrar()">Cerrar vista previa</button></div></div>';
 }
 function rpermVistaCerrar(){ const m = document.getElementById('rpermVistaModal'); if(m) m.remove(); rpermVistaRol = null; }
+
+// Vista previa del rol Supervisor (visitas): lista lo que ve y lo que no, con los permisos de hoy
+function rpermVistaSup(refrescar, e){
+  const fns = (rpermDatos.catalogo || []).filter(c=>c.area === AREA_SUP);
+  const on = fns.filter(c=>rpermValor(ROL_SUP, c.modulo)), off = fns.filter(c=>!rpermValor(ROL_SUP, c.modulo));
+  let m = document.getElementById('rpermVistaModal');
+  if(!m){ m = document.createElement('div'); m.id = 'rpermVistaModal'; m.className = 'home-modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); document.body.appendChild(m); m.addEventListener('click', ev=>{ if(ev.target === m) rpermVistaCerrar(); }); }
+  rpermVistaRol = ROL_SUP;
+  m.innerHTML = '<div class="home-modal-box" style="max-width:640px;width:96%;max-height:88vh;overflow:auto;">' +
+    '<div class="home-modal-head"><span class="home-modal-ico">👁</span><h3>Vista previa: ' + e(ROL_NOMBRES_MATRIZ[ROL_SUP]) + '</h3></div>' +
+    '<div class="note-box" style="margin:0 0 10px;"><b>Solo vista.</b> Así queda la pantalla del supervisor con los permisos de hoy. Si cambias un permiso en la tabla, esta vista se actualiza sola.</div>' +
+    '<p style="margin:0 0 6px;font-size:14px;"><b>Puede hacer (' + on.length + '):</b></p>' +
+    (on.length ? '<ul style="font-size:13.5px;margin:0 0 10px 18px;">' + on.map(c=>'<li>✔ ' + e(c.titulo) + '</li>').join('') + '</ul>' : '<div class="note-box">No tiene funciones habilitadas: al entrar vería un aviso para pedirle al administrador que le habilite alguna.</div>') +
+    (off.length ? '<p style="margin:0 0 6px;font-size:14px;"><b>No ve (' + off.length + '):</b></p><ul style="font-size:13.5px;margin:0 0 10px 18px;">' + off.map(c=>'<li>✖ ' + e(c.titulo) + '</li>').join('') + '</ul>' : '') +
+    '<p class="helptext">La base de datos además rechaza cualquier función sin permiso, aunque alguien la llame a mano. Se necesita haber ejecutado rol-supervisor-etapa54.sql.</p>' +
+    '<div class="home-modal-acc"><button class="primary" type="button" onclick="rpermVistaCerrar()">Cerrar vista previa</button></div></div>';
+}
