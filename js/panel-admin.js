@@ -62,8 +62,9 @@
         { icono:'📈', clase:'administrador', titulo:'Informes y reportes cruzados', mod:'inf_reportes', desc:'Elige qué cruzar, filtra, agrupa y ordena; ponle título y notas, y descárgalo en PDF o Excel.', abrir:()=>abrirInformes() }
       ] },
     { id:'comunicacion', icono:'✉️', clase:'empresa', titulo:'Comunicación',
-      desc:'Los correos que envía la plataforma.',
+      desc:'Mensajes dentro de la plataforma y los correos que envía.',
       funciones:[
+        { icono:'💬', clase:'empresa', titulo:'Mensajes (chat)', mod:['chat_interno','chat_externo'], desc:'Escribe al equipo o a una persona del personal, y atiende los mensajes de estudiantes, empresas y supervisores. Se puede bloquear a quien haga mal uso.', abrir:()=>abrirChat() },
         { icono:'✉️', clase:'empresa', titulo:'Correos automáticos', mod:'solo_admin', desc:'Configura avisos y recordatorios, envía claves y consulta la bitácora de lo enviado.', abrir:()=>abrirCorreos() }
       ] }
   ];
