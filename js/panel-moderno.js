@@ -18,6 +18,7 @@
     seguridad: SVG('<path d="M12 3 4.5 6v5.5c0 4.4 3 7.6 7.5 9.5 4.5-1.9 7.5-5.1 7.5-9.5V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/>'),
     informes: SVG('<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>'),
     comunicacion: SVG('<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6.5L20.5 7"/>'),
+    chat: SVG('<path d="M4 5.5h16v10.5H9.5L5.5 20v-4H4Z"/><path d="M8 9.5h8M8 12.5h5"/>'),
     ayuda: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>')
   };
   const ICO_URG = SVG('<circle cx="12" cy="12" r="9.5"/><path d="M12 7v6"/><circle cx="12" cy="16.6" r=".7" fill="#fff"/>');
@@ -60,7 +61,9 @@
     const grupos = (typeof window.pgGrupos === 'function' ? window.pgGrupos() : []).filter(g=>document.getElementById('grupoSec-' + g.id));
     const total = chips.reduce((a, c)=>a + c.n, 0);
     const it = (id, ico, txt, num) => '<button type="button" class="pm-it' + (activo === id ? ' act' : '') + '" onclick="pmIr(\'' + id + '\')"' + (activo === id ? ' aria-current="page"' : '') + '>' + ico + '<span class="t">' + e(txt) + '</span>' + (num ? '<span class="pm-n" title="Pendientes">' + num + '</span>' : '') + '</button>';
-    nav.innerHTML = it('dash', IC.dash, 'Panel', total) + grupos.map(g=>it(g.id, IC[g.id] || IC.practica, g.titulo, sumaSeccion(document.getElementById('grupoSec-' + g.id)))).join('');
+    const chat = (typeof window.chatPuede === 'function' && window.chatPuede())
+      ? '<button type="button" class="pm-it" onclick="abrirChat()">' + IC.chat + '<span class="t">Mensajes</span><span class="pm-n" id="pmChatN" style="' + (window.chatNoLeidos ? '' : 'display:none') + '" title="Mensajes sin leer">' + (window.chatNoLeidos > 99 ? '99+' : (window.chatNoLeidos || 0)) + '</span></button>' : '';
+    nav.innerHTML = it('dash', IC.dash, 'Panel', total) + grupos.map(g=>it(g.id, IC[g.id] || IC.practica, g.titulo, sumaSeccion(document.getElementById('grupoSec-' + g.id)))).join('') + chat;
     // nombre de quien entró
     try{
       const rol = (typeof ROL_NOMBRES !== 'undefined' && typeof permAdmin !== 'undefined' && permAdmin.rol) ? ROL_NOMBRES[permAdmin.rol] : 'Administrador';
