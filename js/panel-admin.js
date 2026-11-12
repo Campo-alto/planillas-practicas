@@ -56,6 +56,11 @@
         { icono:'🔑', clase:'administrador', titulo:'Roles y permisos', mod:'solo_admin', desc:'Activa o desactiva las funciones que puede usar cada rol.', abrir:()=>abrirPermisos() },
         { icono:'🛡', clase:'administrador', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Mira quién creó, cambió, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() }
       ] },
+    { id:'informes', icono:'📈', clase:'administrador', titulo:'Informes y reportes',
+      desc:'Cruza la información de estudiantes, empresas, cupos, supervisores, formalización y notas, y preséntala como informe en PDF o Excel.',
+      funciones:[
+        { icono:'📈', clase:'administrador', titulo:'Informes y reportes cruzados', mod:'inf_reportes', desc:'Elige qué cruzar, filtra, agrupa y ordena; ponle título y notas, y descárgalo en PDF o Excel.', abrir:()=>abrirInformes() }
+      ] },
     { id:'comunicacion', icono:'✉️', clase:'empresa', titulo:'Comunicación',
       desc:'Los correos que envía la plataforma.',
       funciones:[
