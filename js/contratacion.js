@@ -216,9 +216,9 @@ function caProcesoEstudiante(d){
         <tr><th>Ciudad / jornada</th><td>${esc(p.ciudad||'—')} · ${esc(p.jornada||'—')}</td><th>Próxima decisión</th><td>${p.estado==='seleccionado'?'—':caFmt(p.proxima_decision)}</td></tr>
         <tr><th>Funciones</th><td colspan="3">${esc(p.funciones)}</td></tr></tbody></table></div>`;
     if(p.estado==='seleccionado') h += caContratoEstHtml();
-    else if(p.puede_decidir) h += `<div class="note-box">Han pasado ${CA_DIAS_DECISION} días. Puedes <b>seguir esperando</b> a que la empresa avance, o <b>rechazar</b> esta oferta para postularte a otra (no podrás volver a esta empresa).</div>
-      <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caDecidir('${p.id}','esperar')">⏳ Seguir esperando ${CA_DIAS_DECISION} días</button><button class="danger" onclick="caDecidir('${p.id}','rechazar')">✖ Rechazar y buscar otra oferta</button></div>`;
-    else h += `<p class="helptext">Podrás decidir si sigues esperando o rechazas esta oferta a partir del <b>${caFmt(p.proxima_decision)}</b>.</p>`;
+    else if(p.puede_decidir) h += `<div class="note-box">Han pasado ${CA_DIAS_DECISION} días hábiles. Puedes <b>seguir esperando</b> a que la empresa avance, o <b>rechazar</b> esta oferta para postularte a otra (no podrás volver a esta empresa).</div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caDecidir('${p.id}','esperar')">⏳ Seguir esperando ${CA_DIAS_DECISION} días hábiles</button><button class="danger" onclick="caDecidir('${p.id}','rechazar')">✖ Rechazar y buscar otra oferta</button></div>`;
+    else h += `<p class="helptext">Podrás decidir si sigues esperando o rechazas esta oferta a partir del <b>${caFmt(p.proxima_decision)}</b>. <span style="color:var(--muted)">(Se cuentan ${CA_DIAS_DECISION} días hábiles: de lunes a viernes, sin festivos, porque las empresas no trabajan esos días.)</span></p>`;
     return h;
   }
   const of = d.ofertas || [];
@@ -233,7 +233,7 @@ async function caPostular(id){ if(!confirm('¿Postularte a esta oferta? Solo pue
   try{ await caRpc('ca_postular', { p_token: state.token, p_oferta: id }); toast('Postulación enviada'); caCargarEstudiante(); }catch(e){ toast(e.message, true); } }
 async function caDecidir(id, accion){
   if(accion==='rechazar' && !confirm('Si rechazas esta oferta NO podrás volver a postularte a esta empresa. ¿Continuar?')) return;
-  try{ await caRpc('ca_decidir', { p_token: state.token, p_post: id, p_accion: accion }); toast(accion==='esperar'?'Seguirás esperando ' + CA_DIAS_DECISION + ' días más':'Oferta rechazada'); caCargarEstudiante(); }catch(e){ toast(e.message, true); }
+  try{ await caRpc('ca_decidir', { p_token: state.token, p_post: id, p_accion: accion }); toast(accion==='esperar'?'Seguirás esperando ' + CA_DIAS_DECISION + ' días hábiles más':'Oferta rechazada'); caCargarEstudiante(); }catch(e){ toast(e.message, true); }
 }
 
 /* ======================================================================== */
