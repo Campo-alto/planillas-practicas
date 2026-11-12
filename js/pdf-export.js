@@ -218,7 +218,9 @@ async function downloadPdf(){
     block(3, so.comentarios, 50.8, 598.5, 424, 525.4, 8);
     await sig(3, eo.firma, 598.5, 741.2, 194.8, 258);
     await sig(3, jo.firma, 598.5, 741.2, 312.6, 396);
-    await sig(3, so.firma, 598.5, 655.8, 415.4, 488);
+    // el QR que traía la plantilla se tapa con blanco (ya no se usa) y la firma del supervisor ocupa todo el recuadro
+    pages[3].drawRectangle({x:650.2, y:H-503.6, width:90.7, height:88.1, color:rgb(1,1,1)});
+    await sig(3, so.firma, 598.5, 740, 417, 502);
 
     const bytes = await doc.save();
     if(window._pdfCapturar){ const cap = window._pdfCapturar; window._pdfCapturar = null; cap(bytes); return; }   // envío por correo
