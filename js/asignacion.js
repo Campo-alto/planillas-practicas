@@ -79,6 +79,19 @@ function caChipFicha(emp){
   const est = c.estado==='aprobada' ? 'aprobada' : (c.estado==='pendiente' ? 'pendiente de aprobación' : 'rechazada');
   return '<br><span class="pill" style="background:#EEF3E4;color:#3B5B16;">Contrato de aprendizaje · '+est+' · '+c.ofertas+' solicitud(es) · '+c.contratados+' contratado(s)</span>';
 }
+function empDatosTabla(emp){
+  const c = caPorFicha[emp.id];
+  const est = c ? (c.estado==='aprobada' ? 'Aprobada' : (c.estado==='pendiente' ? 'Pendiente de aprobación' : 'Rechazada')) : '';
+  const col = (t, v, cls)=>'<th'+(cls?' class="'+cls+'"':'')+'>'+t+'</th>';
+  const heads = [['NIT'],['Dirección'],['Ciudad'],['Teléfono'],['Correo'],['Contacto']];
+  const vals = [emp.nit, emp.direccion, emp.ciudad, emp.telefono, emp.correo, emp.contacto];
+  let h = heads.map(x=>'<th>'+x[0]+'</th>').join(''), r = vals.map(v=>'<td>'+(v?esc(v):'<span style="color:var(--muted)">—</span>')+'</td>').join('');
+  if(c){
+    h += '<th>Contrato de aprendizaje</th><th class="cp-c">Solicitudes</th><th class="cp-c">Contratados</th>';
+    r += '<td><span class="pill" style="background:#EEF3E4;color:#3B5B16;">'+est+'</span></td><td class="cp-c">'+c.ofertas+'</td><td class="cp-c">'+c.contratados+'</td>';
+  }
+  return '<div class="cupos-wrap emp-datos"><table class="cupos-table"><thead><tr>'+h+'</tr></thead><tbody><tr>'+r+'</tr></tbody></table></div>';
+}
 var filtroEmpTexto = '', filtroEmpPrograma = '';
 function empNormTxt(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 function asegurarFiltroEmpresas(){
@@ -141,18 +154,18 @@ function renderEmpresasListHtml(){
     const tabla = cupos.length ? `<div class="cupos-wrap"><table class="cupos-table"><thead><tr><th>Programa</th><th>Jornada</th><th class="cp-c">Cupos</th><th class="cp-c">Ocupados</th><th class="cp-c">Disponibles</th><th>Inicio</th><th>Fin</th><th>Horario</th><th>Días</th><th>Funciones del estudiante</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<p style="color:var(--muted);font-size:13px;">Esta empresa todavía no tiene cupos.</p>';
     return `<div class="card" style="${emp.activa?'':'opacity:.65;'}">
-      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
         <div>
-          <b style="font-size:15px;">${esc(emp.nombre)}</b> <span class="pill" style="background:#E6F1F0;color:var(--deep);">${esc(nombreCategoria(emp.categoria||'practica_no_remunerada'))}</span> ${emp.activa?'':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>'}${caChipFicha(emp)}<br>
-          <span style="color:var(--muted);font-size:12.5px;">${esc(emp.direccion||'—')}${emp.ciudad?' · '+esc(emp.ciudad):''} · Tel. ${esc(emp.telefono||'—')}${emp.nit?' · NIT '+esc(emp.nit):''}</span>
+          <b style="font-size:17px;">${esc(emp.nombre)}</b> <span class="pill" style="background:#E6F1F0;color:var(--deep);">${esc(nombreCategoria(emp.categoria||'practica_no_remunerada'))}</span> ${emp.activa?'':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>'}
         </div>
-        <div style="white-space:nowrap;">
-          <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="gestionarAcceso('${emp.id}')">${tieneAcceso(emp)?'🔑 Acceso creado':'🔑 Crear acceso'}</button>
-          <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="editarEmpresa('${emp.id}')">Editar</button>
-          <button class="ghost" style="padding:5px 9px;font-size:12px;" onclick="toggleEmpresaActiva('${emp.id}', ${!emp.activa})">${emp.activa?'Desactivar':'Activar'}</button>
-          <button class="danger" style="padding:5px 9px;font-size:12px;" onclick="eliminarEmpresa('${emp.id}')">Eliminar</button>
+        <div class="emp-acciones">
+          <button class="ghost" onclick="gestionarAcceso('${emp.id}')">${tieneAcceso(emp)?'🔑 Acceso creado':'🔑 Crear acceso'}</button>
+          <button class="ghost" onclick="editarEmpresa('${emp.id}')">✏️ Editar</button>
+          <button class="ghost" onclick="toggleEmpresaActiva('${emp.id}', ${!emp.activa})">${emp.activa?'⏸ Desactivar':'▶ Activar'}</button>
+          <button class="danger" onclick="eliminarEmpresa('${emp.id}')">🗑 Eliminar</button>
         </div>
       </div>
+      ${empDatosTabla(emp)}
       ${esPNR ? `<div style="margin-top:12px;">${tabla}</div>
       <div class="field-row" style="margin-top:10px;align-items:end;">
         <div class="field"><label>Programa</label><select id="cupoProg-${emp.id}">${progOpts}</select></div>
