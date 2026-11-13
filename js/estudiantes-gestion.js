@@ -17,7 +17,7 @@ function egDecorar(){
     const doc = egDocDeFila(tr); if(!doc) return; visibles.push(doc);
     const td = document.createElement('td'); td.className = 'eg-acc'; td.onclick = e=>e.stopPropagation();
     td.innerHTML = `<input type="checkbox" class="eg-chk" aria-label="Seleccionar" ${egSel.has(doc) ? 'checked' : ''} onchange="egMarcar('${doc}', this.checked)">
-      <button type="button" class="ghost eg-btn" title="Modificar datos" onclick="egEditar('${doc}')">✏</button>
+      <button type="button" class="ghost eg-btn" title="Modificar datos" onclick="egEditar('${doc}')">✏️</button>
       <button type="button" class="ghost eg-btn eg-del" title="Eliminar estudiante" onclick="egEliminar(['${doc}'])">🗑</button>`;
     tr.insertBefore(td, tr.firstChild);
   });
