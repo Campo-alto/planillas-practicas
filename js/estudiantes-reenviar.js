@@ -13,7 +13,7 @@
       if(td.querySelector('.er-btn')) return;
       const tr = td.closest('tr'), doc = (typeof egDocDeFila === 'function') ? egDocDeFila(tr) : null; if(!doc) return;
       const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost eg-btn er-btn';
-      b.title = 'Reenviar acceso por correo (genera una contraseña nueva)'; b.textContent = '✉';
+      b.title = 'Reenviar acceso por correo (genera una contraseña nueva)'; b.textContent = '✉️';
       b.onclick = e=>{ e.stopPropagation(); erReenviar(doc, b); };
       td.insertBefore(b, td.querySelector('.eg-del'));
     });
