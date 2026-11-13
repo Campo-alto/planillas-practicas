@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual del administrador · Planillas Campoalto</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--teal:#0E7C86;--teal-d:#0A5A62;--deep:#0B3D3D;--orange:#E8792D;--orange-d:#C75B16;--ink:#22282B;--muted:#667276;--paper:#F7F4EE;--line:#E3DDD0;--card:#fff;
+--c-est:#0E7C86;--c-ins:#C75B16;--c-emp:#1B7F55;--c-sup:#7A4EAB;--ok:#1B7F55;--danger:#B23A2E;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+a{color:var(--teal-d)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 60px}
+header.top{background:linear-gradient(135deg,var(--deep),var(--teal-d));color:#fff;padding:18px 0 22px}
+header.top .wrap{padding-bottom:0}
+.brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brandrow img{background:#fff;border-radius:12px;padding:6px 10px;height:46px}
+.brandrow .back{margin-left:auto;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:10px;padding:7px 12px;text-decoration:none;font-size:14px}
+h1{font:italic 700 clamp(26px,4.5vw,40px)/1.15 'Zilla Slab',Georgia,serif;margin:16px 0 4px}
+header.top p{margin:0;color:#d6ecec;max-width:760px}
+nav.mods{background:var(--paper);border-bottom:1px solid var(--line);padding:10px 0}
+.modbtns{display:flex;gap:8px;flex-wrap:wrap}
+.mb{border:2px solid var(--line);background:#fff;border-radius:12px;padding:9px 14px;font:600 14.5px/1.2 'Inter',system-ui,sans-serif;cursor:pointer;color:var(--ink);text-align:left}
+.mb small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
+.mb.on{border-color:var(--teal);background:var(--teal);color:#fff}.mb.on small{color:#d6ecec}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:13.5px}
+.filtros b{color:var(--muted);font-weight:600}
+.fb{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;cursor:pointer;font:600 13px/1.2 'Inter',system-ui,sans-serif}
+.fb.on{color:#fff;border-color:transparent}
+.fb[data-a=todos].on{background:var(--ink)}
+.intro{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:20px 0}
+.intro h2,.sec h2{font:italic 700 26px/1.2 'Zilla Slab',Georgia,serif;margin:0 0 6px;color:var(--deep)}
+.resumen{color:var(--muted);margin:0 0 6px}
+/* carriles */
+.lanes{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:20px 0;overflow-x:auto}
+.lanes h3{margin:0 0 10px;font-size:16px}
+.lane-g{display:grid;grid-template-columns:minmax(190px,1.6fr) repeat(var(--cols),minmax(86px,1fr));gap:0;min-width:560px;font-size:13px}
+.lane-g .h{font-weight:700;text-align:center;padding:6px 4px;color:#fff;border-radius:8px 8px 0 0;margin:0 2px;font-size:12.5px}
+.lane-g .t{padding:5px 8px 5px 0;display:flex;align-items:center;gap:6px;border-top:1px dashed var(--line);cursor:pointer}
+.lane-g .t:hover{color:var(--teal-d);text-decoration:underline}
+.lane-g .c{border-top:1px dashed var(--line);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(90deg,transparent 0 calc(50% - .5px),#eee8dc calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px))}
+.dot{width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;line-height:26px;text-align:center;display:inline-block;flex:none}
+.sec{margin:26px 0}
+/* pasos */
+.steps{position:relative;margin:10px 0 0;padding-left:0}
+.step{display:grid;grid-template-columns:54px 1fr;gap:0 14px;position:relative;padding-bottom:22px}
+.step::before{content:"";position:absolute;left:26px;top:52px;bottom:-2px;width:3px;background:var(--line)}
+.step:last-child::before{display:none}
+.num{width:52px;height:52px;border-radius:50%;color:#fff;font-weight:700;font-size:22px;line-height:52px;text-align:center;cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 2px var(--line);user-select:none}
+.step.hecho .num{background:var(--ok)!important}.step.hecho .num::after{content:"✔";font-size:22px}.step.hecho .num{font-size:0}
+.card{background:#fff;border:1px solid var(--line);border-left:6px solid var(--ac);border-radius:14px;padding:14px 16px;break-inside:avoid}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px;line-height:1.6;color:#fff;background:var(--ac)}
+.chip.plz{background:#fff;color:var(--orange-d);border:1.5px solid var(--orange)}
+.chip.menu{background:#EEF4F4;color:var(--teal-d);border:1px solid #cfe3e3;font-weight:600}
+.card h3{margin:2px 0 8px;font-size:19px;line-height:1.25}
+.cols{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}
+.card ol{margin:6px 0 8px;padding-left:22px}.card li{margin:3px 0}
+.ves,.sigue,.nota,.warn{border-radius:10px;padding:8px 11px;margin:8px 0 0;font-size:14.5px}
+.ves{background:#EEF4F4}.sigue{background:#FFF3E4}.nota{background:#F3EEFA}.warn{background:#FBEAE7;color:#7d2a20}
+.ves>b:first-child,.sigue>b:first-child,.nota>b:first-child{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px;opacity:.75}
+/* maqueta de pantalla */
+.mk{border:1px solid #cfc8b8;border-radius:10px;overflow:hidden;background:#F7F4EE;font-size:11.5px;line-height:1.3;box-shadow:0 4px 14px rgba(0,0,0,.08);align-self:start}
+.mk .bar{background:#e9e4d8;padding:4px 8px;display:flex;gap:4px;align-items:center;color:#777;font-size:10.5px}
+.mk .bar i{width:8px;height:8px;border-radius:50%;background:#c9c2b0;display:inline-block}
+.mk .bd{display:grid;grid-template-columns:96px 1fr;min-height:150px}
+.mk .sd{background:linear-gradient(180deg,#0B3D3D,#0A5A62);color:#dcefef;padding:8px 5px;display:flex;flex-direction:column;gap:2px}
+.mk .sd .lg{background:#fff;color:#0B3D3D;font-weight:700;border-radius:6px;text-align:center;padding:3px;margin-bottom:6px;font-size:10.5px}
+.mk .sd span{padding:4px 6px;border-radius:6px;border-left:3px solid transparent;font-size:10.5px}
+.mk .sd span.on{background:rgba(255,255,255,.2);border-left-color:#F29A52;color:#fff;font-weight:700;outline:2px solid #F29A52;outline-offset:1px}
+.mk .ct{padding:8px}
+.mk .ct .sb{background:var(--teal);color:#fff;font-weight:700;border-radius:5px;padding:4px 7px;font-size:10.5px;text-transform:uppercase;margin-bottom:6px}
+.mk .ct p{margin:3px 0;color:#4b5559}
+.mk .ct .ln{background:#fff;border:1px solid #e3ddd0;border-radius:5px;padding:3px 6px;margin:3px 0;color:#555}
+.mk .ct .bt{display:inline-block;background:var(--teal);color:#fff;border-radius:6px;padding:4px 9px;font-weight:700;margin-top:5px;outline:2px solid #F29A52;outline-offset:2px}
+.mk .ct .bg{display:inline-block;border-radius:999px;padding:1px 8px;background:#FFE9D1;color:#9a4a0d;font-weight:700;margin-left:4px;font-size:10px}
+.mk .ct .bg.g{background:#DDF3E8;color:#1B7F55}.mk .ct .bg.r{background:#FBE3DF;color:#B23A2E}
+.cap{font-size:11px;color:var(--muted);margin:3px 2px 0;text-align:center}
+/* bloques generales */
+table.t{border-collapse:collapse;width:100%;font-size:14.5px;background:#fff}
+table.t th,table.t td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+table.t th{background:#EEF4F4}
+tr.mio td{background:#FFF3E4;font-weight:600}
+details.fq{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0}
+details.fq summary{cursor:pointer;font-weight:600}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:30px}
+.btnp{border:0;background:var(--orange);color:#fff;border-radius:10px;padding:9px 14px;font:700 14px/1 'Inter',system-ui,sans-serif;cursor:pointer}
+.oculto{display:none!important}
+.dim{opacity:.35}
+.dim .mk{display:none}
+@media (max-width:820px){table.t{display:block;overflow-x:auto}.modbtns{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.mb{flex:none}.mb small{display:none}.filtros{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.fb{flex:none}.cols{grid-template-columns:1fr}.step{grid-template-columns:40px 1fr;gap:0 10px}.num{width:38px;height:38px;font-size:17px;line-height:38px}.step::before{left:19px;top:40px}}
+@media print{
+ @page{size:A4;margin:12mm}
+ body{background:#fff;font-size:12.5px}
+ nav.mods,.fb,.btnp,.back,.noprint{display:none!important}
+ header.top{background:#fff;color:#000;padding:0}header.top p{color:#444}.brandrow img{padding:0}
+ .wrap{max-width:none;padding:0}
+ .step{page-break-inside:avoid;break-inside:avoid}
+ .card,.mk,.intro,.lanes{box-shadow:none}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .dim{opacity:1}.dim .mk{display:block}
+ h1{font-size:26px}
+ .cols{grid-template-columns:1.2fr 1fr!important;gap:12px}
+ .step{grid-template-columns:44px 1fr!important;gap:0 10px;padding-bottom:12px}
+ .num{width:40px!important;height:40px!important;font-size:18px!important;line-height:40px!important}
+ .step::before{left:21px!important;top:42px!important}
+ table.t{display:table!important}
+ .card{padding:10px 12px}
+ .card h3{font-size:16px}
+ .mk{font-size:10px}
+}
+</style><style>
+.fn{display:block}
+.fn .perm{display:inline-block;background:#F3EEFA;color:#5a3d86;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px}
+.toc{columns:2 280px;column-gap:24px;font-size:14.5px}
+.toc a{display:block;padding:2px 0;text-decoration:none}
+.toc h4{margin:10px 0 4px;color:var(--deep);break-after:avoid}
+.grp{margin:34px 0 8px;display:flex;align-items:center;gap:10px}
+.grp .ic{font-size:28px}
+.grp h2{margin:0}
+.grp-d{color:var(--muted);margin:0 0 12px}
+.fcard{background:#fff;border:1px solid var(--line);border-left:6px solid var(--ac);border-radius:14px;padding:14px 16px;margin:0 0 14px;break-inside:avoid}
+.fcard h3{margin:2px 0 6px;font-size:19px}
+.fcard .chips{margin-bottom:4px}
+.fcard .que{margin:0 0 6px}
+.fcard ol{margin:6px 0 8px;padding-left:22px}.fcard li{margin:3px 0}
+.rol-t td:first-child{font-weight:600;white-space:nowrap}
+.ok{color:var(--ok);font-weight:700}.no{color:#b5b5b5}
+@media print{.fcard{padding:10px 12px}.fcard h3{font-size:16px}.grp{margin-top:18px}.toc{columns:2}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+ <div class="brandrow"><img src="data:image/png;base64,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" alt="Campoalto"><a class="back" href="manual.html" style="margin-left:auto">📘 Manuales por modalidad</a><a class="back" href="administrador.html">← Volver al panel</a></div>
+ <h1>Manual del administrador</h1>
+ <p>Para quienes ingresan por el acceso de administración: administrador, coordinadores, asistentes, supervisor general y servicio al estudiante. Explica cada función del panel, para qué sirve y cómo se usa.</p>
+</div></header>
+<main class="wrap" id="main"></main>
+<footer class="wrap">Planillas de prácticas · PPS-GAA-F-006 · Campoalto. Cada persona solo ve las funciones que el administrador le activó en «Roles y permisos».</footer>
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MENU=['Panel','Estudiantes','Empresas','Supervisión','Configurar la práctica','Personas y seguridad','Informes','Comunicación','Mensajes'];
+const PERM={est_registrados:'Estudiantes registrados',est_contrato:'Contrato de aprendizaje',est_importexport:'Importar / exportar estudiantes',emp_cupos:'Empresas y cupos',emp_ca:'Empresas de contrato de aprendizaje',emp_solicitudes:'Solicitudes de aprendices',emp_importexport:'Importar / exportar empresas',sup_asignar:'Asignar visitas',sup_usuarios:'Usuarios de supervisores',sup_reporte:'Reporte de visitas',sup_importexport:'Importar / exportar supervisores',adm_programas:'Programas',adm_modalidades:'Modalidades',adm_rubrica:'Rúbrica de calificación',inf_reportes:'Informes y reportes',chat_interno:'Chat con el equipo',chat_externo:'Chat con estudiantes, empresas y supervisores',solo_admin:'Solo administrador'};
+/* f = función: t título, ic icono, p permisos, q para qué sirve, h pasos, n ten en cuenta, l lo que ves (líneas de la maqueta), b botón principal */
+const G=[
+{id:'estudiantes',ic:'🎓',t:'Estudiantes',c:'#0E7C86',d:'El camino del estudiante, en orden: su acceso, su solicitud de práctica y su seguimiento.',f:[
+ {t:'Solicitudes de acceso',ic:'📨',p:['est_registrados'],q:'Aquí decides quién puede entrar a la plataforma. El estudiante pide su acceso desde «Solicita tu acceso aquí» en la pantalla de ingreso.',h:['Abre <b>Solicitudes de acceso</b>.','Revisa los datos de cada solicitud (documento, nombre, correo).','Pulsa <b>Aprobar</b>: el estudiante recibe su usuario (su documento) y su contraseña por correo. Si no corresponde, recházala.'],n:'El número de solicitudes pendientes aparece en el Panel (proceso 1 · Acceso y solicitud).',l:['Ana Pérez · 1011…','Pedro Gómez · 1022…'],b:'Aprobar'},
+ {t:'Solicitudes de práctica',ic:'📂',p:['est_registrados'],q:'Revisas la modalidad, los datos y los PDF que subió el estudiante y decides si la solicitud queda aprobada.',h:['Abre la solicitud y mira cada documento: marca <b>✔ aprobado</b> o <b>✖ devuelto</b>.','Elige <b>Aprobar</b>, <b>Devolver</b> (escribe el motivo; el estudiante corrige y reenvía) o <b>Rechazar</b>.','Al aprobar, la modalidad y los datos pasan al estudiante. En RLP y RAP el lugar queda «esperando visita» y el Supervisor general recibe el aviso.'],n:'Los plazos de registro (PNR 27→2; RAP/RLP 1→10) los aplica la plataforma al estudiante. El administrador no queda limitado por ellos.',l:['Ana Pérez · RLP','Documentos 5 de 5 ✔'],b:'Aprobar'},
+ {t:'Inasistencias reportadas',ic:'🩺',p:['est_registrados'],q:'Lista las inasistencias que reportan los estudiantes, con su soporte (incapacidad) en PDF.',h:['Abre la inasistencia y consulta el soporte.','Márcala <b>justificada</b> o <b>no justificada</b>.'],n:'Solo el estudiante reporta inasistencias; la empresa solo las consulta. Los motivos médicos son reservados para la empresa.',l:['Ana Pérez · 12/03 · Incapacidad'],b:'Justificada'},
+ {t:'Actas de comité',ic:'📝',p:['est_registrados'],q:'Acta (formato PE-SGI-F-015) para casos especiales de un estudiante.',h:['Pulsa el botón para crear un acta nueva y elige al estudiante.','Escribe el caso y los participantes; recoge las firmas (la empresa y todos los participantes).','Al guardar, el acta se envía por correo y queda archivada junto con las planillas del estudiante.'],n:'La empresa y el estudiante pueden leerla y descargarla en PDF desde su perfil.',l:['Estudiante · Caso','Participantes y firmas'],b:'Guardar acta'},
+ {t:'Estudiantes registrados',ic:'🎓',p:['est_registrados'],q:'El directorio completo: ficha de cada estudiante, su planilla, sus notas y su estado.',h:['Busca por documento o nombre y abre la ficha.','Desde la ficha puedes ver y editar datos, ver la planilla y las notas mes a mes, descargar el PDF y enviar la carta de presentación o la planilla por correo.','Para crear un estudiante, usa la opción de crear; para quien ya no debe ingresar, <b>Inhabilitar</b> (no se borra nada y se puede habilitar de nuevo).','<b>Generar claves para estudiantes sin acceso (Excel)</b> crea las contraseñas de muchos estudiantes a la vez.','Si un mes calificado quedó cerrado por error, el administrador puede desbloquearlo.'],n:'Un usuario inhabilitado no puede ingresar, pero todo lo que hizo se conserva.',l:['Buscar: documento o nombre','Ana Pérez · RLP · Activo'],b:'Abrir ficha'},
+ {t:'Notas por subir al sistema',ic:'📤',p:['est_registrados'],q:'Estudiantes con meses ya calificados completos (las 4 competencias) cuya nota aún no se ha subido al sistema institucional.',h:['Abre la lista y revisa los meses pendientes.','Cuando subas la nota al sistema, márcala como <b>subida</b>.'],n:'El número aparece en el Panel (proceso 4) y en la campana.',l:['Ana Pérez · Mes 1 calificado','Luis Mora · Mes 2 calificado'],b:'Marcar subida'},
+ {t:'Contrato de aprendizaje',ic:'🤝',p:['est_contrato'],q:'Todo el proceso de contrato de aprendizaje en cuatro pestañas.',h:['<b>Inscripciones</b>: verifica los pagos y declara apto o no apto al estudiante.','<b>Empresas</b>: aprueba empresas (ver «Empresas de contrato de aprendizaje»).','<b>Solicitudes</b>: aprueba lo que pide cada empresa.','<b>Procesos</b>: sigue cada postulación. Define las <b>cuatro fechas</b> de la carta (lectiva y productiva). Cuando el estudiante sube su contrato firmado, pulsa <b>Ver contrato</b> y luego <b>Aceptar</b> o <b>Devolver</b> (motivo de al menos 5 letras).'],n:'Solo al aceptar el contrato el estudiante queda contratado y se habilitan sus planillas. Los avisos salen por correo y por la campana.',l:['Inscripciones · Empresas · Solicitudes · Procesos','Ana Pérez · contrato.pdf'],b:'Aceptar'},
+ {t:'Contrato de aprendizaje · Convenio',ic:'👥',p:['est_contrato'],q:'Para grupos de estudiantes que ya fueron aceptados por una empresa (sin entrevistas ni hoja de vida).',h:['<b>Nuevo convenio</b>: elige la empresa aprobada, la modalidad, la ciudad y las fechas del grupo; preinscribe a los estudiantes pegando sus documentos o desde Excel.','En el detalle ajusta las fechas y pulsa <b>📨 Generar y enviar cartas</b>: la empresa recibe un solo correo con un solo PDF.','Cuando los estudiantes suban su contrato firmado, usa <b>Ver contrato</b> (o <b>Devolver</b>) y luego <b>✔ Formalizar seleccionados</b>.','Pulsa <b>📨 Enviar planillas (formalizados)</b> para enviarlas por correo al estudiante y a la empresa.'],n:'Si formalizas a alguien que no subió contrato, la plataforma te lo advierte. Si hay estudiantes omitidos al crear el convenio, la lista dice el motivo (ya está en otro convenio, no está registrado, etc.).',l:['Convenio · Empresa · Fechas','☑ Ana Pérez · Carta enviada'],b:'✔ Formalizar seleccionados'},
+ {t:'Importar / exportar estudiantes',ic:'⇅',p:['est_importexport'],q:'Carga masiva de estudiantes desde Excel y descarga de listados.',h:['Pulsa <b>📄 Plantilla de importación</b> y llénala (obligatorios: Documento y Nombre completo).','Sube el archivo: la plataforma muestra una vista previa con las filas válidas y las que tienen error.','Confirma <b>Importar N fila(s)</b>.','Para descargar usa <b>⬇ Exportar Excel</b> o <b>🖨 Exportar PDF</b>.'],n:'Modalidad, programa y jornada se reconocen aunque vengan escritos distinto (mayúsculas, numeración).',l:['Estudiantes','Plantilla · Exportar Excel · PDF'],b:'Importar'}
+]},
+{id:'empresas',ic:'🏢',t:'Empresas',c:'#1B7F55',d:'Dónde se hace la práctica: empresas, cupos y solicitudes de aprendices.',f:[
+ {t:'Empresas por confirmar',ic:'✅',p:['emp_cupos'],q:'Lugares que consiguieron los estudiantes de RLP y RAP. Cuando el supervisor los declara aptos, aquí se crea el acceso de la empresa.',h:['Abre el lugar y revisa o corrige los datos (empresa, contacto, correo, teléfono, dirección).','Pulsa <b>Confirmar y crear acceso</b>: se crea el usuario con una contraseña temporal y se envía el correo. Si no corresponde, usa <b>Devolver</b> y se avisa al estudiante.'],n:'La empresa creada aquí solo ve y califica a los estudiantes vinculados a ella.',l:['ACME · lugar de Ana Pérez','Concepto: apto ✔'],b:'Confirmar y crear acceso'},
+ {t:'Empresas de RLP y RAP',ic:'📋',p:['emp_cupos'],q:'Consulta (solo lectura) de todas las empresas que consiguieron los estudiantes: contacto, estudiante, supervisor y concepto de la visita.',h:['Busca o filtra.','Exporta a Excel o PDF si lo necesitas.'],l:['ACME · Ana Pérez · Apto','Supervisor: …'],b:'Exportar'},
+ {t:'Cambios de empresa',ic:'🔄',p:['est_registrados','sup_asignar'],q:'Solicitudes de los estudiantes para cambiar de empresa (todas las modalidades).',h:['Abre la solicitud y lee el motivo.','El Supervisor general y el asistente pueden dar su <b>opinión</b>; quien tiene el permiso de estudiantes registrados <b>aprueba o rechaza</b>.','Al aprobar, el estudiante recibe un correo.'],l:['Ana Pérez · motivo…','Estado: pendiente'],b:'Aprobar'},
+ {t:'Empresas y cupos',ic:'🏢',p:['emp_cupos'],q:'Datos de cada empresa de prácticas no remuneradas, sus cupos por programa y jornada, y su usuario de acceso.',h:['Crea o edita una empresa (los cambios se reflejan también en su copia de contrato de aprendizaje).','Agrega cupos: programa, jornada, días, horario y las <b>funciones</b> que hará el estudiante.','Crea el acceso de la empresa (correo y contraseña) y envía las claves.','En la tarjeta <b>Fechas de apertura y cierre</b> define cuándo los estudiantes pueden tomar cupo y pulsa <b>Guardar fechas</b>. Por defecto está cerrada.','Si la empresa tiene el correo mal escrito, usa <b>Cambiar correo</b> (cierra las sesiones abiertas de esa cuenta).'],n:'Un estudiante solo puede tener una empresa activa a la vez.',l:['ACME · Cupos: 2','Fechas de apertura y cierre'],b:'Guardar fechas'},
+ {t:'Empresas de contrato de aprendizaje',ic:'🤝',p:['emp_ca'],q:'Aprueba las empresas que se registran para recibir aprendices.',h:['Revisa que la empresa aparezca en la plataforma del SENA.','Pulsa <b>Aprobar</b>: la empresa recibe un correo. Si no le llegó, usa <b>Reenviar aviso</b>.','Puedes crear sus accesos y enlazarla con «Empresas».'],n:'Hasta que se apruebe, la empresa no puede entrar. Si se equivocó de correo al registrarse, corrígelo con Cambiar correo.',l:['ACME SAS · pendiente'],b:'Aprobar'},
+ {t:'Solicitudes de aprendices',ic:'📝',p:['emp_solicitudes'],q:'Lo que pide cada empresa: cargo, programa, cupos, horario y funciones.',h:['Verifica que las funciones correspondan al programa.','<b>Aprueba</b>, ciérrala o elimínala.'],n:'Una solicitud aprobada queda visible para los estudiantes aptos.',l:['Auxiliar de enfermería · 3 cupos'],b:'Aprobar'},
+ {t:'Importar / exportar empresas',ic:'⇅',p:['emp_importexport'],q:'Carga masiva desde Excel de empresas (con cupos) y de empresas de contrato de aprendizaje; exporta la lista de asignaciones.',h:['Descarga la plantilla, llénala (una fila por empresa; repite la empresa para varios cupos) y súbela.','En empresas de contrato de aprendizaje, «Verificada SENA = Sí» las deja aprobadas.'],l:['Empresas','Plantilla · Exportar'],b:'Importar'}
+]},
+{id:'supervision',ic:'👤',t:'Supervisión',c:'#7A4EAB',d:'Quienes acompañan la práctica y el registro de sus visitas.',f:[
+ {t:'Visitas por asignar',ic:'🧭',p:['sup_asignar'],q:'Estudiantes de RAP y RLP aprobados que esperan supervisor.',h:['Asigna cada estudiante a un supervisor (o deja que ellos mismos lo tomen desde su perfil).','Puedes reasignar o liberar.','Desde que hay supervisor, el estudiante queda bloqueado para los demás.'],n:'La base de datos impone el bloqueo, no solo la pantalla.',l:['Ana Pérez · esperando supervisor'],b:'Asignar'},
+ {t:'Usuarios de supervisores',ic:'S',p:['sup_usuarios'],q:'Crea y administra los accesos de los supervisores institucionales.',h:['Crea el supervisor con correo, nombre y contraseña (mínimo 8 caracteres).','Para uno ya creado puedes cambiar su correo o inhabilitarlo.'],l:['Supervisores','Correo · Nombre · Estado'],b:'Crear supervisor'},
+ {t:'Reporte de visitas',ic:'📋',p:['sup_reporte'],q:'Una fila por visita: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.',h:['Filtra y consulta.','Una visita guardada queda bloqueada; si hay que corregirla, el administrador puede desbloquearla.'],l:['Visita 1 · Ana Pérez · 10/03'],b:'Exportar'},
+ {t:'Importar / exportar supervisores',ic:'⇅',p:['sup_importexport'],q:'Crea o actualiza supervisores desde Excel y descarga el listado.',h:['Sube el Excel. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.'],l:['Supervisores'],b:'Importar'}
+]},
+{id:'practica',ic:'🗂',t:'Configurar la práctica',c:'#C75B16',d:'Lo que define cómo funciona la práctica: programas, modalidades, documentos y forma de calificar.',f:[
+ {t:'Programas',ic:'📚',p:['adm_programas'],q:'Catálogo de programas o técnicos laborales de cada área.',h:['Agrega un programa nuevo con su área.','Elimina los que ya no se usan.'],l:['Área › Programa'],b:'Agregar'},
+ {t:'Modalidades',ic:'🗂',p:['adm_modalidades'],q:'Las modalidades de práctica y cuántos meses dura cada una.',h:['Edita el nombre y los meses de cada modalidad.','Marca <b>Cupos y carta (no remunerada)</b> en la que funciona con cupos y carta de presentación.','Pulsa <b>Guardar</b>.'],n:'Ya existen PNR, RAP, RLP y Contrato de aprendizaje.',l:['Prácticas no remuneradas · 6 meses'],b:'Guardar'},
+ {t:'Documentos por modalidad',ic:'📑',p:['adm_modalidades'],q:'Qué PDF debe subir el estudiante en cada modalidad.',h:['Elige la modalidad.','Para cada documento define el nombre, si es obligatorio y el peso máximo en MB.'],n:'Contrato de aprendizaje no pide documentos: solo los datos.',l:['RLP · Carta de aceptación (obligatorio, 3 MB)'],b:'Guardar'},
+ {t:'Rúbrica de calificación',ic:'📊',p:['adm_rubrica'],q:'Los criterios y niveles con que la empresa califica al estudiante cada mes.',h:['Crea, ordena o modifica criterios y niveles.'],n:'Un mes ya calificado y bloqueado no cambia por un cambio de rúbrica.',l:['Competencia 1 · Criterio · Niveles'],b:'Guardar'}
+]},
+{id:'seguridad',ic:'🔐',t:'Personas y seguridad',c:'#22282B',d:'Quién puede entrar, qué puede hacer cada rol y el registro de lo que ocurre.',f:[
+ {t:'Personal y roles',ic:'Ad',p:['solo_admin'],q:'Crea al personal de la institución y asígnale su rol.',h:['Crea a la persona con correo, nombre y contraseña de mínimo 8 caracteres.','Elige el rol: administrador, coordinador de prácticas, coordinador de gestión empresarial, asistente, supervisor general o servicio al estudiante.','Para corregir un correo mal escrito usa <b>Cambiar correo</b>.','Para quien ya no debe ingresar usa <b>Inhabilitar</b>.'],n:'Si olvidas tu contraseña, en la pantalla de ingreso pulsa «¿Olvidaste tu contraseña?» y sigue el enlace del correo.',l:['Personal','Correo · Rol · Estado'],b:'Crear'},
+ {t:'Firma de la carta de fechas',ic:'✍️',p:['solo_admin'],q:'Nombre, cargo, teléfono y correo que firman la carta de fechas.',h:['Edita los datos y guarda: todas las cartas nuevas salen con esa firma.'],l:['Nombre · Cargo · Teléfono · Correo'],b:'Guardar'},
+ {t:'Roles y permisos',ic:'🔑',p:['solo_admin'],q:'Activa o desactiva qué funciones puede usar cada rol.',h:['En la matriz, marca las funciones de cada rol. Hay botones para <b>restaurar</b> los valores iniciales.','Usa <b>Vista previa por rol</b> para ver exactamente lo que verá esa persona.'],n:'Da a cada persona solo lo que necesita. Si alguien ve «Esa función no está habilitada para tu rol», actívala aquí.',l:['Matriz: rol × función'],b:'Guardar'},
+ {t:'Auditoría del sistema',ic:'🛡',p:['solo_admin'],q:'Registro de quién creó, cambió, eliminó, exportó o ingresó información: fecha, hora, usuario, rol, actividad y detalle.',h:['Filtra por tipo de actividad, rol, usuario o fechas.','Revísala cuando algo no cuadre (ingresos fallidos, cambios de notas, consultas de contratos).'],n:'El registro no se puede editar ni borrar.',l:['Fecha · Usuario · Actividad'],b:'Consultar'}
+]},
+{id:'informes',ic:'📈',t:'Informes y reportes',c:'#0A5A62',d:'Cruza información de estudiantes, empresas, cupos, supervisores, formalización y notas.',f:[
+ {t:'Informes y reportes cruzados',ic:'📈',p:['inf_reportes'],q:'Armas tu propio informe sin saber de Excel.',h:['Elige qué cruzar (por ejemplo «Estudiantes · cruce general» o «Empresas · cupos y estudiantes»).','Escoge las columnas, aplica filtros (modalidad, programa, sede, periodo, supervisor…), agrupa y ordena.','Ponle título y notas, y descárgalo en <b>PDF</b> o <b>Excel</b>.'],l:['Estudiantes · cruce general','Columnas · Filtros · Agrupar'],b:'Descargar PDF'}
+]},
+{id:'comunicacion',ic:'✉️',t:'Comunicación',c:'#C75B16',d:'Mensajes dentro de la plataforma y los correos que se envían.',f:[
+ {t:'Mensajes (chat)',ic:'💬',p:['chat_interno','chat_externo'],q:'Escribe al equipo o a una persona del personal y atiende los mensajes de estudiantes, empresas y supervisores. Es la función del rol <b>Servicio al estudiante</b>.',h:['Las pestañas separan <b>Equipo</b>, <b>Estudiantes</b>, <b>Empresas</b> y <b>Supervisores</b>.','Elige o busca a la persona y escribe (hasta 1500 caracteres).','Para parar una conversación usa <b>Bloquear</b> con un motivo; queda en la auditoría. Solo el administrador puede eliminar un mensaje.','En <b>Opciones</b> el administrador enciende o apaga el chat por grupo.'],n:'Cada persona externa puede enviar hasta 20 mensajes cada 10 minutos. El número rojo del menú cuenta los mensajes sin leer.',l:['Equipo · Estudiantes · Empresas · Supervisores','Ana Pérez: Hola…'],b:'Enviar'},
+ {t:'Correos automáticos',ic:'✉️',p:['solo_admin'],q:'Configura avisos y recordatorios, envía claves y consulta la bitácora de lo enviado.',h:['La lista muestra cada correo con su estado: <b>Pendiente</b>, <b>Enviado</b> o <b>Error</b>.','Si hay pendientes, pulsa <b>▶ Enviar pendientes ahora</b>.','Para comprobar que todo funciona, usa <b>Enviar correo de prueba</b> a tu propia dirección.','Activa el interruptor general y marca los avisos y recordatorios que quieras (cupo asignado, calificaciones atrasadas).'],n:'Si el estado dice Error, el mensaje explica la causa. Si el envío automático está configurado, los pendientes salen solos cada 10 minutos.',l:['Correos · Pendiente 3','Enviado 120 · Error 0'],b:'▶ Enviar pendientes ahora'}
+]}
+];
+const ROLES=[
+ ['Administrador','Todo',['✔','✔','✔','✔','✔','✔','✔']],
+ ['Coordinador de prácticas','Estudiantes y supervisión',['✔','','✔','','','','']],
+ ['Coordinador de gestión empresarial','Estudiantes y empresas',['✔','✔','','','','','']],
+ ['Asistente','Estudiantes',['✔','','','','','','']],
+ ['Supervisor general','Asigna visitas',['','','✔','','','','']],
+ ['Servicio al estudiante','Solo el chat',['','','','','','','✔']]
+];
+const GR=['Estudiantes','Empresas','Supervisión','Configurar','Seguridad','Informes','Comunicación'];
+function mock(f,g){
+  const act=g.t==='Informes y reportes'?'Informes':g.t==='Personas y seguridad'?'Personas y seguridad':g.t==='Comunicación'&&/chat/i.test(f.t)?'Mensajes':g.t;
+  return '<div><div class="mk" aria-hidden="true"><div class="bar"><i></i><i></i><i></i>&nbsp;administrador · panel</div><div class="bd"><div class="sd"><div class="lg">Campoalto</div>'+MENU.map(i=>'<span'+(i===act||(i==='Configurar la práctica'&&g.id==='practica')?' class="on"':'')+'>'+esc(i)+'</span>').join('')+'</div><div class="ct"><div class="sb">'+esc(f.t)+'</div>'+(f.l||[]).map(x=>'<div class="ln">'+esc(x)+'</div>').join('')+(f.b?'<span class="bt">'+esc(f.b)+'</span>':'')+'</div></div></div><div class="cap">Ilustración: el menú resalta el grupo donde está la tarjeta.</div></div>';
+}
+let h='';
+h+='<section class="intro"><h2>Cómo está organizado el panel</h2><p>Al entrar con el <b>Acceso de administrador</b> (correo y contraseña) ves el <b>menú a la izquierda</b> (en el celular, arriba) y la campana 🔔 arriba a la derecha. El <b>Panel</b> muestra los <b>Pendientes por proceso</b>, ordenados como ocurre el proceso real:</p>'+
+ '<table class="t"><thead><tr><th>Proceso</th><th>Qué revisas</th></tr></thead><tbody><tr><td>1 · Acceso y solicitud</td><td>Solicitudes de acceso y de práctica</td></tr><tr><td>2 · Contrato de aprendizaje</td><td>Inscripciones, empresas por aprobar, solicitudes de aprendices, aprendices por confirmar y cartas de fechas</td></tr><tr><td>3 · Convenios</td><td>Cartas de convenio por enviar y estudiantes por formalizar</td></tr><tr><td>4 · Prácticas y seguimiento</td><td>Notas por subir, empresas por confirmar, visitas por asignar, cambios de empresa e inasistencias</td></tr></tbody></table>'+
+ '<p style="margin-top:8px">Cada cuadro muestra un número: si es mayor que cero, púlsalo y la plataforma te lleva a la función. Debajo están las <b>tarjetas de funciones</b> por grupo, con un <b>buscador</b>: escribe el nombre de lo que buscas. El botón <b>Manual</b> del menú abre este manual y el de cada modalidad.</p></section>';
+h+='<section class="intro"><h2>Quién ve qué (roles)</h2><p class="resumen">Valores iniciales aproximados: el administrador los ajusta en <b>Roles y permisos</b>, que es la referencia exacta de cada rol.</p><div style="overflow-x:auto"><table class="t rol-t"><thead><tr><th>Rol</th><th>Ve por defecto</th><th>Estudiantes</th><th>Empresas</th><th>Supervisión</th><th>Configurar</th><th>Seguridad</th><th>Informes</th><th>Chat</th></tr></thead><tbody>'+
+ ROLES.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td>'+r[2].map(c=>'<td class="'+(c?'ok':'no')+'">'+(c||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+
+ '<p style="margin-top:8px">La columna <i>Seguridad</i> (personal, roles y permisos, auditoría, firma de cartas y correos) es <b>solo del administrador</b>. Cada tarjeta indica el permiso que necesita. Los permisos se aplican en la base de datos: aunque alguien manipule el navegador, el servidor lo vuelve a validar.</p></section>';
+h+='<section class="intro"><h2>Orden recomendado de puesta en marcha</h2><ol style="margin:6px 0 0;padding-left:22px"><li><b>Personas y seguridad</b> → crea al personal y revisa <b>Roles y permisos</b>.</li><li><b>Configurar la práctica</b> → programas, modalidades, documentos por modalidad y rúbrica.</li><li><b>Empresas</b> → carga empresas y cupos; define las fechas de apertura y cierre; aprueba las empresas de contrato de aprendizaje.</li><li><b>Supervisión</b> → crea los supervisores.</li><li><b>Estudiantes</b> → importa estudiantes, genera claves y aprueba solicitudes.</li><li><b>Comunicación</b> → prueba los correos y activa los avisos.</li></ol></section>';
+h+='<section class="intro"><h2>Tu rutina diaria</h2><ol style="margin:6px 0 0;padding-left:22px"><li>Mira el <b>Panel</b>: cada número mayor que cero es un pendiente.</li><li>Atiende en orden: accesos → solicitudes de práctica → contratos firmados → visitas por asignar → cambios de empresa e inasistencias.</li><li>Revisa la campana 🔔 y los <b>Mensajes</b>.</li><li>Cada mes: <b>Notas por subir al sistema</b> (las empresas califican del 27 al 2).</li><li>Cierra sesión al terminar.</li></ol><p class="resumen" style="margin-top:8px">El administrador no queda limitado por el calendario de plazos; los estudiantes y las empresas sí.</p></section>';
+h+='<section class="intro"><h2>Índice de funciones</h2><div class="toc">'+G.map(g=>'<h4>'+g.ic+' '+g.t+'</h4>'+g.f.map(f=>'<a href="#'+g.id+'-'+g.f.indexOf(f)+'">'+esc(f.t)+'</a>').join('')).join('')+'</div></section>';
+G.forEach(g=>{
+  h+='<div class="grp" style="color:'+g.c+'"><span class="ic">'+g.ic+'</span><h2>'+g.t+'</h2></div><p class="grp-d">'+g.d+'</p>';
+  g.f.forEach((f,i)=>{
+    h+='<div class="fcard" id="'+g.id+'-'+i+'" style="--ac:'+g.c+'"><div class="chips"><span class="chip" style="background:'+g.c+'">'+g.ic+' '+g.t+'</span>'+f.p.map(p=>'<span class="chip menu">🔑 '+esc(PERM[p])+'</span>').join('')+'</div><h3>'+f.ic+' '+esc(f.t)+'</h3>'+
+     '<div class="cols"><div><p class="que"><b>Para qué sirve:</b> '+f.q+'</p><ol>'+f.h.map(x=>'<li>'+x+'</li>').join('')+'</ol>'+(f.n?'<div class="nota"><b>Ten en cuenta</b>'+f.n+'</div>':'')+'</div>'+mock(f,g)+'</div></div>';
+  });
+});
+h+='<section class="sec"><h2>Preguntas frecuentes del personal</h2>'+[
+ ['Un asistente no ve una función','El administrador debe activarla en Roles y permisos. Un cuadro del panel que dice «rol no habilitado» significa lo mismo.'],
+ ['El estudiante dice que no le llegó su clave','Revisa su correo en la ficha y, si está mal, usa Cambiar correo; luego genera una clave nueva. Mira también la bitácora en Correos automáticos.'],
+ ['Los correos quedan en «Pendiente»','Pulsa ▶ Enviar pendientes ahora en Correos automáticos y, si se repite, revisa el envío automático.'],
+ ['Una empresa quiere corregir una nota','El mes cerrado está bloqueado: el administrador puede desbloquearlo y avisarle a la empresa. Queda en la auditoría.'],
+ ['Un estudiante no puede subir su contrato o sus documentos','Revisa la fecha: los plazos son fijos cada mes (ver el manual por modalidad). Fuera del plazo la plataforma no lo deja.'],
+ ['No veo mis cambios después de una actualización','Pulsa Ctrl + Shift + R (en el celular, cierra y abre el navegador).'],
+ ['¿Cómo recupero mi contraseña de administración?','En la pantalla de ingreso pulsa «¿Olvidaste tu contraseña?» y sigue el enlace que llega al correo.']
+].map(f=>'<details class="fq"><summary>'+esc(f[0])+'</summary><p style="margin:6px 0 2px">'+f[1]+'</p></details>').join('')+'</section>';
+$('#main').innerHTML=h;
+if(new URLSearchParams(location.search).get('imprimir')==='1') document.querySelectorAll('details').forEach(d=>d.open=true);
+
+</script>
+</body></html>
