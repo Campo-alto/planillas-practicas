@@ -1,0 +1,18 @@
+/* Diseño moderno para estudiante, empresa y supervisor (mismo estilo del panel de administrador).
+   Se carga DESPUÉS de styles.css y panel-moderno.css. Si no está, las pantallas se ven como antes. */
+body.pm-u #estTabs{display:none;}
+.pmu-oculta{display:none !important;}
+#pmSide .pmu-emo{width:22px;text-align:center;font-size:18px;line-height:1;flex:none;}
+#pmSide .pm-nav{min-height:0;}
+body.pm-u .status-strip{border-radius:14px;}
+#pmuRes{margin:0 0 18px;}
+.pmu-ruta .gd-lista,.pmu-ruta .gd-next,.pmu-ruta .gd-prog,.pmu-ruta > .section-bar{display:none;}
+body.pm-u .pm-fila .tx small{display:block;color:var(--muted);font-size:12.5px;line-height:1.3;margin-top:2px;font-weight:400;}
+body.pm-u .pm-fila.nolink{cursor:default;} body.pm-u .pm-fila.nolink:hover{transform:none;box-shadow:none;}
+.pmu-titulo{margin:2px 0 14px;font:700 28px/1.15 'Zilla Slab',Georgia,serif;font-style:italic;color:var(--deep);}
+@media (max-width:900px){
+  body.pm-u #pmSide .pm-nav{overflow-x:auto;max-width:100%;}
+  body.pm-u #pmSide .pm-it .pmu-emo{font-size:17px;}
+  .pmu-titulo{font-size:22px;}
+}
+body.pm-u .screen.active .card:empty{display:none}
