@@ -48,7 +48,6 @@ async function gdRutaEstudiante(){
   if(conv){
     const ok = conv.estado;
     pasos.push({ t:'Preinscripción al convenio', e:'hecho', d: 'Estás vinculado a ' + conv.empresa + ' (convenio «' + conv.nombre + '»).' });
-    pasos.push({ t:'Completar tu hoja de vida', e: insc && insc.hv_completa ? 'hecho' : 'actual', d: insc && insc.hv_completa ? 'Hoja de vida completa.' : 'Es obligatoria para formalizar tu contrato.', go: ir('ca'), b:'Llenar mi hoja de vida' });
     pasos.push({ t:'Carta de fechas', e: ok === 'preinscrito' ? 'espera' : 'hecho', d: ok === 'preinscrito' ? 'La institución la prepara y la envía a la empresa y a tu correo.' : 'Enviada a tu correo y a la empresa.' });
     pasos.push({ t:'Formalización del contrato', e: ok === 'formalizado' ? 'hecho' : (ok === 'carta_enviada' ? 'actual' : 'espera'),
       d: ok === 'formalizado' ? 'Contrato formalizado: tus planillas están habilitadas.'
