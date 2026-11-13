@@ -1,236 +1,144 @@
-/* ============================= PANEL DEL ADMINISTRADOR · DISEÑO MODERNO (Campoalto) =============================
-   Capa visual sobre el panel que ya existe (panel-admin.js + guia.js): no cambia ninguna función ni permiso.
-   · Barra lateral con las secciones que tu rol puede usar (con el número de pendientes de cada una) y «Ayuda».
-   · «Acciones prioritarias»: resume los pendientes en Urgente / En proceso / Al día (salen de «Pendientes por proceso»).
-   · Catálogo de funciones con buscador (Ctrl+K o ⌘K) y secciones que muestran 4 tarjetas con «Ver más».
-   Se carga DESPUÉS de panel-admin.js y guia.js, junto con panel-moderno.css. Si falta alguno de los dos, el panel se ve como antes. */
+/* ============================= DISEÑO MODERNO · ESTUDIANTE, EMPRESA Y SUPERVISOR =============================
+   Mismo estilo del panel de administrador (menú lateral Campoalto, campana arriba a la derecha, resumen Urgente / En proceso /
+   Completado), pero sobre las pantallas que ya existen. NO cambia ninguna función, permiso ni dato: solo reorganiza lo que se ve.
+   · Estudiante: cada pestaña pasa al menú lateral; «Mi ruta» muestra el resumen.
+   · Empresa y supervisor: cada recuadro de la pantalla pasa al menú lateral y se abre solo.
+   Se carga al final, con panel-moderno.css y panel-moderno-usuarios.css. Si falta alguno, todo se ve como antes. */
 (function(){
   if(typeof showScreen !== 'function') return;
-  const SIN_BARRA = ['screen-home', 'screen-admin-login', 'screen-reset-password'];
+  const PANTALLAS = ['screen-estudiante', 'screen-empresa', 'screen-supervisor', 'screen-lookup'];
   const e = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const SVG = d => '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
-  const IC = {
-    dash: SVG('<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>'),
-    estudiantes: SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.3"/>'),
-    empresas: SVG('<path d="M4 20V5.5L13 3v17"/><path d="M13 9h7v11"/><path d="M7.5 8.5h2M7.5 12h2M7.5 15.5h2M16 13h1M16 16.5h1"/><path d="M3 20h18"/>'),
-    supervisores: SVG('<path d="M3.5 4v16h17"/><path d="M7 15l3.6-4 3 2.8L20 7"/>'),
-    practica: SVG('<circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>'),
-    seguridad: SVG('<path d="M12 3 4.5 6v5.5c0 4.4 3 7.6 7.5 9.5 4.5-1.9 7.5-5.1 7.5-9.5V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/>'),
-    informes: SVG('<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>'),
-    comunicacion: SVG('<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6.5L20.5 7"/>'),
-    chat: SVG('<path d="M4 5.5h16v10.5H9.5L5.5 20v-4H4Z"/><path d="M8 9.5h8M8 12.5h5"/>'),
-    ayuda: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>')
-  };
-  const ICO_URG = SVG('<circle cx="12" cy="12" r="9.5"/><path d="M12 7v6"/><circle cx="12" cy="16.6" r=".7" fill="#fff"/>');
-  const ICO_PRO = SVG('<circle cx="12" cy="12" r="9.5"/><path d="m10 8.5 5 3.5-5 3.5Z" fill="#fff"/>');
-  const ICO_OK = SVG('<circle cx="12" cy="12" r="9.5"/><path d="m7.8 12.3 3 3 5.6-6"/>');
-  const ESTRELLA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8L12 2.8Z"/></svg>';
-  const LUPA = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>';
+  const EMO = [[/ruta/i, '🧭'], [/datos|perfil|hoja de vida/i, '🪪'], [/asign|cupo|lugar|empresa/i, '📍'], [/nota|competen/i, '📝'], [/control|firma|cumpl/i, '✍️'],
+               [/solicitud|postul|oferta/i, '📂'], [/contrato|convenio/i, '🤝'], [/carta/i, '✉️'], [/planilla/i, '📋'], [/visita|supervis/i, '🧭'], [/buscar|estudiante/i, '🔎'],
+               [/inasist|asistencia|cambio/i, '🩺'], [/concepto/i, '🏢']];
+  const emoji = t => { const m = EMO.find(x=>x[0].test(t)); return m ? m[1] : '📌'; };
+  let sel = '';            // título de la sección abierta (se conserva entre repintados)
+  let ult = '';            // pantalla en la que se pintó por última vez
 
-  // Qué pendientes son urgentes (la institución los tiene detenidos) y cuáles son de seguimiento
-  const URGENTES = ['Solicitudes de acceso', 'Solicitudes de práctica', 'Inscripciones por verificar', 'Empresas por aprobar', 'Solicitudes de aprendices por aprobar',
-                    'Aprendices por confirmar', 'Cartas de fechas por definir', 'Cartas de convenio por enviar', 'Estudiantes por formalizar'];
-  const EMOJI = { 'Solicitudes de acceso':'📨', 'Solicitudes de práctica':'📂', 'Inscripciones por verificar':'🧾', 'Empresas por aprobar':'🏢', 'Solicitudes de aprendices por aprobar':'📝',
-                  'Aprendices por confirmar':'🤝', 'Cartas de fechas por definir':'📅', 'Cartas de convenio por enviar':'✉️', 'Estudiantes por formalizar':'🎓',
-                  'Notas por subir al sistema':'📤', 'Empresas por confirmar':'✅', 'Estudiantes esperando supervisor':'🧭', 'Cambios de empresa':'🔄', 'Inasistencias por revisar':'🩺' };
-  const expandidas = new Set();
-  let activo = 'dash', chips = [], vista = null;   // vista = sección abierta por separado desde la barra lateral (null = panel completo)
+  const pantallaActiva = () => { const a = document.querySelector('.screen.active'); return (a && PANTALLAS.indexOf(a.id) >= 0 && typeof state !== 'undefined' && state && state.token) ? a : null; };
+  const rolTxt = () => (typeof roleLabel === 'function' ? roleLabel(state.role || state.pendingRole) : '') || (state.caMode ? 'Empresa' : 'Usuario');
+  const nombreUsuario = () => (state.record && state.record.nombre) ? state.record.nombre : (state.currentUserNombre || rolTxt());
 
-  const enHub = () => { const h = document.getElementById('screen-admin-hub'); return !!(h && h.classList.contains('active')); };
-  const valorBusca = () => String((document.getElementById('pmBuscar') || {}).value || '').trim();
-  const hayBuscador = () => !!valorBusca();
-
-  /* ---------- Barra lateral ---------- */
+  /* ---------- Menú lateral ---------- */
   function crearBarra(){
     if(document.getElementById('pmSide')) return;
     const logo = document.querySelector('.brand-logo');
-    const n = document.createElement('nav'); n.id = 'pmSide'; n.setAttribute('aria-label', 'Secciones del panel');
+    const n = document.createElement('nav'); n.id = 'pmSide'; n.setAttribute('aria-label', 'Secciones');
     n.innerHTML = '<div class="pm-logo">' + (logo ? '<img src="' + e(logo.getAttribute('src')) + '" alt="Campoalto" width="150" height="39">' : '<b>Campoalto</b>') + '</div>' +
       '<div class="pm-logo-sub">Educación para el Trabajo y el Desarrollo Humano</div>' +
-      '<div class="pm-user"><div class="pm-av" id="pmAv">A</div><div><div class="pm-un" id="pmUn">Administrador</div><div class="pm-ue"><span class="pm-on"></span>En línea</div></div></div>' +
+      '<div class="pm-user"><div class="pm-av" id="pmAv">U</div><div><div class="pm-un" id="pmUn">Usuario</div><div class="pm-ue"><span class="pm-on"></span><span id="pmRol">En línea</span></div></div></div>' +
       '<div class="pm-nav" id="pmNav"></div><div class="pm-fill"></div>' +
-      '<button type="button" class="pm-it" onclick="pmAyuda()">' + IC.ayuda + '<span class="t">Ayuda</span></button><div class="pm-pie">Planillas de prácticas · PPS-GAA-F-006</div>';
+      '<button type="button" class="pm-it" onclick="pmuAyuda()"><span class="pmu-emo">❔</span><span class="t">Ayuda</span></button><div class="pm-pie">Planillas de prácticas · PPS-GAA-F-006</div>';
     document.body.appendChild(n);
   }
-  function sumaSeccion(sec){
-    let s = 0; sec.querySelectorAll('.fn-badge .sa-badge').forEach(b=>{ s += Number(String(b.textContent).replace(/\D/g, '')) || 0; }); return s;
-  }
-  function pintarBarra(){
-    crearBarra();
-    const nav = document.getElementById('pmNav'); if(!nav) return;
-    const grupos = (typeof window.pgGrupos === 'function' ? window.pgGrupos() : []).filter(g=>document.getElementById('grupoSec-' + g.id));
-    const total = chips.reduce((a, c)=>a + c.n, 0);
-    const it = (id, ico, txt, num) => '<button type="button" class="pm-it' + (activo === id ? ' act' : '') + '" onclick="pmIr(\'' + id + '\')"' + (activo === id ? ' aria-current="page"' : '') + '>' + ico + '<span class="t">' + e(txt) + '</span>' + (num ? '<span class="pm-n" title="Pendientes">' + num + '</span>' : '') + '</button>';
-    const chat = (typeof window.chatPuede === 'function' && window.chatPuede())
-      ? '<button type="button" class="pm-it" onclick="abrirChat()">' + IC.chat + '<span class="t">Mensajes</span><span class="pm-n" id="pmChatN" style="' + (window.chatNoLeidos ? '' : 'display:none') + '" title="Mensajes sin leer">' + (window.chatNoLeidos > 99 ? '99+' : (window.chatNoLeidos || 0)) + '</span></button>' : '';
-    nav.innerHTML = it('dash', IC.dash, 'Panel', total) + grupos.map(g=>it(g.id, IC[g.id] || IC.practica, g.titulo, sumaSeccion(document.getElementById('grupoSec-' + g.id)))).join('') + chat;
-    // nombre de quien entró
-    try{
-      const rol = (typeof ROL_NOMBRES !== 'undefined' && typeof permAdmin !== 'undefined' && permAdmin.rol) ? ROL_NOMBRES[permAdmin.rol] : 'Administrador';
-      const un = document.getElementById('pmUn'); if(un) un.textContent = rol || 'Administrador';
-      if(typeof sb !== 'undefined' && sb && sb.auth && !pintarBarra.mail){
-        pintarBarra.mail = 1;
-        sb.auth.getSession().then(r=>{ const m = r && r.data && r.data.session && r.data.session.user && r.data.session.user.email; if(m){ const av = document.getElementById('pmAv'); if(av) av.textContent = m.charAt(0).toUpperCase(); const un2 = document.getElementById('pmUn'); if(un2) un2.title = m; } }).catch(()=>{});
-      }
-    }catch(_){}
-  }
-  window.pmIr = function(id){
-    activo = id; vista = id === 'dash' ? null : id;
-    const bi = document.getElementById('pmBuscar'); if(bi && bi.value){ bi.value = ''; if(typeof pgFiltrar === 'function') pgFiltrar(''); document.body.classList.remove('pm-buscando'); }
-    const ir = () => { aplicarVista(); window.scrollTo({ top:0, behavior:'smooth' }); pintarBarra(); };
-    if(!enHub()){ showScreen('screen-admin-hub'); setTimeout(ir, 350); } else ir();
-  };
-  // Muestra SOLO las funciones de la sección elegida (o el panel completo si vista es null)
-  function aplicarVista(){
-    document.body.classList.toggle('pm-vista', !!vista);
-    document.querySelectorAll('#grupoGrid .fn-seccion').forEach(sec=>{ sec.classList.toggle('pm-oculta', !!vista && sec.id !== 'grupoSec-' + vista); });
-    const grid = document.getElementById('grupoGrid'); if(!grid) return;
-    let mig = grid.querySelector('.pm-mig');
-    const buscando = hayBuscador();
-    document.body.classList.toggle('pm-buscando', buscando);
-    let migHtml = '';
-    if(vista){
-      const g = (typeof window.pgGrupos === 'function' ? window.pgGrupos() : []).find(x=>x.id === vista);
-      if(!g || !document.getElementById('grupoSec-' + vista)){ vista = null; activo = 'dash'; return aplicarVista(); }   // la sección ya no está disponible para este rol
-      migHtml = '<button type="button" onclick="pmIr(\'dash\')">← Volver al panel</button><span>/</span><b>' + e(g.titulo) + '</b>';
-    } else if(buscando){
-      migHtml = '<button type="button" onclick="pmLimpiar()">← Volver al panel</button><span>/</span><b>Resultados de la búsqueda</b>';
+  function secciones(pant){
+    const r = [];
+    if(pant.id === 'screen-estudiante'){
+      document.querySelectorAll('#estTabs .tab').forEach(b=>r.push({ t: b.textContent.trim(), activo: b.classList.contains('active'), abrir: ()=>b.click(), tab: true }));
+      return r;
     }
-    if(migHtml){ if(!mig){ mig = document.createElement('div'); mig.className = 'pm-mig'; grid.insertBefore(mig, grid.firstChild); } if(mig.innerHTML !== migHtml) mig.innerHTML = migHtml; }
-    else if(mig) mig.remove();
-    pmCortas();
+    Array.from(pant.children).forEach((c, i)=>{
+      if(!c.classList.contains('card') || c.style.display === 'none' || c.classList.contains('pmu-mio')) return;
+      const sb2 = c.querySelector('.section-bar'), h = c.querySelector('h2, h3');
+      let t = sb2 ? sb2.textContent.trim() : (h ? h.textContent.trim() : '');
+      if(!t && /DatosGenerales/i.test(c.id)) t = 'Datos del estudiante';
+      if(!t && c.querySelector('#lookupDoc')) t = 'Buscar estudiante';
+      if(!t || !c.textContent.trim()) return;
+      r.push({ t, el: c });
+    });
+    return r;
   }
-  window.pmAyuda = function(){
+  function pintar(){
+    const pant = pantallaActiva();
+    const cl = document.body.classList;
+    if(!pant){ cl.remove('pm-side', 'pm-u'); document.querySelectorAll('.pmu-oculta').forEach(x=>x.classList.remove('pmu-oculta')); ult = ''; return; }
+    crearBarra(); cl.add('pm-side', 'pm-u');
+    const ss = secciones(pant);
+    if(pant.id !== ult){ ult = pant.id; sel = ''; }
+    if(!ss.some(s=>s.t === sel)){ const a = ss.find(s=>s.activo); sel = a ? a.t : (ss.length ? ss[0].t : ''); }
+    // mostrar solo la sección elegida (estudiante: lo hace su propia pestaña)
+    if(pant.id !== 'screen-estudiante') ss.forEach(s=>s.el.classList.toggle('pmu-oculta', s.t !== sel));
+    const nom = nombreUsuario(); const un = document.getElementById('pmUn'), av = document.getElementById('pmAv'), ro = document.getElementById('pmRol');
+    if(un) un.textContent = nom; if(av) av.textContent = (String(nom).trim()[0] || 'U').toUpperCase(); if(ro) ro.textContent = rolTxt() + ' · En línea';
+    const nav = document.getElementById('pmNav');
+    nav.innerHTML = ss.map((s, i)=>'<button type="button" class="pm-it' + (s.t === sel ? ' act' : '') + '" data-i="' + i + '"><span class="pmu-emo">' + emoji(s.t) + '</span><span class="t">' + e(s.t.replace(/^[^\wÁÉÍÓÚáéíóúñÑ]+/, '')) + '</span></button>').join('');
+    nav.querySelectorAll('.pm-it').forEach(b=>b.onclick = ()=>{ const s = ss[Number(b.dataset.i)]; if(!s) return; sel = s.t; if(s.abrir) s.abrir(); pintar(); window.scrollTo(0, 0); });
+    resumenRuta(pant);
+    espejoCampana();
+  }
+
+  /* ---------- Resumen Urgente / En proceso / Completado (desde «Mi ruta») ---------- */
+  function resumenRuta(pant){
+    pant.querySelectorAll('.card').forEach(host=>{
+      const lista = host.querySelector('.gd-lista'); if(!lista || host.style.display === 'none') return;
+      host.classList.add('pmu-ruta');
+      const pasos = Array.from(lista.querySelectorAll('.gd-paso')).map(li=>({
+        e: li.classList.contains('gd-foco') ? 'foco' : li.classList.contains('gd-hecho') ? 'hecho' : 'otro',
+        t: (li.querySelector('.gd-tit') || {}).textContent || '', d: (li.querySelector('.gd-det') || {}).textContent || '',
+        go: li.querySelector('.gd-btn') }));
+      const foco = host.querySelector('.gd-next button');
+      const fila = (p, ic, urg)=>'<button type="button" class="pm-fila' + ((p.go || (urg && foco)) ? '' : ' nolink') + '" data-k="' + e(p.t) + '"><span class="ic">' + ic + '</span><span class="tx"><b>' + e(p.t) + '</b><small>' + e(p.d) + '</small></span>' + ((p.go || (urg && foco)) ? '<span class="go" aria-hidden="true">›</span>' : '') + '</button>';
+      const urg = pasos.filter(p=>p.e === 'foco'), pro = pasos.filter(p=>p.e === 'otro'), ok = pasos.filter(p=>p.e === 'hecho');
+      const col = (cls, tit, arr, ic, vacio, urgente)=>'<div class="pm-col ' + cls + '"><h3>' + tit + ' <small>(' + arr.length + ')</small></h3>' +
+        (arr.length ? '<div class="pm-lista">' + arr.map(p=>fila(p, ic, urgente)).join('') + '</div>' : '<div class="pm-vacio"><b>' + vacio + '</b></div>') + '</div>';
+      let box = host.querySelector('#pmuRes');
+      if(!box){ box = document.createElement('div'); box.id = 'pmuRes'; box.className = 'pmu-mio'; host.insertBefore(box, host.firstChild); }
+      const tit = (host.querySelector('.section-bar') || {}).textContent || 'Mi ruta';
+      const html = '<div class="pmu-titulo">' + e(tit) + '</div><div class="pm-banner">' + ((urg.length || !pasos.length) ? 'Tu <b>siguiente paso</b> está listo' : '🎉 ¡Todo al día!') + '<small>' + ok.length + ' de ' + pasos.length + ' pasos completados</small></div>' +
+        '<div class="pm-cols">' + col('urg', 'Urgente', urg, '👉', 'Nada urgente', true) + col('pro', 'En proceso', pro, '⏳', 'Sin pasos en espera', false) + col('ok', 'Completado', ok, '✔️', 'Aún no hay pasos completos', false) + '</div>';
+      if(box.dataset.h !== html){
+        box.dataset.h = html; box.innerHTML = html;
+        box.querySelectorAll('.pm-fila').forEach(b=>{
+          const p = pasos.find(x=>x.t === b.dataset.k); if(!p) return;
+          const btn = p.e === 'foco' ? foco : p.go; if(btn) b.onclick = ()=>btn.click();
+        });
+      }
+    });
+  }
+
+  /* ---------- Ayuda ---------- */
+  window.pmuAyuda = function(){
     if(document.getElementById('pmAyuda')) return;
     const m = document.createElement('div'); m.id = 'pmAyuda'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
-    m.innerHTML = '<div class="caja"><h3>¿Cómo se usa el panel?</h3><ul>' +
-      '<li><b>Acciones prioritarias:</b> lo que está esperando que lo atiendas. Pulsa una fila y te lleva a esa función.</li>' +
-      '<li><b>Barra lateral:</b> salta a una sección. El número rojo indica cuántos pendientes tiene.</li>' +
-      '<li><b>Catálogo de funciones:</b> todas tus funciones, agrupadas. Usa «Ver más» para mostrar todas las de una sección.</li>' +
-      '<li><b>Buscar:</b> escribe en el buscador o pulsa <kbd>Ctrl</kbd> + <kbd>K</kbd> (en Mac <kbd>⌘</kbd> + <kbd>K</kbd>).</li>' +
-      '<li>Solo ves las funciones que tu rol tiene habilitadas.</li></ul>' +
-      '<p style="font-size:13.5px;margin:0 0 14px;">¿Dudas? Escribe a <b>asistentedepracticas@campoalto.edu.co</b>.</p>' +
+    m.innerHTML = '<div class="caja"><h3>¿Necesitas ayuda?</h3><ul><li>Usa el <b>menú de la izquierda</b> para moverte entre las secciones.</li>' +
+      '<li>En <b>Mi ruta</b> ves tu siguiente paso y lo que ya completaste.</li><li>La campana 🔔 de arriba te avisa de novedades.</li>' +
+      '<li>Si tienes una duda, escríbenos desde el botón 💬 o al correo asistentedepracticas@campoalto.edu.co.</li></ul>' +
       '<div style="text-align:right;"><button class="primary" type="button" onclick="pmAyudaCerrar()">Entendido</button></div></div>';
     m.addEventListener('click', ev=>{ if(ev.target === m) pmAyudaCerrar(); });
     document.body.appendChild(m);
   };
   window.pmAyudaCerrar = function(){ const m = document.getElementById('pmAyuda'); if(m) m.remove(); };
+  document.addEventListener('keydown', ev=>{ if(ev.key === 'Escape') window.pmAyudaCerrar(); });
 
-  /* ---------- Acciones prioritarias ---------- */
-  function leerChips(){
-    return [...document.querySelectorAll('#gdPend .gd-chip')].map((b, i)=>({ i, n: Number((b.querySelector('b') || {}).textContent) || 0, t: ((b.querySelector('span') || {}).textContent || '').trim() }));
-  }
-  window.pmChip = function(i){ const b = document.querySelectorAll('#gdPend .gd-chip')[i]; if(b) b.click(); };
-  function filaHtml(c){ return '<button type="button" class="pm-fila" onclick="pmChip(' + c.i + ')"><span class="ic">' + (EMOJI[c.t] || '📌') + '<span class="nb">' + c.n + '</span></span><span class="tx">' + e(c.t) + '</span><span class="go" aria-hidden="true">›</span></button>'; }
-  function pintarResumen(){
-    const hub = document.getElementById('screen-admin-hub'); if(!hub) return;
-    let host = document.getElementById('pmResumen');
-    if(!host){
-      host = document.createElement('div'); host.id = 'pmResumen';
-      const ref = document.getElementById('gdPend') || hub.querySelector('h2'); if(ref) ref.insertAdjacentElement('afterend', host); else hub.insertBefore(host, hub.firstChild);
-      host.innerHTML = '<div class="pm-banner">' + ESTRELLA + '<span>Acciones prioritarias</span></div><div class="pm-cols"><div class="pm-carga">Cargando tus pendientes…</div></div>';
-    }
-    chips = leerChips();
-    if(!document.getElementById('gdPend')) { pintarBarra(); return; }          // aún no llegaron los datos
-    const urg = chips.filter(c=>c.n > 0 && URGENTES.indexOf(c.t) >= 0), pro = chips.filter(c=>c.n > 0 && URGENTES.indexOf(c.t) < 0), ok = chips.filter(c=>c.n === 0);
-    const total = chips.reduce((a, c)=>a + c.n, 0);
-    const vacioCol = txt => '<div class="pm-vacio"><span>' + txt + '</span></div>';
-    host.innerHTML = '<div class="pm-banner">' + ESTRELLA + '<span>' + (total ? 'Tienes <b>' + total + '</b> ' + (total === 1 ? 'acción prioritaria' : 'acciones prioritarias') : 'No tienes acciones prioritarias') + '</span>' +
-        '<small>Se actualiza sola cada minuto</small></div>' +
-      '<div class="pm-cols">' +
-      '<section class="pm-col urg" aria-label="Urgente"><h3>' + ICO_URG + '<span>Urgente <small>· Requiere acción inmediata</small></span></h3>' + (urg.length ? '<div class="pm-lista">' + urg.map(filaHtml).join('') + '</div>' : vacioCol('Nada urgente por ahora.')) + '</section>' +
-      '<section class="pm-col pro" aria-label="En proceso"><h3>' + ICO_PRO + '<span>En proceso <small>· Seguimiento activo</small></span></h3>' + (pro.length ? '<div class="pm-lista">' + pro.map(filaHtml).join('') + '</div>' : vacioCol('Nada en seguimiento por ahora.')) + '</section>' +
-      '<section class="pm-col ok" aria-label="Completado"><h3>' + ICO_OK + '<span>Completado <small>/ Al día</small></span></h3>' +
-        '<div class="pm-vacio"><span class="chk">' + SVG('<path d="m5 12.5 4.5 4.5L19 7.5"/>') + '</span>' +
-        (total ? '<b>' + ok.length + ' ' + (ok.length === 1 ? 'proceso al día' : 'procesos al día') + '</b>' + (ok.length ? '<div class="pm-aldia">' + ok.slice(0, 6).map(c=>'<span>' + e(c.t) + '</span>').join('') + '</div>' : '')
-               : '<b>Sin acciones pendientes</b><span>¡Excelente trabajo!</span>') + '</div></section></div>';
-    pintarBarra();
-  }
-
-  /* ---------- Catálogo ---------- */
-  window.pmVerMas = function(id){ if(expandidas.has(id)) expandidas.delete(id); else expandidas.add(id); pmCortas(); };
-  function pmCortas(){
-    const buscando = hayBuscador();
-    document.querySelectorAll('#grupoGrid .fn-seccion').forEach(sec=>{
-      const id = sec.id.replace('grupoSec-', ''), n = sec.querySelectorAll('.fn-card').length;
-      const larga = n > 4, abierta = expandidas.has(id) || buscando || vista === id;
-      sec.classList.toggle('pm-corta', larga && !abierta);
-      let b = sec.querySelector('.pm-vermas');
-      if(larga && !buscando && !vista){
-        if(!b){ b = document.createElement('button'); b.type = 'button'; b.className = 'pm-vermas'; b.onclick = ()=>pmVerMas(id); sec.querySelector('.fn-sec-cab').appendChild(b); }
-        b.textContent = abierta ? 'Ver menos ↑' : 'Ver más (' + (n - 4) + ') →'; b.setAttribute('aria-expanded', abierta ? 'true' : 'false');
-      } else if(b) b.remove();
-    });
-  }
-  function mejorarCatalogo(){
-    if(!document.getElementById('grupoGrid')) return;
-    crearTop(); aplicarVista(); pintarBarra();
-  }
-  /* Buscador del panel (arriba): al escribir se muestran, de todo el catálogo, solo las funciones que coinciden */
-  function crearTop(){
-    if(document.getElementById('pmTop')) return;
-    const hub = document.getElementById('screen-admin-hub'); if(!hub) return;
-    const t = document.createElement('div'); t.id = 'pmTop';
-    t.innerHTML = '<div class="pm-bus"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>' +
-      '<input type="search" id="pmBuscar" placeholder="Busca una función… (ej. correo, empresa, notas)" autocomplete="off" aria-label="Buscar una función" oninput="pmBuscar(this.value)">' +
-      '<span class="pm-kbd" aria-hidden="true">' + (/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent) ? '⌘ K' : 'Ctrl K') + '</span></div>';
-    const h2 = hub.querySelector('h2'); if(h2) h2.insertAdjacentElement('afterend', t); else hub.insertBefore(t, hub.firstChild);
-  }
-  window.pmBuscar = function(v){
-    if(vista){ vista = null; activo = 'dash'; }
-    if(typeof pgFiltrar === 'function') pgFiltrar(v);
-    aplicarVista(); pintarBarra(); pmCortas();
-  };
-  window.pmLimpiar = function(){ const i = document.getElementById('pmBuscar'); if(i) i.value = ''; pmBuscar(''); };
-
-  /* ---------- Campana de notificaciones (🔔): la misma de siempre, ahora arriba a la derecha ---------- */
-  function crearCampana(){
-    if(document.getElementById('pmCampana')) return;
-    const top = document.querySelector('.topbar'); if(!top) return;
-    const b = document.createElement('button'); b.type = 'button'; b.id = 'pmCampana'; b.setAttribute('aria-label', 'Notificaciones');
-    b.innerHTML = SVG('<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>') + '<span class="pm-cn" style="display:none"></span>';
-    b.onclick = () => { if(typeof ntAbrir === 'function') ntAbrir(); };
-    top.appendChild(b);
-  }
+  /* ---------- Campana arriba a la derecha (refleja la campana original) ---------- */
   function espejoCampana(){
-    crearCampana();
-    const b = document.getElementById('pmCampana'); if(!b) return;
-    const f = document.getElementById('ntBell');                       // la campana original (queda oculta en este diseño)
-    const visible = !!f && f.style.display !== 'none';
+    if(!document.body.classList.contains('pm-u')) return;
+    const top = document.querySelector('.topbar'); if(!top) return;
+    let b = document.getElementById('pmCampana');
+    if(!b){
+      b = document.createElement('button'); b.type = 'button'; b.id = 'pmCampana'; b.setAttribute('aria-label', 'Notificaciones');
+      b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="pm-cn" style="display:none"></span>';
+      b.onclick = ()=>{ if(typeof ntAbrir === 'function') ntAbrir(); }; top.appendChild(b);
+    }
+    const f = document.getElementById('ntBell'); const visible = !!f && f.style.display !== 'none';
     b.classList.toggle('on', visible);
     const sp = f && f.querySelector('span'), n = sp ? String(sp.textContent).trim() : '';
     const c = b.querySelector('.pm-cn'); if(c){ c.textContent = n; c.style.display = n ? '' : 'none'; }
-    b.setAttribute('aria-label', n ? 'Notificaciones: ' + n + ' sin leer' : 'Notificaciones');
   }
-  if(typeof ntPintarBell === 'function'){ const _n = ntPintarBell; ntPintarBell = function(){ const r = _n.apply(this, arguments); try{ espejoCampana(); }catch(_){} return r; }; }
-  setInterval(espejoCampana, 2000);
-  // El panel vuelve a pintar las tarjetas cada vez que se muestra o llegan los permisos: se reaplica el diseño
-  (function(){
-    const g = document.getElementById('grupoGrid'); if(!g || typeof MutationObserver === 'undefined') return;
-    new MutationObserver(()=>{ mejorarCatalogo(); }).observe(g, { childList:true });
-  })();
-  if(typeof window.pgFiltrar === 'function'){ const _f = window.pgFiltrar; window.pgFiltrar = function(){ if(vista && hayBuscador()){ vista = null; activo = 'dash'; aplicarVista(); pintarBarra(); } const r = _f.apply(this, arguments); pmCortas(); return r; }; }
-  document.addEventListener('keydown', ev=>{
-    if((ev.ctrlKey || ev.metaKey) && String(ev.key).toLowerCase() === 'k' && enHub()){ const i = document.getElementById('pmBuscar'); if(i){ ev.preventDefault(); window.scrollTo({ top:0, behavior:'smooth' }); i.focus(); i.select(); } }
-    if(ev.key === 'Escape') pmAyudaCerrar();
-  });
 
-  /* ---------- Enganche con el panel existente ---------- */
+  /* ---------- Cuándo repintar ---------- */
+  let t = null; const prog = ()=>{ clearTimeout(t); t = setTimeout(()=>{ try{ pintar(); }catch(err){ console.error(err); } }, 220); };
   const _show = showScreen;
-  showScreen = function(id){
-    const r = _show.apply(this, arguments);
-    const conBarra = SIN_BARRA.indexOf(id) < 0 && !!document.getElementById(id);
-    document.body.classList.toggle('pm-side', conBarra);
-    document.body.classList.toggle('pm-on', id === 'screen-admin-hub');
-    if(SIN_BARRA.indexOf(id) >= 0){ vista = null; activo = 'dash'; }
-    if(conBarra){ if(id !== 'screen-admin-hub') activo = ''; else activo = vista || 'dash'; pintarBarra(); }
-    if(id === 'screen-admin-hub'){ pintarResumen(); mejorarCatalogo(); }
-    return r;
-  };
-  if(typeof gdPendientes === 'function'){
-    const _g = gdPendientes;
-    gdPendientes = async function(){ const r = await _g.apply(this, arguments); try{ pintarResumen(); }catch(err){ console.error(err); } return r; };
+  showScreen = function(){ const r = _show.apply(this, arguments); prog(); setTimeout(prog, 900); return r; };
+  if(typeof showEstTab === 'function'){ const _t = showEstTab; showEstTab = function(){ const r = _t.apply(this, arguments); prog(); return r; }; }
+  if(typeof MutationObserver !== 'undefined'){
+    new MutationObserver(muts=>{
+      if(!document.body.classList.contains('pm-u') && !pantallaActiva()) return;
+      if(muts.every(m=>Array.from(m.addedNodes).concat(Array.from(m.removedNodes)).every(n=>n.nodeType !== 1 || n.id === 'pmuRes' || n.classList.contains('pmu-mio') || n.id === 'pmCampana' || n.id === 'pmSide'))) return;
+      prog();
+    }).observe(document.querySelector('.app') || document.body, { childList:true, subtree:true });
   }
-  // si el panel ya estaba abierto al cargar este archivo
-  try{ const h = document.getElementById('screen-admin-hub'); if(h && h.classList.contains('active')) showScreen('screen-admin-hub'); }catch(_){}
+  setInterval(()=>{ if(document.body.classList.contains('pm-u')) espejoCampana(); }, 2000);
+  window.addEventListener('resize', ()=>{});
+  prog();
 })();
