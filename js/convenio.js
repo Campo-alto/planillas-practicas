@@ -170,10 +170,20 @@ async function cvCrear(){
 }
 
 /* ---------------- Detalle ---------------- */
+let cvContr = {};
+const cvContrTxt = x => { const k = cvContr[x.documento]; if(!k) return x.estado === 'carta_enviada' ? '<br><span class="aud-ref">📄 Sin contrato firmado</span>' : ''; return '<br><span class="aud-ref">📄 ' + ({ pendiente:'Contrato por revisar', aceptado:'Contrato aceptado', rechazado:'Contrato devuelto' }[k.estado] || '') + '</span>'; };
+const cvContrBtn = x => cvContr[x.documento] ? `<button class="ghost" onclick="cvVerContrato('${esc(x.documento)}')">Ver contrato</button>` + (cvContr[x.documento].estado === 'pendiente' && x.estado === 'carta_enviada' ? ` <button class="ghost" onclick="cvDevolverContrato('${esc(x.documento)}')">Devolver</button>` : '') + ' ' : '';
+function cvVerContrato(doc){ return spaVisorPdf('Contrato firmado', ()=>sb.rpc('admin_convenio_contrato_doc', { p_id: cvDet.convenio.id, p_documento: doc })); }
+async function cvDevolverContrato(doc){
+  const m = prompt('Motivo para devolver el contrato (mínimo 5 caracteres). El estudiante lo verá y podrá subirlo de nuevo:'); if(m === null) return;
+  const { error } = await sb.rpc('admin_convenio_contrato_devolver', { p_id: cvDet.convenio.id, p_documento: doc, p_obs: m });
+  if(error){ toast(cvErr(error), true); return; } toast('Contrato devuelto al estudiante'); cvDetalle(cvDet.convenio.id);
+}
 async function cvDetalle(id){
   const el = spaPantalla('screen-admin-convenio'); if(!el) return;
   const r = await sb.rpc('admin_convenio_detalle', { p_id: id }); if(r.error){ toast(cvErr(r.error), true); return; }
   cvDet = r.data; cvMarcados = new Set(); cvSel = new Map();
+  cvContr = {}; try{ const rc = await sb.rpc('admin_convenio_contratos', { p_id: id }); if(!rc.error) (rc.data || []).forEach(k=>{ cvContr[k.documento] = k; }); }catch(_){}   // sin la etapa 60 simplemente no hay contratos
   const c = cvDet.convenio, e = cvDet.empresa, ests = cvDet.estudiantes;
   const activos = ests.filter(x=>x.estado !== 'retirado');
   const inp = (k, v) => `<div class="field"><label>${k}</label><input type="date" id="cvf-${k.replace(/\W/g, '')}" value="${esc((v || '').slice(0, 10))}"></div>`;
@@ -198,8 +208,8 @@ async function cvDetalle(id){
     (ests.length ? ests.map(x=>`<tr${x.estado === 'retirado' ? ' style="opacity:.55"' : ''}><td>${x.estado === 'retirado' ? '' : `<input type="checkbox" class="cvChk" value="${esc(x.documento)}" onchange="cvMarcar('${esc(x.documento)}',this.checked)">`}</td>
       <td>${esc(x.documento)}</td><td><b>${esc(x.nombre)}</b><br><span class="aud-ref">${esc(x.correo || 'sin correo')}</span></td><td>${esc(x.programa || '')}</td>
       <td class="aud-nw">${x.lectiva_ini ? cvF(x.lectiva_ini) + ' → ' + cvF(x.lectiva_fin) : '<span style="color:var(--danger)">Falta</span>'}</td><td class="aud-nw">${x.prod_ini ? cvF(x.prod_ini) + ' → ' + cvF(x.prod_fin) : '<span style="color:var(--danger)">Falta</span>'}</td>
-      <td><span class="cor-est ${cvEstCls[x.estado]}">${cvEstTxt[x.estado]}</span>${x.formalizado_en ? '<br><span class="aud-ref">' + cvF(x.formalizado_en) + '</span>' : x.carta_enviada_en ? '<br><span class="aud-ref">' + cvF(x.carta_enviada_en) + '</span>' : ''}${x.estado === 'retirado' ? '<br><span class="aud-ref">' + esc(x.motivo_retiro) + '</span>' : ''}</td>
-      <td class="aud-nw">${x.estado === 'retirado' ? '' : `<button class="danger" onclick="cvRetirar('${esc(x.documento)}')">Retirar</button>`}</td></tr>`).join('') : '<tr><td colspan="9" style="color:var(--muted)">Sin estudiantes.</td></tr>') +
+      <td><span class="cor-est ${cvEstCls[x.estado]}">${cvEstTxt[x.estado]}</span>${cvContrTxt(x)}${x.formalizado_en ? '<br><span class="aud-ref">' + cvF(x.formalizado_en) + '</span>' : x.carta_enviada_en ? '<br><span class="aud-ref">' + cvF(x.carta_enviada_en) + '</span>' : ''}${x.estado === 'retirado' ? '<br><span class="aud-ref">' + esc(x.motivo_retiro) + '</span>' : ''}</td>
+      <td class="aud-nw">${x.estado === 'retirado' ? '' : cvContrBtn(x) + `<button class="danger" onclick="cvRetirar('${esc(x.documento)}')">Retirar</button>`}</td></tr>`).join('') : '<tr><td colspan="9" style="color:var(--muted)">Sin estudiantes.</td></tr>') +
     `</tbody></table></div></div>
     <div class="card"><details><summary style="cursor:pointer;font-weight:600;">+ Agregar más estudiantes</summary>${cvPickerHtml()}
       <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="cvAgregar()">Agregar al convenio</button></div></details></div>
@@ -322,6 +332,8 @@ async function cvEnviarCartas(){
 /* ---------------- Formalizar y planillas ---------------- */
 async function cvFormalizar(){
   const sel = cvElegidos(['carta_enviada']); if(!sel.length) return;
+  const sinC = sel.filter(x=>!cvContr[x.documento]);
+  if(sinC.length && !confirm('Atención: ' + sinC.length + ' estudiante(s) NO han subido su contrato firmado (' + sinC.slice(0, 5).map(x=>x.nombre).join(', ') + (sinC.length > 5 ? '…' : '') + ').\n\n¿Formalizar de todos modos?')) return;
   if(!confirm('¿Formalizar a ' + sel.length + ' estudiante(s)? Quedan contratados con ' + cvDet.empresa.nombre + ' y se HABILITAN sus planillas.')) return;
   const { data, error } = await sb.rpc('admin_convenio_formalizar', { p_id: cvDet.convenio.id, p_docs: sel.map(x=>x.documento) });
   if(error){ toast(cvErr(error), true); return; }
