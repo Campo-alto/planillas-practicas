@@ -143,11 +143,11 @@ body.pm-vista .fn-seccion:not(.pm-oculta) .fn-sec-cab h3{display:none;}
 /* ---------- Pantallas medianas y celulares ---------- */
 @media (max-width:1180px){ .pm-cols{grid-template-columns:1fr;} .pm-col{min-height:0;} }
 @media (max-width:900px){
-  body.pm-side #pmSide{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;flex-direction:row;align-items:center;gap:6px;padding:6px 8px;overflow-x:auto;box-shadow:0 -4px 16px rgba(11,61,61,.22);}
+  body.pm-side #pmSide{position:fixed;top:0;left:0;right:0;bottom:auto;width:auto;height:56px;flex-direction:row;align-items:center;gap:6px;padding:6px 8px;overflow-x:auto;box-shadow:0 4px 16px rgba(11,61,61,.22);}
   #pmSide .pm-logo,#pmSide .pm-logo-sub,#pmSide .pm-user,#pmSide .pm-fill,#pmSide .pm-pie{display:none;}
   #pmSide .pm-nav{flex-direction:row;gap:4px;} #pmSide .pm-it{white-space:nowrap;padding:9px 12px;width:auto;border-left:0;border-bottom:3px solid transparent;}
   #pmSide .pm-it.act{border-bottom-color:#F29A52;}
-  body.pm-side .app{margin:0;padding:12px 14px 80px;max-width:920px;}
+  body.pm-side .app{margin:0;padding:68px 14px 40px;max-width:920px;}
   body.pm-side .topbar .brand{display:flex;}
   body.pm-on #screen-admin-hub > h2{font-size:24px;}
   .pm-banner{font-size:19px;padding:12px 14px;flex-wrap:wrap;} .pm-banner b{font-size:28px;} .pm-banner small{margin-left:0;text-align:left;width:100%;}
