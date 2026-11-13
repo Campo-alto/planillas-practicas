@@ -697,3 +697,12 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .emp-acciones button{padding:8px 14px;font-size:14px;white-space:nowrap;}
 .emp-datos tbody td:nth-child(1),.emp-datos tbody td:nth-child(3),.emp-datos tbody td:nth-child(4){white-space:nowrap;}
 .emp-datos tbody td:nth-child(6){min-width:130px;}
+
+/* ===== Empresas: lista y detalle individual ===== */
+.emp-lista{min-width:900px;font-size:14.5px;}
+.emp-lista tbody td{padding:12px;}
+.emp-lista tbody td:nth-child(1){min-width:210px;font-size:15px;}
+.emp-lista tbody td:nth-child(3),.emp-lista tbody td:nth-child(5){white-space:nowrap;}
+.emp-fila{cursor:pointer;}
+.emp-fila:focus{outline:2px solid var(--deep);outline-offset:-2px;}
+.emp-ver{color:var(--deep);font-weight:700;white-space:nowrap;text-align:right;}
