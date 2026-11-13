@@ -686,3 +686,14 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .lista-est tbody td:nth-child(10){min-width:170px;}                                    /* Plataforma */
 .lista-est tbody td:nth-child(11){white-space:nowrap;min-width:120px;}                 /* Acceso */
 .lista-est tbody td:nth-child(11) button{white-space:nowrap;}
+
+/* ===== Empresas: datos en tabla y acciones ordenadas ===== */
+.emp-datos{margin:12px 0 0;}
+.emp-datos .cupos-table{min-width:1000px;font-size:14px;}
+.emp-datos tbody td{padding:10px 12px;vertical-align:middle;}
+.emp-datos tbody td:nth-child(2){min-width:220px;}
+.emp-datos tbody td:nth-child(5){word-break:break-word;min-width:180px;}
+.emp-acciones{display:flex;flex-wrap:wrap;gap:8px;}
+.emp-acciones button{padding:8px 14px;font-size:14px;white-space:nowrap;}
+.emp-datos tbody td:nth-child(1),.emp-datos tbody td:nth-child(3),.emp-datos tbody td:nth-child(4){white-space:nowrap;}
+.emp-datos tbody td:nth-child(6){min-width:130px;}
