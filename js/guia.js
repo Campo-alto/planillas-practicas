@@ -36,6 +36,7 @@ async function gdRutaEstudiante(){
   const sol = pr && pr.solicitud, mod = rec.modalidad;
   const ir = t => "showEstTab('" + t + "')";
   const pasos = [];
+  pasos.push({ t:'Preinscripción (solicitud de acceso)', e:'hecho', d:'Pediste tu acceso y la institución lo aprobó: ya puedes usar la plataforma.' });
   // 1 · Solicitud de práctica
   let s1 = { t:'Solicitud de práctica', go: ir('sp'), b:'Abrir mi solicitud' };
   if(mod || (sol && sol.estado === 'aprobada')){ s1.e = 'hecho'; s1.d = 'Modalidad: ' + (mod || sol.modalidad); }
@@ -47,7 +48,7 @@ async function gdRutaEstudiante(){
   const insc = ca && ca.inscripcion, post = ca && ca.postulacion;
   if(conv){
     const ok = conv.estado;
-    pasos.push({ t:'Preinscripción al convenio', e:'hecho', d: 'Estás vinculado a ' + conv.empresa + ' (convenio «' + conv.nombre + '»).' });
+    pasos.push({ t:'Vinculación al convenio', e:'hecho', d: 'Estás vinculado a ' + conv.empresa + ' (convenio «' + conv.nombre + '»).' });
     pasos.push({ t:'Carta de fechas', e: ok === 'preinscrito' ? 'espera' : 'hecho', d: ok === 'preinscrito' ? 'La institución la prepara y la envía a la empresa y a tu correo.' : 'Enviada a tu correo y a la empresa.' });
     pasos.push({ t:'Formalización del contrato', e: ok === 'formalizado' ? 'hecho' : (ok === 'carta_enviada' ? 'actual' : 'espera'),
       d: ok === 'formalizado' ? 'Contrato formalizado: tus planillas están habilitadas.'
