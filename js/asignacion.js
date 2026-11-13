@@ -131,7 +131,7 @@ function renderEmpresasListHtml(){
   if(visibles.length===0){ el.innerHTML = filtros + '<p style="color:var(--muted);font-size:13px;">No hay empresas que coincidan con los filtros.</p>'; return; }
   const progOpts = (programasCache||[]).map(p=>`<option value="${esc(p.nombre)}">${esc(p.nombre)}</option>`).join('');
   const jorOpts = JORNADAS.map(j=>`<option value="${j}">${j}</option>`).join('');
-  el.innerHTML = filtros + visibles.map(emp=>{
+  const tarjetas = visibles.map(emp=>{
     const esPNR = (emp.categoria||'practica_no_remunerada')==='practica_no_remunerada';
     const cupos = (emp.cupos_empresa||[]).slice().sort((a,b)=> a.programa.localeCompare(b.programa) || a.jornada.localeCompare(b.jornada));
     const rows = cupos.map(c=>{
@@ -179,7 +179,33 @@ function renderEmpresasListHtml(){
         <div class="field"><button class="primary" onclick="agregarCupo('${emp.id}')">Agregar cupos</button></div>
       </div>` : `<p style="margin:12px 0 0;color:var(--muted);font-size:13px;">Esta categoría no maneja cupos ni fechas de inscripción: solo aplican a prácticas no remuneradas.</p>`}
     </div>`;
+  });
+  if(empSelId && !visibles.some(e=>String(e.id)===String(empSelId))) empSelId = null;
+  if(empSelId){
+    const i = visibles.findIndex(e=>String(e.id)===String(empSelId));
+    el.innerHTML = filtros + '<div style="margin:0 0 10px;"><button class="ghost" onclick="empVolverLista()">← Volver a la lista de empresas</button></div>' + tarjetas[i];
+  } else {
+    el.innerHTML = filtros + empListaTabla(visibles);
+  }
+}
+var empSelId = null;
+function empSeleccionar(id){ empSelId = id; renderEmpresasListHtml(); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){} }
+function empVolverLista(){ empSelId = null; renderEmpresasListHtml(); }
+function empListaTabla(lista){
+  const filas = lista.map(e=>{
+    const c = caPorFicha[e.id];
+    const ct = c ? (c.estado==='aprobada' ? 'Aprobada' : (c.estado==='pendiente' ? 'Pendiente' : 'Rechazada')) : '—';
+    return '<tr class="emp-fila" tabindex="0" onclick="empSeleccionar(\''+e.id+'\')" onkeydown="if(event.key===\'Enter\')empSeleccionar(\''+e.id+'\')" style="'+(e.activa?'':'opacity:.65;')+'">'+
+      '<td class="cp-prog"><b>'+esc(e.nombre)+'</b></td>'+
+      '<td>'+esc(nombreCategoria(e.categoria||'practica_no_remunerada'))+'</td>'+
+      '<td>'+(e.nit?esc(e.nit):'—')+'</td><td>'+(e.ciudad?esc(e.ciudad):'—')+'</td><td>'+(e.telefono?esc(e.telefono):'—')+'</td>'+
+      '<td>'+ct+'</td>'+
+      '<td>'+(tieneAcceso(e)?'🔑 Sí':'Sin acceso')+'</td>'+
+      '<td>'+(e.activa?'Activa':'<span class="pill" style="background:#F6E3E0;color:var(--danger);">Inactiva</span>')+'</td>'+
+      '<td class="emp-ver">Ver ›</td></tr>';
   }).join('');
+  return '<p class="helptext" style="margin:0 0 8px;">'+lista.length+' empresa(s). Haz clic en una para ver y manejar sus datos.</p>'+
+    '<div class="cupos-wrap"><table class="cupos-table emp-lista"><thead><tr><th>Empresa</th><th>Categoría</th><th>NIT</th><th>Ciudad</th><th>Teléfono</th><th>Contrato de aprendizaje</th><th>Acceso</th><th>Estado</th><th></th></tr></thead><tbody>'+filas+'</tbody></table></div>';
 }
 function limpiarFormEmpresa(){
   editingEmpresaId = null;
