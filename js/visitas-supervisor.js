@@ -39,7 +39,7 @@ async function svCargar(){
         <td>${esc(v.modalidad)}</td>
         <td>${l ? '<b>' + esc(l.nombre) + '</b>' + (l.intento > 1 ? ' <span class="aud-ref">(lugar n.º ' + l.intento + ')</span>' : '') + '<br><span class="aud-ref">' + esc([l.direccion, l.ciudad].filter(Boolean).join(', ') || '—') + '<br>Contacto: ' + esc(l.contacto || '—') + (l.telefono ? ' · ' + esc(l.telefono) : '') + '</span><br>' + etq(l) + (l.observaciones ? '<br><i>' + esc(l.observaciones) + '</i>' : '') : esc(v.sitio || '—')}</td>
         <td class="aud-nw">${f(v.asignada)}<br>${svFechasHtml(v.documento)}</td>
-        <td>${svPuede('supv_registrar') || svPuede('supv_mis_visitas') ? `<button class="primary" onclick="svAbrir(${i})">Abrir</button>` : ''} ${svPuede('supv_fechas') ? `<button class="ghost" onclick="svFechaModal('${esc(v.documento)}', null)">📅 Fecha de visita</button>` : ''} ${svPuede('supv_registrar') && l && l.estado === 'pendiente' ? `<button class="primary" onclick="svConcepto(${i})">Concepto del lugar</button>` : ''} ${svPuede('supv_registrar') ? `<button class="ghost" onclick="svFinalizar(${i})">Finalizar seguimiento</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>'
+        <td>${svPuede('supv_registrar') || svPuede('supv_mis_visitas') ? `<button class="primary" onclick="svAbrir(${i})">Abrir</button>` : ''} ${svPuede('supv_fechas') ? `<button class="ghost" onclick="svFechaModal('${esc(v.documento)}', null)">📅 ${svEsRap(v.modalidad) ? 'Fecha de la reunión' : 'Fecha de visita'}</button>` : ''} ${svPuede('supv_registrar') && l && l.estado === 'pendiente' ? `<button class="primary" onclick="svConcepto(${i})">Concepto del lugar</button>` : ''} ${svPuede('supv_registrar') ? `<button class="ghost" onclick="svFinalizar(${i})">Finalizar seguimiento</button>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>'
     : '<p style="color:var(--muted);font-size:13.5px;">No tienes visitas asignadas por ahora. Cuando el supervisor general te asigne una, la verás aquí y recibirás un correo.</p>');
 }
 /* Concepto sobre el lugar de prácticas, después de visitarlo */
@@ -82,23 +82,28 @@ async function svEnviarConcepto(i){
 }
 
 /* ---- Fechas de visita concretadas con el estudiante (1.ª y 2.ª) ---- */
+/* RAP: una sola reunión; en ella se llenan las dos visitas */
+function svEsRap(m){ return /previos|\brap\b/i.test(String(m || '')); }
+function svModDoc(doc){ const v = svVisitas.find(x=>x.documento === doc) || svDisp.find(x=>x.documento === doc) || {}; return v.modalidad || ''; }
 function svFmtFecha(x){ if(!x) return ''; const p = String(x.fecha).slice(0,10).split('-'); return p[2] + '/' + p[1] + '/' + p[0] + (x.hora ? ' ' + esc(x.hora) : ''); }
 function svFechasHtml(doc){
   const f = svFechas[doc] || {};
+  if(svEsRap(svModDoc(doc))) return '<span class="aud-ref">Reunión única: ' + (f[1] ? '<b>' + svFmtFecha(f[1]) + '</b>' : 'sin fecha') + '<br>(se llenan las 2 visitas)</span>';
   return '<span class="aud-ref">Visita 1: ' + (f[1] ? '<b>' + svFmtFecha(f[1]) + '</b>' : 'sin fecha') + '<br>Visita 2: ' + (f[2] ? '<b>' + svFmtFecha(f[2]) + '</b>' : 'sin fecha') + '</span>';
 }
 // doc: documento del estudiante · tomar: datos del estudiante si aún no está a mi cargo (lo toma al guardar)
 function svFechaModal(doc, tomar){
   const f = svFechas[doc] || {}; const nombre = tomar ? tomar.nombre : ((svVisitas.find(v=>v.documento === doc) || {}).nombre || doc);
-  const sug = tomar ? (tomar.hecha1 ? 2 : 1) : (f[1] ? 2 : 1);
+  const rap = svEsRap(tomar ? tomar.modalidad : svModDoc(doc));
+  const sug = rap ? 1 : (tomar ? (tomar.hecha1 ? 2 : 1) : (f[1] ? 2 : 1));
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone:'America/Bogota' });
   const prev = document.getElementById('svModal'); if(prev) prev.remove();
   const m = document.createElement('div'); m.id = 'svModal'; m.className = 'cor-modal';
   m.innerHTML = `<div class="cor-caja" role="dialog" aria-modal="true" style="max-width:520px;">
-    <h3 style="margin:0 0 4px;">${tomar ? 'Tomar estudiante y programar visita' : 'Fecha de la visita'}</h3>
+    <h3 style="margin:0 0 4px;">${tomar ? (rap ? 'Tomar estudiante y programar la reunión' : 'Tomar estudiante y programar visita') : (rap ? 'Fecha de la reunión' : 'Fecha de la visita')}</h3>
     <p class="helptext" style="margin:0 0 8px;"><b>${esc(nombre)}</b> (Doc. ${esc(doc)})${tomar ? '<br>Al guardar, el estudiante queda <b>a tu cargo</b> y bloqueado para los demás supervisores.' : ''}<br>Escribe la fecha que <b>concretaste con el estudiante</b>. Él recibirá un correo con la fecha.</p>
     <div class="field-row">
-      <div class="field"><label>Visita *</label><select id="svVisita" onchange="svVisitaCambio('${esc(doc)}')"><option value="1"${sug === 1 ? ' selected' : ''}>Visita 1</option><option value="2"${sug === 2 ? ' selected' : ''}>Visita 2</option></select></div>
+      ${rap ? `<input type="hidden" id="svVisita" value="1"><div class="field" style="grid-column:1/-1;flex:1 1 100%;width:100%;"><div class="note-box" style="margin:0;">En <b>RAP</b> hay <b>una sola reunión</b>: en ella se llenan las dos visitas. Esta fecha queda para ambas.</div></div>` : `<div class="field"><label>Visita *</label><select id="svVisita" onchange="svVisitaCambio('${esc(doc)}')"><option value="1"${sug === 1 ? ' selected' : ''}>Visita 1</option><option value="2"${sug === 2 ? ' selected' : ''}>Visita 2</option></select></div>`}
       <div class="field"><label>Fecha *</label><input type="date" id="svFechaV" min="${hoy}"></div>
       <div class="field"><label>Hora (opcional)</label><input type="time" id="svHoraV"></div>
     </div>
@@ -117,9 +122,9 @@ async function svGuardarFecha(doc, tomar){
   const { data, error } = await sb.rpc(tomar ? 'sup_visita_tomar' : 'sup_visita_fecha', { p_token: state.token, p_documento: doc, p_visita: visita, p_fecha: fecha, p_hora: hora || '' });
   if(error){ btn.disabled = false; msg.innerHTML = '<span style="color:var(--danger)">' + esc(error.message) + (/does not exist|Could not find/i.test(error.message) ? ' (¿ejecutaste visitas-fechas-etapa42.sql?)' : '') + '</span>'; if(tomar) svDisponibles(); return; }
   document.getElementById('svModal').remove();
-  if(!data.aviso_correo){ toast('Visita ' + visita + ' programada, pero el estudiante no tiene un correo válido: avísale tú.', true); svCargar(); return; }
+  if(!data.aviso_correo){ toast((data.unica ? 'Reunión programada' : 'Visita ' + visita + ' programada') + ', pero el estudiante no tiene un correo válido: avísale tú.', true); svCargar(); return; }
   // El aviso por correo queda en cola; la plataforma te pregunta «¿Enviar el correo ahora?» (js/correos-pregunta.js)
-  toast('Visita ' + visita + ' programada. El aviso al estudiante está listo para enviar.');
+  toast((data.unica ? 'Reunión programada (vale para las dos visitas)' : 'Visita ' + visita + ' programada') + '. El aviso al estudiante está listo para enviar.');
   svCargar();
 }
 
@@ -142,7 +147,7 @@ async function svDisponibles(){
     '<div class="cupos-wrap"><table class="cupos-table"><thead><tr><th>Estudiante</th><th>Contacto</th><th>Modalidad / programa</th><th>Lugar de prácticas</th><th>Visitas</th><th></th></tr></thead><tbody>' +
     svDisp.map((e,i)=>`<tr><td><b>${esc(e.nombre || '')}</b><br><span class="aud-ref">Doc. ${esc(e.documento)}</span></td>
       <td><span class="aud-ref">${esc(e.telefono || '—')}<br>${esc(e.correo || '—')}</span></td><td>${esc(e.modalidad || '—')}<br><span class="aud-ref">${esc(e.programa || '')}</span></td><td>${esc(e.sitio || '—')}</td>
-      <td class="aud-nw"><span class="aud-ref">V1: ${e.hecha1 ? '✔ hecha' : (e.fecha1 ? svFmtFecha({ fecha:e.fecha1 }) : 'pendiente')}<br>V2: ${e.hecha2 ? '✔ hecha' : (e.fecha2 ? svFmtFecha({ fecha:e.fecha2 }) : 'pendiente')}</span></td>
+      <td class="aud-nw">${svEsRap(e.modalidad) ? `<span class="aud-ref">Reunión única: ${e.hecha1 && e.hecha2 ? '✔ hecha' : (e.fecha1 ? svFmtFecha({ fecha:e.fecha1 }) : 'pendiente')}</span>` : `<span class="aud-ref">V1: ${e.hecha1 ? '✔ hecha' : (e.fecha1 ? svFmtFecha({ fecha:e.fecha1 }) : 'pendiente')}<br>V2: ${e.hecha2 ? '✔ hecha' : (e.fecha2 ? svFmtFecha({ fecha:e.fecha2 }) : 'pendiente')}</span>`}</td>
       <td><button class="primary" onclick="svTomar(${i})">Tomar y programar</button></td></tr>`).join('') + '</tbody></table></div>';
 }
 function svTomar(i){ const e = svDisp[i]; if(e) svFechaModal(e.documento, e); }
