@@ -28,7 +28,7 @@
       '<div class="pm-logo-sub">Educación para el Trabajo y el Desarrollo Humano</div>' +
       '<div class="pm-user"><div class="pm-av" id="pmAv">U</div><div><div class="pm-un" id="pmUn">Usuario</div><div class="pm-ue"><span class="pm-on"></span><span id="pmRol">En línea</span></div></div></div>' +
       '<div class="pm-nav" id="pmNav"></div><div class="pm-fill"></div>' +
-      '<button type="button" class="pm-it" onclick="pmuAyuda()"><span class="pmu-emo">❔</span><span class="t">Ayuda</span></button><div class="pm-pie">Planillas de prácticas · PPS-GAA-F-006</div>';
+      '<button type="button" class="pm-it" onclick="pmuManual()"><span class="pmu-emo">📘</span><span class="t">Manual</span></button><button type="button" class="pm-it" onclick="pmuAyuda()"><span class="pmu-emo">❔</span><span class="t">Ayuda</span></button><div class="pm-pie">Planillas de prácticas · PPS-GAA-F-006</div>';
     document.body.appendChild(n);
   }
   function secciones(pant){
@@ -106,6 +106,16 @@
     });
   }
 
+  /* ---------- Manual (abre la modalidad que corresponde) ---------- */
+  window.pmuManual = function(){
+    let m = 'pnr'; try{
+      const a = document.querySelector('.screen.active'), md = String((state.record && state.record.modalidad) || '').toLowerCase();
+      if(a && a.id === 'screen-ca-panel') m = 'ca';
+      else if(a && a.id === 'screen-supervisor') m = 'rlp';
+      else if(/contrato/.test(md)) m = 'ca'; else if(/rap|aprendizajes/.test(md)) m = 'rap'; else if(/rlp|lugar/.test(md)) m = 'rlp';
+    }catch(_){}
+    window.open('manual.html#' + m, '_blank', 'noopener');
+  };
   /* ---------- Ayuda ---------- */
   window.pmuAyuda = function(){
     if(document.getElementById('pmAyuda')) return;
