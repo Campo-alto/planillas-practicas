@@ -6,7 +6,7 @@
 const AUD_TIPOS = [['', 'Todas las actividades'], ['crear', 'Crear / ingresar información'], ['modificar', 'Modificar'], ['eliminar', 'Eliminar'],
                    ['ingreso', 'Ingresos al sistema'], ['seguridad', 'Ingresos fallidos'], ['exportar', 'Exportaciones']];
 const AUD_ROLES = [['', 'Todos los roles'], ['administrador', 'Administrador'], ['coord_practicas', 'Coordinador de prácticas'],
-                   ['coord_gestion', 'Coordinador de gestión empresarial'], ['asistente', 'Asistente'], ['sup_general', 'Supervisor general'],
+                   ['coord_gestion', 'Coordinador de gestión empresarial'], ['asistente', 'Asistente'], ['sup_general', 'Supervisor general'], ['servicio_estudiante', 'Servicio al estudiante'],
                    ['estudiante', 'Estudiante'], ['empresa', 'Empresa'], ['empresa_ca', 'Empresa (contrato de aprendizaje)'],
                    ['supervisor', 'Supervisor'], ['sistema', 'Sistema']];
 const AUD_TIPO_TXT = { crear:'Crear', modificar:'Modificar', eliminar:'Eliminar', ingreso:'Ingreso', seguridad:'Ingreso fallido', exportar:'Exportar', otro:'Otro' };
