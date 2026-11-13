@@ -121,7 +121,9 @@ async function gdRutaEmpresa(){
     await _p.apply(this, arguments);
     const scr = document.getElementById('screen-ca-panel'); if(!scr) return;
     let h = document.getElementById('gdRutaEmp');
-    if(!h){ h = document.createElement('div'); h.id = 'gdRutaEmp'; h.className = 'card gd-caja'; const tabs = scr.querySelector('.tabs'); if(tabs) tabs.insertAdjacentElement('beforebegin', h); else scr.appendChild(h); }
+    const tabs = scr.querySelector('.tabs');
+    if(!h){ h = document.createElement('div'); h.id = 'gdRutaEmp'; h.className = 'card gd-caja'; if(tabs) tabs.insertAdjacentElement('afterend', h); else scr.appendChild(h); }
+    else if(tabs && h.previousElementSibling !== tabs) tabs.insertAdjacentElement('afterend', h);   // «Mi ruta» va debajo del menú de pestañas
     gdRutaEmpresa();
   };
 })();
