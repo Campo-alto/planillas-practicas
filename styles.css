@@ -610,7 +610,7 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 
 /* ===== Modificar / eliminar estudiantes ===== */
 .eg-acc{white-space:nowrap;width:1%;text-align:left}
-.eg-btn{padding:4px 10px;font-size:20px;line-height:1.2;min-width:40px;min-height:38px;margin-left:5px;vertical-align:middle;cursor:pointer}
+.eg-btn{padding:4px 10px;font-size:26px;line-height:1.1;min-width:52px;min-height:46px;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;margin-left:5px;vertical-align:middle;cursor:pointer}
 .eg-acc .eg-chk,.eg-acc #egTodos,th.eg-acc input{width:20px;height:20px;vertical-align:middle;cursor:pointer}
 .eg-acc{padding-top:6px;padding-bottom:6px}
 .eg-del:hover{background:#fdecea;border-color:#e0a4a0}
