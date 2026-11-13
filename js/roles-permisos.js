@@ -1,5 +1,5 @@
 /* ============================= ROLES Y PERMISOS DEL PERSONAL =============================
-   Roles: Administrador (todo) · Coordinador de prácticas · Coordinador de gestión empresarial · Asistente · Supervisor general.
+   Roles: Administrador (todo) · Coordinador de prácticas · Coordinador de gestión empresarial · Asistente · Supervisor general · Servicio al estudiante (atiende el chat).
    El panel solo muestra las funciones que el rol tiene habilitadas, y el administrador puede habilitar o
    inhabilitar cada función de los otros tres roles en «Roles y permisos».
    SEGURIDAD: esto solo organiza lo que se VE. La base de datos (roles-permisos-etapa18.sql) es quien rechaza
@@ -10,9 +10,10 @@ const ROL_NOMBRES = {
   coord_practicas: 'Coordinador de prácticas',
   coord_gestion: 'Coordinador de gestión empresarial',
   asistente: 'Asistente',
-  sup_general: 'Supervisor general'
+  sup_general: 'Supervisor general',
+  servicio_estudiante: 'Servicio al estudiante'
 };
-const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente', 'sup_general'];
+const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente', 'sup_general', 'servicio_estudiante'];
 // En la matriz también va el «Supervisor (visitas)»: el que entra por la pantalla de supervisor (no es del personal del panel)
 const ROL_SUP = 'supervisor', AREA_SUP = 'Supervisor (visitas)';
 const ROL_NOMBRES_MATRIZ = Object.assign({}, ROL_NOMBRES, { supervisor: 'Supervisor (visitas)' });
