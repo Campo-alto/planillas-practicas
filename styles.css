@@ -645,3 +645,26 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 .gd-chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line,#ddd);background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13.5px}
 .gd-chip b{min-width:26px;height:26px;border-radius:13px;background:#E5E0D5;display:inline-flex;align-items:center;justify-content:center}
 .gd-chip.on{border-color:#c0392b}.gd-chip.on b{background:#c0392b;color:#fff}
+
+/* ============ TABLAS QUE SE AJUSTAN A LA PANTALLA ============
+   Ninguna tabla debe salirse de su tarjeta: si no cabe, se desplaza hacia los lados DENTRO de su marco (js/tablas-ajuste.js
+   las envuelve) y los textos largos se parten en varias líneas en vez de empujar el ancho de la página. */
+.tbl-wrap{display:block;width:100%;max-width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;margin:0 0 12px;border-radius:10px;}
+.tbl-wrap>table{margin-bottom:0;}
+.tbl-wrap::-webkit-scrollbar{height:9px;} .tbl-wrap::-webkit-scrollbar-thumb{background:#C9C3B2;border-radius:6px;}
+.card,.screen{min-width:0;}
+table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.rperm-table,table.aud-tabla{max-width:100%;}
+.cupos-table{min-width:0!important;}
+.cupos-table td,.students-list td,.resumen-table td,table.ca-tabla td,.rperm-table td,.cupos-table th:not(.nowrap),.rperm-table th{overflow-wrap:anywhere;word-break:normal;}
+.cupos-table td .cp-in,.cupos-table td select,.cupos-table td input{max-width:100%;}
+.cupos-table .cp-prog{min-width:0;}
+@media (max-width:900px){
+  .cupos-table,.students-list,.resumen-table,table.ca-tabla,.rperm-table{font-size:12.5px;}
+  .cupos-table thead th,.students-list thead th,.resumen-table thead th,table.ca-tabla thead th{font-size:11px;padding:8px 8px;}
+  .cupos-table td,.students-list td,.resumen-table td,table.ca-tabla td,.rperm-table td{padding:8px 8px!important;}
+  .app-admin .cupos-table thead th,.app-admin .cupos-table tbody td{padding:8px 8px;}
+}
+@media (max-width:520px){
+  .cupos-table td .cp-in,.cupos-table input[type=date].cp-in{min-width:0;}
+  .cupos-table .cp-txt{min-width:0;}
+}
