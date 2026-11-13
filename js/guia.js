@@ -50,7 +50,11 @@ async function gdRutaEstudiante(){
     pasos.push({ t:'Preinscripción al convenio', e:'hecho', d: 'Estás vinculado a ' + conv.empresa + ' (convenio «' + conv.nombre + '»).' });
     pasos.push({ t:'Completar tu hoja de vida', e: insc && insc.hv_completa ? 'hecho' : 'actual', d: insc && insc.hv_completa ? 'Hoja de vida completa.' : 'Es obligatoria para formalizar tu contrato.', go: ir('ca'), b:'Llenar mi hoja de vida' });
     pasos.push({ t:'Carta de fechas', e: ok === 'preinscrito' ? 'espera' : 'hecho', d: ok === 'preinscrito' ? 'La institución la prepara y la envía a la empresa y a tu correo.' : 'Enviada a tu correo y a la empresa.' });
-    pasos.push({ t:'Formalización del contrato', e: ok === 'formalizado' ? 'hecho' : 'espera', d: ok === 'formalizado' ? 'Contrato formalizado: tus planillas están habilitadas.' : 'Cuando firmes el contrato, la institución lo formaliza y se habilitan tus planillas.' });
+    pasos.push({ t:'Formalización del contrato', e: ok === 'formalizado' ? 'hecho' : (ok === 'carta_enviada' ? 'actual' : 'espera'),
+      d: ok === 'formalizado' ? 'Contrato formalizado: tus planillas están habilitadas.'
+       : ok === 'carta_enviada' ? 'Qué sigue: 1) descarga tu carta de fechas; 2) firma el contrato con la empresa; 3) sube el contrato firmado en PDF (en la opción Cartas) entre el 1 y el 10 del mes. Cuando la institución lo reciba, la institución lo formaliza y se habilitan tus planillas.'
+       : 'Primero la institución prepara tu carta de fechas. Después firmas el contrato con la empresa y lo subes en PDF (opción Cartas) entre el 1 y el 10 del mes; la institución lo formaliza y se habilitan tus planillas.',
+      go: ok === 'carta_enviada' ? ir('cartas') : undefined, b: ok === 'carta_enviada' ? 'Ir a Cartas y subir contrato' : undefined });
   } else if(esCA){
     pasos.push({ t:'Inscripción al proceso de contrato de aprendizaje', e: insc ? 'hecho' : 'actual', d: insc ? 'Inscrito.' : 'Inscríbete para que la institución verifique tus pagos.', go: ir('ca'), b:'Inscribirme' });
     const est = insc && insc.estado;
