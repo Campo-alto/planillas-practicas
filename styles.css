@@ -670,3 +670,19 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
   .cupos-table td .cp-in,.cupos-table input[type=date].cp-in{min-width:0;}
   .cupos-table .cp-txt{min-width:0;}
 }
+
+/* ===== Lista de estudiantes: columnas anchas para que el texto no se parta ===== */
+.lista-est{min-width:1560px;table-layout:auto;font-size:14px;}
+.lista-est tbody td{padding:10px 12px;}
+.lista-est thead th{padding:12px;font-size:12.5px;}
+.lista-est tbody td:nth-child(2){min-width:250px;font-size:15.5px;line-height:1.3;}   /* Nombre */
+.lista-est tbody td:nth-child(2) b{font-size:15.5px;}
+.lista-est tbody td:nth-child(3){white-space:nowrap;}                                  /* Documento */
+.lista-est tbody td:nth-child(4){min-width:190px;}                                     /* Programa */
+.lista-est tbody td:nth-child(5){min-width:170px;}                                     /* Empresa */
+.lista-est tbody td:nth-child(6){white-space:nowrap;}                                  /* Sede */
+.lista-est tbody td:nth-child(8){min-width:160px;}                                     /* Modalidad */
+.lista-est tbody td:nth-child(9){min-width:130px;}                                     /* Notas */
+.lista-est tbody td:nth-child(10){min-width:170px;}                                    /* Plataforma */
+.lista-est tbody td:nth-child(11){white-space:nowrap;min-width:120px;}                 /* Acceso */
+.lista-est tbody td:nth-child(11) button{white-space:nowrap;}
