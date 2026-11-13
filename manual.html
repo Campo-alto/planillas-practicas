@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual paso a paso · Planillas de Prácticas Campoalto</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--teal:#0E7C86;--teal-d:#0A5A62;--deep:#0B3D3D;--orange:#E8792D;--orange-d:#C75B16;--ink:#22282B;--muted:#667276;--paper:#F7F4EE;--line:#E3DDD0;--card:#fff;
+--c-est:#0E7C86;--c-ins:#C75B16;--c-emp:#1B7F55;--c-sup:#7A4EAB;--ok:#1B7F55;--danger:#B23A2E;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+a{color:var(--teal-d)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 60px}
+header.top{background:linear-gradient(135deg,var(--deep),var(--teal-d));color:#fff;padding:18px 0 22px}
+header.top .wrap{padding-bottom:0}
+.brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brandrow img{background:#fff;border-radius:12px;padding:6px 10px;height:46px}
+.brandrow .back{margin-left:auto;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:10px;padding:7px 12px;text-decoration:none;font-size:14px}
+h1{font:italic 700 clamp(26px,4.5vw,40px)/1.15 'Zilla Slab',Georgia,serif;margin:16px 0 4px}
+header.top p{margin:0;color:#d6ecec;max-width:760px}
+nav.mods{background:var(--paper);border-bottom:1px solid var(--line);padding:10px 0}
+.modbtns{display:flex;gap:8px;flex-wrap:wrap}
+.mb{border:2px solid var(--line);background:#fff;border-radius:12px;padding:9px 14px;font:600 14.5px/1.2 'Inter',system-ui,sans-serif;cursor:pointer;color:var(--ink);text-align:left}
+.mb small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
+.mb.on{border-color:var(--teal);background:var(--teal);color:#fff}.mb.on small{color:#d6ecec}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:13.5px}
+.filtros b{color:var(--muted);font-weight:600}
+.fb{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;cursor:pointer;font:600 13px/1.2 'Inter',system-ui,sans-serif}
+.fb.on{color:#fff;border-color:transparent}
+.fb[data-a=todos].on{background:var(--ink)}
+.intro{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:20px 0}
+.intro h2,.sec h2{font:italic 700 26px/1.2 'Zilla Slab',Georgia,serif;margin:0 0 6px;color:var(--deep)}
+.resumen{color:var(--muted);margin:0 0 6px}
+/* carriles */
+.lanes{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:20px 0;overflow-x:auto}
+.lanes h3{margin:0 0 10px;font-size:16px}
+.lane-g{display:grid;grid-template-columns:minmax(190px,1.6fr) repeat(var(--cols),minmax(86px,1fr));gap:0;min-width:560px;font-size:13px}
+.lane-g .h{font-weight:700;text-align:center;padding:6px 4px;color:#fff;border-radius:8px 8px 0 0;margin:0 2px;font-size:12.5px}
+.lane-g .t{padding:5px 8px 5px 0;display:flex;align-items:center;gap:6px;border-top:1px dashed var(--line);cursor:pointer}
+.lane-g .t:hover{color:var(--teal-d);text-decoration:underline}
+.lane-g .c{border-top:1px dashed var(--line);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(90deg,transparent 0 calc(50% - .5px),#eee8dc calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px))}
+.dot{width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;line-height:26px;text-align:center;display:inline-block;flex:none}
+.sec{margin:26px 0}
+/* pasos */
+.steps{position:relative;margin:10px 0 0;padding-left:0}
+.step{display:grid;grid-template-columns:54px 1fr;gap:0 14px;position:relative;padding-bottom:22px}
+.step::before{content:"";position:absolute;left:26px;top:52px;bottom:-2px;width:3px;background:var(--line)}
+.step:last-child::before{display:none}
+.num{width:52px;height:52px;border-radius:50%;color:#fff;font-weight:700;font-size:22px;line-height:52px;text-align:center;cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 2px var(--line);user-select:none}
+.step.hecho .num{background:var(--ok)!important}.step.hecho .num::after{content:"✔";font-size:22px}.step.hecho .num{font-size:0}
+.card{background:#fff;border:1px solid var(--line);border-left:6px solid var(--ac);border-radius:14px;padding:14px 16px;break-inside:avoid}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-weight:700;font-size:12px;line-height:1.6;color:#fff;background:var(--ac)}
+.chip.plz{background:#fff;color:var(--orange-d);border:1.5px solid var(--orange)}
+.chip.menu{background:#EEF4F4;color:var(--teal-d);border:1px solid #cfe3e3;font-weight:600}
+.card h3{margin:2px 0 8px;font-size:19px;line-height:1.25}
+.cols{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}
+.card ol{margin:6px 0 8px;padding-left:22px}.card li{margin:3px 0}
+.ves,.sigue,.nota,.warn{border-radius:10px;padding:8px 11px;margin:8px 0 0;font-size:14.5px}
+.ves{background:#EEF4F4}.sigue{background:#FFF3E4}.nota{background:#F3EEFA}.warn{background:#FBEAE7;color:#7d2a20}
+.ves>b:first-child,.sigue>b:first-child,.nota>b:first-child{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px;opacity:.75}
+/* maqueta de pantalla */
+.mk{border:1px solid #cfc8b8;border-radius:10px;overflow:hidden;background:#F7F4EE;font-size:11.5px;line-height:1.3;box-shadow:0 4px 14px rgba(0,0,0,.08);align-self:start}
+.mk .bar{background:#e9e4d8;padding:4px 8px;display:flex;gap:4px;align-items:center;color:#777;font-size:10.5px}
+.mk .bar i{width:8px;height:8px;border-radius:50%;background:#c9c2b0;display:inline-block}
+.mk .bd{display:grid;grid-template-columns:96px 1fr;min-height:150px}
+.mk .sd{background:linear-gradient(180deg,#0B3D3D,#0A5A62);color:#dcefef;padding:8px 5px;display:flex;flex-direction:column;gap:2px}
+.mk .sd .lg{background:#fff;color:#0B3D3D;font-weight:700;border-radius:6px;text-align:center;padding:3px;margin-bottom:6px;font-size:10.5px}
+.mk .sd span{padding:4px 6px;border-radius:6px;border-left:3px solid transparent;font-size:10.5px}
+.mk .sd span.on{background:rgba(255,255,255,.2);border-left-color:#F29A52;color:#fff;font-weight:700;outline:2px solid #F29A52;outline-offset:1px}
+.mk .ct{padding:8px}
+.mk .ct .sb{background:var(--teal);color:#fff;font-weight:700;border-radius:5px;padding:4px 7px;font-size:10.5px;text-transform:uppercase;margin-bottom:6px}
+.mk .ct p{margin:3px 0;color:#4b5559}
+.mk .ct .ln{background:#fff;border:1px solid #e3ddd0;border-radius:5px;padding:3px 6px;margin:3px 0;color:#555}
+.mk .ct .bt{display:inline-block;background:var(--teal);color:#fff;border-radius:6px;padding:4px 9px;font-weight:700;margin-top:5px;outline:2px solid #F29A52;outline-offset:2px}
+.mk .ct .bg{display:inline-block;border-radius:999px;padding:1px 8px;background:#FFE9D1;color:#9a4a0d;font-weight:700;margin-left:4px;font-size:10px}
+.mk .ct .bg.g{background:#DDF3E8;color:#1B7F55}.mk .ct .bg.r{background:#FBE3DF;color:#B23A2E}
+.cap{font-size:11px;color:var(--muted);margin:3px 2px 0;text-align:center}
+/* bloques generales */
+table.t{border-collapse:collapse;width:100%;font-size:14.5px;background:#fff}
+table.t th,table.t td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+table.t th{background:#EEF4F4}
+tr.mio td{background:#FFF3E4;font-weight:600}
+details.fq{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0}
+details.fq summary{cursor:pointer;font-weight:600}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:30px}
+.btnp{border:0;background:var(--orange);color:#fff;border-radius:10px;padding:9px 14px;font:700 14px/1 'Inter',system-ui,sans-serif;cursor:pointer}
+.oculto{display:none!important}
+.dim{opacity:.35}
+.dim .mk{display:none}
+@media (max-width:820px){table.t{display:block;overflow-x:auto}.modbtns{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.mb{flex:none}.mb small{display:none}.filtros{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.fb{flex:none}.cols{grid-template-columns:1fr}.step{grid-template-columns:40px 1fr;gap:0 10px}.num{width:38px;height:38px;font-size:17px;line-height:38px}.step::before{left:19px;top:40px}}
+@media print{
+ @page{size:A4;margin:12mm}
+ body{background:#fff;font-size:12.5px}
+ nav.mods,.fb,.btnp,.back,.noprint{display:none!important}
+ header.top{background:#fff;color:#000;padding:0}header.top p{color:#444}.brandrow img{padding:0}
+ .wrap{max-width:none;padding:0}
+ .step{page-break-inside:avoid;break-inside:avoid}
+ .card,.mk,.intro,.lanes{box-shadow:none}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .dim{opacity:1}.dim .mk{display:block}
+ h1{font-size:26px}
+ .cols{grid-template-columns:1.2fr 1fr!important;gap:12px}
+ .step{grid-template-columns:44px 1fr!important;gap:0 10px;padding-bottom:12px}
+ .num{width:40px!important;height:40px!important;font-size:18px!important;line-height:40px!important}
+ .step::before{left:21px!important;top:42px!important}
+ table.t{display:table!important}
+ .card{padding:10px 12px}
+ .card h3{font-size:16px}
+ .mk{font-size:10px}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+ <div class="brandrow"><img src="img/logo-campoalto.png" alt="Campoalto"><a class="back" href="index.html">← Volver a la plataforma</a></div>
+ <h1 id="h1">Manual paso a paso</h1>
+ <p id="sub">Elige la modalidad y sigue los pasos en orden. Cada paso dice quién actúa, dónde pulsar y qué sigue.</p>
+</div></header>
+
+<nav class="mods"><div class="wrap" style="padding-bottom:0">
+ <div class="modbtns" id="modbtns" role="tablist" aria-label="Modalidad"></div>
+ <div class="filtros" id="filtros"><b>Ver los pasos de:</b></div>
+</div></nav>
+
+<main class="wrap" id="main"></main>
+<footer class="wrap">Planillas de prácticas · PPS-GAA-F-006 · Campoalto. Las pantallas dibujadas son ilustrativas: los nombres de las opciones sí son los reales.</footer>
+
+<script>
+/* ============================== DATOS ============================== */
+const ACT = {
+  est:{n:'Estudiante',c:'#0E7C86',i:'🎓'}, ins:{n:'Institución',c:'#C75B16',i:'🏛️'},
+  emp:{n:'Empresa',c:'#1B7F55',i:'🏢'}, sup:{n:'Supervisor',c:'#7A4EAB',i:'🧭'}
+};
+const MENU = {
+  est:['Mi ruta','Datos generales','Asignación de práctica','Mis notas','Control y firma','Solicitud de práctica','Asistencia y cambio','Cartas','Plazos'],
+  estCA:['Mi ruta','Datos generales','Contrato de aprendizaje','Solicitud de práctica','Mis notas','Control y firma','Cartas','Plazos'],
+  emp:['Buscar estudiante','Planilla del mes','Asistencia','Actas de comité'],
+  empCA:['Mi ruta','Mis solicitudes','Candidatos','Procesos','Planillas de calificaciones','Cartas de convenio'],
+  sup:['Estudiantes disponibles','Mis visitas asignadas','Visita 1','Visita 2','Concepto del lugar'],
+  ins:['Panel','Estudiantes','Empresas','Supervisión','Configurar la práctica','Personas y seguridad','Comunicación','Mensajes']
+};
+const PLAZOS = [
+  {k:'pnr',t:'Prácticas no remuneradas',d:'Registro de documentos del <b>27</b> de cada mes al <b>2</b> del mes siguiente. Si ya enviaste la solicitud y tienes algo pendiente por corregir, tienes hasta el <b>10</b>.'},
+  {k:'raprlp',t:'Prácticas RAP y RLP',d:'Registro de documentos del <b>1 al 10</b> de cada mes.'},
+  {k:'ca',t:'Contrato de aprendizaje (y convenio)',d:'Formalización: envío del <b>contrato firmado</b> del <b>1 al 10</b> de cada mes.'},
+  {k:'notas',t:'Notas de la empresa (todas las modalidades)',d:'La empresa solo puede registrar notas del <b>27</b> de cada mes al <b>2</b> del mes siguiente.'}
+];
+
+/* Cada paso: a=actor, t=título, menu=ruta de menú, plazo, h=lista de acciones, ves, sigue, nota, warn, mk=maqueta */
+const P = (a,t,o)=>Object.assign({a,t},o);
+const MODS = {
+ pnr:{
+  nombre:'Prácticas no remuneradas', corto:'PNR', desc:'El estudiante toma un cupo en una empresa registrada. No hay visitas de supervisor.',
+  resumen:'Solicitud → aprobación → toma de cupo → carta de presentación → práctica con notas y firmas cada mes.',
+  plazos:['pnr','notas'], actores:['est','ins','emp'],
+  pasos:[
+   P('ins','Prepara la plataforma',{menu:['Panel','Configurar la práctica'],h:['Crea los <b>Programas</b> y revisa las <b>Modalidades</b> (meses de cada una; la modalidad sin remuneración usa cupos y carta).','Revisa los <b>Documentos por modalidad</b> y la <b>Rúbrica de calificación</b>.','En <b>Empresas y cupos</b> carga o crea las empresas con sus cupos por programa y jornada, y las funciones que hará el estudiante.'],ves:'Cada empresa muestra sus cupos disponibles.',sigue:'Crear los accesos de estudiantes y empresas.',mk:{r:'ins',act:'Configurar la práctica',t:'Configurar la práctica',l:['Programas','Modalidades','Documentos por modalidad','Rúbrica de calificación']}}),
+   P('ins','Crea los accesos',{menu:['Panel','Estudiantes'],h:['Estudiantes: aprueba <b>Solicitudes de acceso</b> o usa <b>Generar claves para estudiantes sin acceso (Excel)</b>. El estudiante recibe usuario y contraseña por correo.','Empresas: en <b>Empresas y cupos</b> crea el acceso de cada empresa (correo y contraseña).'],ves:'El estudiante entra con su <b>número de documento</b> y la contraseña recibida.',sigue:'El estudiante ingresa por primera vez.',mk:{r:'ins',act:'Estudiantes',t:'Solicitudes de acceso',l:['Ana Pérez · 1011…','Pedro Gómez · 1022…'],b:'Aprobar'}}),
+   P('est','Entra y cambia tu contraseña',{menu:['Página principal','Tarjeta Estudiante'],h:['Abre la plataforma y pulsa la tarjeta <b>Estudiante</b>.','Usuario: tu número de documento. Contraseña: la que te enviaron.','La primera vez te pide una contraseña nueva (mínimo 8 caracteres, escríbela dos veces) y que aceptes el tratamiento de datos personales.'],ves:'Aparece tu menú a la izquierda (en el celular, arriba).',sigue:'Completar tus datos generales.',mk:{r:'est',act:'Mi ruta',t:'Mi ruta',l:['Tu siguiente paso está listo','1 de 6 pasos completados'],chip:'Urgente'}}),
+   P('est','Completa tus datos generales',{menu:['Datos generales'],h:['Abre <b>Datos generales</b>.','Revisa y completa la ficha (los campos con * son obligatorios).','Guarda. Revisa bien tu <b>correo</b> y <b>teléfono</b>: por ahí llegan los avisos.'],sigue:'Enviar la solicitud de práctica.',mk:{r:'est',act:'Datos generales',t:'Datos generales',l:['Nombre · Documento','Correo *','Teléfono *'],b:'Guardar'}}),
+   P('est','Envía tu solicitud de práctica',{menu:['Solicitud de práctica'],plazo:'Registro: 27 al 2 (pendientes hasta el 10)',h:['Abre <b>Solicitud de práctica</b> y elige la modalidad <b>Prácticas no remuneradas</b>.','Completa programa, sede, semestre, periodo (ej. 2026-2), jornada y teléfono.','Pulsa <b>Guardar y continuar a los documentos</b> y sube cada documento en <b>PDF</b> (la pantalla indica el peso máximo).','Pulsa <b>Enviar solicitud</b>.'],ves:'La solicitud queda «En revisión».',sigue:'La institución la revisa. Si la <b>devuelve</b>, corrige lo que indica y envíala otra vez.',warn:'Fuera del plazo la plataforma no deja registrar documentos. Si tenías algo pendiente por corregir, tienes hasta el día 10.',mk:{r:'est',act:'Solicitud de práctica',t:'Solicitud de práctica',l:['Modalidad: Prácticas no remuneradas','Documento 1 (PDF) ✔','Documento 2 (PDF)'],b:'Enviar solicitud',chip:'En revisión'}}),
+   P('ins','Revisa la solicitud',{menu:['Panel','Estudiantes','Solicitudes de práctica'],h:['Abre la solicitud y revisa cada PDF: <b>✔ aprobado</b> o <b>✖ devuelto</b>.','Elige <b>Aprobar</b>, <b>Devolver</b> (escribe el motivo para que corrija) o <b>Rechazar</b>.'],ves:'El estudiante recibe la decisión en la campana 🔔 y por correo.',sigue:'Si se aprueba, el estudiante ya puede ubicarse cuando se abra la ventana.',mk:{r:'ins',act:'Estudiantes',t:'Solicitudes de práctica',l:['Ana Pérez · PNR','Documentos: 5 de 5 ✔'],b:'Aprobar'}}),
+   P('ins','Abre la ventana de ubicación',{menu:['Panel','Configurar la práctica','Ventana de ubicación'],h:['Define la fecha de apertura y de cierre en que los estudiantes pueden tomar cupo.'],ves:'Por defecto la ventana está <b>cerrada</b> hasta que la configures.',sigue:'Los estudiantes aprobados eligen su cupo.',mk:{r:'ins',act:'Configurar la práctica',t:'Ventana de ubicación',l:['Abre: 2026-02-01','Cierra: 2026-02-15'],b:'Guardar'}}),
+   P('est','Toma tu cupo',{menu:['Asignación de práctica'],h:['Abre <b>Asignación de práctica</b>.','Verás los cupos de tu programa y jornada: empresa, dirección, teléfono, días, horario y funciones.','Pulsa <b>Tomar cupo</b> y confirma.'],ves:'Tu lugar de práctica queda asignado.',sigue:'Descargar la carta de presentación.',warn:'Después de tomar el cupo solo la institución puede cambiarlo.',mk:{r:'est',act:'Asignación de práctica',t:'Asignación de práctica no remunerada',l:['EMPRESA ACME · Bogotá','Cupos: 2 · Jornada diurna','Funciones: atención al cliente…'],b:'Tomar cupo'}}),
+   P('est','Descarga tu carta de presentación',{menu:['Asignación de práctica'],h:['Con la práctica asignada pulsa <b>Descargar carta (PDF)</b>.','Entrégala en la empresa el primer día: es tu soporte de ingreso.'],sigue:'Empieza la práctica. Cada mes: calificación de la empresa y tu firma.',mk:{r:'est',act:'Asignación de práctica',t:'Mi asignación',l:['Empresa: ACME','Estado: Asignado ✔'],b:'⬇ Descargar carta (PDF)'}}),
+   P('emp','Entra y busca a tu estudiante',{menu:['Página principal','Tarjeta Empresa · Jefe inmediato'],h:['Pulsa la tarjeta <b>Empresa · Jefe inmediato</b>.','Escribe el correo y la contraseña que te envió la institución.','Escribe el <b>número de documento</b> del estudiante y pulsa <b>Buscar</b>.'],ves:'Solo ves a los estudiantes asignados a tu empresa.',sigue:'Calificar el mes.',mk:{r:'emp',act:'Buscar estudiante',t:'Buscar estudiante',l:['Documento: 1011…'],b:'Buscar'}}),
+   P('emp','Califica el mes',{menu:['Planilla del mes'],plazo:'Notas: 27 al 2',h:['Elige la pestaña del mes.','Para cada criterio de la rúbrica marca el nivel que mejor describe el desempeño (¿te equivocaste? <b>Quitar nota</b>).','Escribe tus observaciones.','En <b>Control de cumplimiento</b> dibuja tu firma.','Pulsa <b>Guardar el mes</b>.'],ves:'Queda registrado con fecha y hora.',sigue:'El estudiante revisa sus notas y firma.',warn:'Un mes ya cerrado por la institución aparece bloqueado. Si hay un error, pídele a la institución que lo desbloquee.',mk:{r:'emp',act:'Planilla del mes',t:'Mes 1 · Competencias',l:['Criterio 1: ● ● ○ ○','Criterio 2: ● ● ● ○','Firma: ______'],b:'Guardar el mes'}}),
+   P('est','Revisa tus notas y firma el mes',{menu:['Mis notas','Control y firma'],h:['En <b>Mis notas</b> ves tu calificación mes a mes.','En <b>Control y firma</b> elige el mes, dibuja tu firma y pulsa <b>Guardar firma del mes</b>.','Puedes descargar tu planilla en PDF.'],sigue:'Repite cada mes hasta completar la práctica.',mk:{r:'est',act:'Control y firma',t:'Mi control de cumplimiento · firma tu mes',l:['Firma estudiante:','[ recuadro de firma ]'],b:'Guardar firma del mes'}}),
+   P('est','Si algo pasa: inasistencias y cambio de empresa',{menu:['Asistencia y cambio'],h:['Inasistencia: escribe la fecha, el motivo y adjunta el soporte en PDF. Solo tú la reportas; la empresa solo la consulta.','Cambio de empresa: cuenta el motivo y envía; la institución opina y decide.'],nota:'Los motivos médicos son reservados: la empresa ve que hay soporte, no el detalle.',mk:{r:'est',act:'Asistencia y cambio',t:'Asistencia a la práctica',l:['Fecha: …','Motivo: …','Soporte (PDF)'],b:'Enviar reporte'}}),
+   P('ins','Atiende las novedades y cierra el ciclo',{menu:['Panel'],h:['<b>Inasistencias reportadas</b>: revisa el soporte y marca justificada o no.','<b>Cambios de empresa</b>: opina, aprueba o rechaza. <b>Actas de comité</b> para casos especiales.','<b>Notas por subir al sistema</b>: cuando un mes está calificado completo, súbelo y márcalo. Descarga la planilla en PDF.'],sigue:'Fin de la práctica.',mk:{r:'ins',act:'Panel',t:'Pendientes por proceso',l:['4 · Prácticas y seguimiento','Notas por subir: 3','Inasistencias por revisar: 1']}})
+  ]},
+ rlp:null, rap:null, ca:null, conv:null
+};
+/* RLP y RAP comparten la ruta de supervisión */
+function rutaApoyo(tipo){
+  const RLP = tipo==='rlp';
+  const solicitud = RLP
+    ? ['Elige la modalidad <b>RLP · Reconocimiento de lugar de prácticas</b>.','Escribe el <b>lugar que tú conseguiste</b>: nombre de la empresa, dirección, persona de contacto, correo y teléfono.','Sube los documentos en PDF, incluida la <b>carta de aceptación</b> de la empresa.']
+    : ['Elige la modalidad <b>RAP · Reconocimiento de aprendizajes previos</b>.','Describe la <b>experiencia previa</b> que quieres que te reconozcan: entidad, cargo y tiempo.','Sube los documentos en PDF (certificaciones laborales y los demás que pida la lista).'];
+  return [
+   P('ins','Prepara la modalidad',{menu:['Panel','Configurar la práctica','Personas y seguridad'],h:['Revisa los <b>Documentos por modalidad</b> de '+(RLP?'RLP':'RAP')+' (nombre, obligatorio y peso máximo).','Crea el <b>Supervisor general</b> y los <b>supervisores</b> (Usuarios de supervisores) y activa los permisos de cada rol.','Crea los accesos de los estudiantes (Solicitudes de acceso o claves por Excel).'],sigue:'El estudiante entra y envía su solicitud.',mk:{r:'ins',act:'Personas y seguridad',t:'Roles y permisos',l:['Supervisor general ✔','Asistente ✔','Supervisor ✔']}}),
+   P('est','Entra y completa tus datos',{menu:['Tarjeta Estudiante','Datos generales'],h:['Usuario: tu documento. Contraseña: la que recibiste; la primera vez debes cambiarla.','Completa y guarda tus <b>Datos generales</b> (correo y teléfono correctos).'],mk:{r:'est',act:'Datos generales',t:'Datos generales',l:['Correo *','Teléfono *'],b:'Guardar'}}),
+   P('est','Envía tu solicitud de práctica',{menu:['Solicitud de práctica'],plazo:'Registro: 1 al 10',h:solicitud.concat(['Pulsa <b>Enviar solicitud</b>.']),ves:'La solicitud queda «En revisión».',sigue:'La institución la revisa; si la devuelve, corrige y vuelve a enviarla.',warn:'Los documentos solo se pueden registrar del día 1 al 10 de cada mes.',mk:{r:'est',act:'Solicitud de práctica',t:'Solicitud de práctica',l:['Modalidad: '+(RLP?'RLP':'RAP'),RLP?'Lugar: nombre, dirección, contacto':'Experiencia: entidad, cargo, tiempo','Documentos (PDF)'],b:'Enviar solicitud',chip:'En revisión'}}),
+   P('ins','Revisa y aprueba la solicitud',{menu:['Panel','Estudiantes','Solicitudes de práctica'],h:['Revisa cada PDF (✔ / ✖) y decide: <b>Aprobar</b>, <b>Devolver</b> con motivo o <b>Rechazar</b>.','Al aprobar, el lugar queda <b>esperando visita</b> y el Supervisor general recibe el aviso.'],ves:'El estudiante recibe la decisión por la campana 🔔 y por correo.',mk:{r:'ins',act:'Estudiantes',t:'Solicitudes de práctica',l:['Ana Pérez · '+(RLP?'RLP':'RAP')],b:'Aprobar'}}),
+   P('ins','Asigna la visita (o deja que el supervisor la tome)',{menu:['Panel','Supervisión','Visitas por asignar'],h:['El <b>Supervisor general</b> abre <b>Visitas por asignar</b> y asigna cada estudiante a un supervisor.','También puede dejar que cada supervisor tome a sus estudiantes desde su perfil (paso siguiente).','Mientras un estudiante tenga supervisor, <b>solo ese supervisor</b> puede abrirlo o guardarle información.'],mk:{r:'ins',act:'Supervisión',t:'Visitas por asignar',l:['Ana Pérez · esperando supervisor'],b:'Asignar'}}),
+   P('sup','Toma al estudiante y acuerda la fecha',{menu:['Tarjeta Supervisor','Estudiantes disponibles'],h:['Entra con el correo y la contraseña que creó el administrador.','En <b>Estudiantes disponibles</b> busca por nombre o documento y pulsa <b>Tomar</b>.','Elige <b>Visita 1</b>, escribe la fecha (y la hora) que acordaste con el estudiante y pulsa <b>Tomar y programar</b>.'],ves:'Aparece «Correo enviado al estudiante». Si dice «Quedó en cola», avísale tú por otro medio.',warn:'Primero ponte de acuerdo con el estudiante; después registra la fecha.',mk:{r:'sup',act:'Estudiantes disponibles',t:'Estudiantes disponibles',l:['Ana Pérez · esperando supervisor'],b:'Tomar y programar'}}),
+   P('est','Recibe la fecha de la visita',{menu:['Correo','Campana 🔔'],h:['Revisa tu correo (también el spam) y la campana: ahí está la fecha, la hora y los datos del supervisor.','Si la fecha no te sirve, hablen entre ustedes para cambiarla; el supervisor la reprograma.'],nota:'El estudiante no registra la fecha: la registra el supervisor.',mk:{r:'est',act:'Mi ruta',t:'Avisos 🔔',l:['Visita 1 programada','Martes 10:00 · Supervisor: …']}}),
+   P('sup','Visita 1 y concepto sobre el lugar',{menu:['Mis visitas asignadas','Visita 1','Concepto del lugar'],h:['Abre al estudiante y llena el acta: fecha, modalidad (presencial o virtual), sitio, área, jefe inmediato, funciones, observaciones y compromisos.','Recoge las <b>tres firmas</b> dibujadas: jefe inmediato, estudiante y supervisor. Pulsa <b>Guardar visita 1</b> (queda bloqueada).','Registra tu <b>concepto</b> sobre el lugar: <b>apto</b>, <b>apto con condiciones</b> o <b>no apto</b> (con motivo).'],sigue:'Según el concepto, ver el paso siguiente.',mk:{r:'sup',act:'Visita 1',t:'Visita 1',l:['Sitio · Área · Jefe inmediato','Firmas: jefe · estudiante · supervisor','Concepto: ● Apto'],b:'Guardar visita 1'}}),
+   P('ins','Según el concepto: crea el acceso de la empresa o devuelve',{menu:['Panel','Empresas','Empresas por confirmar'],h:['<b>APTO</b>: revisa y corrige los datos del lugar y pulsa <b>Confirmar y crear acceso</b>. Se crea el usuario de la empresa (solo ve a este estudiante) y se envía el correo con usuario y contraseña.','<b>NO APTO</b>: el estudiante recibe el motivo por correo, su solicitud se reabre para que cambie el lugar y suba una nueva carta de aceptación. Se cancela la visita y se repite desde la aprobación.'],warn:'La empresa nunca recibe acceso antes de que el supervisor diga «apto».',mk:{r:'ins',act:'Empresas',t:'Empresas por confirmar',l:['ACME · lugar de Ana Pérez','Concepto: apto ✔'],b:'Confirmar y crear acceso'}}),
+   P('emp','Entra y califica cada mes',{menu:['Tarjeta Empresa · Jefe inmediato','Planilla del mes'],plazo:'Notas: 27 al 2',h:['Entra con el correo y la contraseña que te envió la institución y busca al estudiante por su documento.','Marca el nivel de cada criterio de la rúbrica, escribe observaciones, firma y pulsa <b>Guardar el mes</b>.'],mk:{r:'emp',act:'Planilla del mes',t:'Mes 1 · Competencias',l:['Criterio 1: ● ● ○ ○','Firma: ______'],b:'Guardar el mes'}}),
+   P('est','Revisa tus notas y firma cada mes',{menu:['Mis notas','Control y firma'],h:['Consulta <b>Mis notas</b>.','En <b>Control y firma</b> dibuja tu firma y pulsa <b>Guardar firma del mes</b>.'],mk:{r:'est',act:'Control y firma',t:'Control y firma',l:['[ recuadro de firma ]'],b:'Guardar firma del mes'}}),
+   P('sup','Visita 2 y cierre del seguimiento',{menu:['Mis visitas asignadas','Visita 2'],h:['Llena los mismos datos y responde las <b>preguntas de cierre</b> (si el lugar es el indicado para el programa, si recibió apoyo del jefe, si sus funciones cubren las necesidades del servicio).','Recoge las firmas, pulsa <b>Guardar visita 2</b> y, si lo necesitas, <b>Descargar PDF</b>.','Pulsa <b>Finalizar seguimiento</b>: libera al estudiante.'],mk:{r:'sup',act:'Visita 2',t:'Visita 2',l:['Preguntas de cierre','Comentarios · firmas'],b:'Guardar visita 2'}}),
+   P('est','Si algo pasa: inasistencias y cambio de empresa',{menu:['Asistencia y cambio'],h:['Reporta tus inasistencias con fecha, motivo y soporte PDF.','Si necesitas cambiar de empresa, envía la solicitud con el motivo.'],mk:{r:'est',act:'Asistencia y cambio',t:'Asistencia a la práctica',l:['Fecha · Motivo · Soporte'],b:'Enviar reporte'}}),
+   P('ins','Cierra el ciclo',{menu:['Panel'],h:['Atiende inasistencias, cambios de empresa y actas de comité.','En <b>Notas por subir al sistema</b> sube y marca los meses calificados. Revisa el <b>Reporte de visitas</b> y descarga las planillas en PDF.'],mk:{r:'ins',act:'Panel',t:'Notas por subir al sistema',l:['3 meses calificados completos'],b:'Marcar subidas'}})
+  ];
+}
+MODS.rlp={nombre:'Reconocimiento de lugar de prácticas',corto:'RLP',desc:'El estudiante consigue su propio lugar; un supervisor de la institución lo visita dos veces y da su concepto.',resumen:'Solicitud con lugar propio → aprobación → visita 1 y concepto → acceso de la empresa → notas mensuales → visita 2.',plazos:['raprlp','notas'],actores:['est','ins','sup','emp'],pasos:rutaApoyo('rlp')};
+MODS.rap={nombre:'Reconocimiento de aprendizajes previos',corto:'RAP',desc:'La institución reconoce la experiencia previa del estudiante; mismo acompañamiento de supervisor que RLP.',resumen:'Solicitud con experiencia previa → aprobación → visita 1 y concepto → acceso de la empresa → notas mensuales → visita 2.',plazos:['raprlp','notas'],actores:['est','ins','sup','emp'],pasos:rutaApoyo('rap')};
+
+MODS.ca={nombre:'Contrato de aprendizaje',corto:'CA',desc:'El estudiante se postula a las ofertas de las empresas, la empresa lo selecciona y se formaliza con un contrato firmado.',resumen:'Inscripción → apto → hoja de vida → postulación y entrevista → selección → carta de fechas → contrato firmado → notas mensuales.',plazos:['ca','notas'],actores:['est','ins','emp'],pasos:[
+ P('est','Entra y envía tu solicitud de práctica',{menu:['Tarjeta Estudiante','Solicitud de práctica'],h:['Entra con tu documento y tu contraseña (la primera vez debes cambiarla).','En <b>Solicitud de práctica</b> elige la modalidad <b>Contrato de aprendizaje</b> y completa tus datos. Esta modalidad no pide documentos.'],sigue:'Inscribirte al proceso.',mk:{r:'estCA',act:'Solicitud de práctica',t:'Solicitud de práctica',l:['Modalidad: Contrato de aprendizaje'],b:'Guardar'}}),
+ P('est','Inscríbete al proceso',{menu:['Contrato de aprendizaje'],h:['Abre <b>Contrato de aprendizaje</b> y pulsa <b>Inscribirme al proceso</b>.'],ves:'Tu inscripción queda «en revisión»: la institución verifica tus pagos.',mk:{r:'estCA',act:'Contrato de aprendizaje',t:'Contrato de aprendizaje',l:['Paso 1 · Inscripción'],b:'Inscribirme al proceso'}}),
+ P('ins','Verifica los pagos y declara apto',{menu:['Panel','Estudiantes','Contrato de aprendizaje','Inscripciones'],h:['Revisa que el estudiante tenga al día los pagos del semestre de prácticas.','Decláralo <b>apto</b> o <b>no apto</b> (con observación).'],ves:'El estudiante recibe el aviso.',mk:{r:'ins',act:'Estudiantes',t:'Contrato de aprendizaje · Inscripciones',l:['Ana Pérez · pendiente'],b:'Declarar apto'}}),
+ P('est','Completa tu hoja de vida',{menu:['Contrato de aprendizaje'],h:['Cuando eres apto, llena tu <b>hoja de vida</b> completa. Es obligatoria para postularte.'],sigue:'Postularte a una oferta.',mk:{r:'estCA',act:'Contrato de aprendizaje',t:'Hoja de vida',l:['Datos · Formación · Experiencia'],b:'Guardar hoja de vida'}}),
+ P('emp','Regístrate como empresa (solo la primera vez)',{menu:['Tarjeta Empresa','Registro de empresa · Contrato de aprendizaje'],h:['Llena razón social, NIT (con dígito de verificación), contacto, teléfono, ciudad y dirección.','Escribe tu correo de acceso y una contraseña de mínimo 8 caracteres.','Envía el registro y espera la aprobación.'],warn:'No podrás entrar hasta que la institución apruebe tu empresa. Revisa también el correo no deseado.',mk:{r:'empCA',act:'Mi ruta',t:'Registro de empresa',l:['Razón social · NIT','Correo de acceso'],b:'Enviar registro'}}),
+ P('ins','Aprueba la empresa',{menu:['Panel','Empresas','Empresas de contrato de aprendizaje'],h:['Revisa que la empresa aparezca en la plataforma del SENA y <b>apruébala</b>.','La empresa recibe un correo de aprobación (si no le llegó, usa <b>Reenviar aviso</b>).'],mk:{r:'ins',act:'Empresas',t:'Empresas de contrato de aprendizaje',l:['ACME SAS · pendiente'],b:'Aprobar'}}),
+ P('emp','Crea tu solicitud de aprendices',{menu:['Mis solicitudes'],h:['Indica cargo, programa, cupos, jornada, horario y funciones.','Envía la solicitud.'],ves:'La institución la aprueba, la cierra o te pide ajustes.',mk:{r:'empCA',act:'Mis solicitudes',t:'Mis solicitudes',l:['Cargo · Programa · Cupos','Funciones'],b:'Enviar solicitud'}}),
+ P('ins','Aprueba la solicitud de aprendices',{menu:['Panel','Empresas','Solicitudes de aprendices'],h:['Verifica que las funciones correspondan al programa y aprueba.'],ves:'Una solicitud aprobada queda visible para los estudiantes aptos.',mk:{r:'ins',act:'Empresas',t:'Solicitudes de aprendices',l:['Auxiliar de enfermería · 3 cupos'],b:'Aprobar'}}),
+ P('est','Postúlate a una oferta',{menu:['Contrato de aprendizaje'],h:['Elige una oferta de tu programa y pulsa <b>Postularme</b>.','Sigue tu proceso: postulado → entrevista. Cuando ya puedas decidir, elige si esperas o rechazas.'],mk:{r:'estCA',act:'Contrato de aprendizaje',t:'Ofertas de mi programa',l:['ACME · Auxiliar de enfermería'],b:'Postularme'}}),
+ P('emp','Revisa candidatos, entrevista y selecciona',{menu:['Candidatos','Procesos'],h:['En <b>Candidatos</b> revisa la hoja de vida de quienes se postularon y llama a entrevista.','Cuando decidas, <b>selecciona</b> al aprendiz.'],ves:'El estudiante y la institución reciben el aviso.',mk:{r:'empCA',act:'Candidatos',t:'Candidatos',l:['Ana Pérez · hoja de vida'],b:'Seleccionar'}}),
+ P('ins','Define la carta de fechas',{menu:['Panel','Estudiantes','Contrato de aprendizaje','Procesos'],h:['La empresa solicita la carta y la institución define las <b>cuatro fechas</b>: inicio y fin de la etapa lectiva e inicio y fin de la etapa productiva.','Con las cuatro fechas, la carta se puede descargar.'],ves:'El estudiante la ve en su opción <b>✉ Cartas</b>.',mk:{r:'ins',act:'Estudiantes',t:'Contrato de aprendizaje · Procesos',l:['Lectiva: 10/01 → 10/06','Productiva: 11/06 → 10/12'],b:'Guardar fechas'}}),
+ P('est','Firma el contrato y súbelo en PDF',{menu:['Contrato de aprendizaje'],plazo:'Contrato: 1 al 10',h:['Firma el contrato con la empresa.','En <b>Contrato de aprendizaje</b> pulsa <b>⬆ Subir contrato firmado (PDF)</b> (máximo 3 MB).'],ves:'Queda «en revisión» por la institución.',warn:'Solo se recibe del día 1 al 10 de cada mes.',mk:{r:'estCA',act:'Contrato de aprendizaje',t:'📄 Contrato firmado',l:['Archivo: contrato.pdf'],b:'⬆ Subir contrato firmado (PDF)'}}),
+ P('ins','Revisa el contrato: acepta o devuelve',{menu:['Panel','Estudiantes','Contrato de aprendizaje','Procesos'],h:['Abre el PDF y elige <b>Aceptar</b> o <b>Devolver</b> (escribe un motivo de al menos 5 letras).','Al aceptar, el estudiante queda <b>contratado</b> y se habilitan sus planillas.'],ves:'Si lo devuelves, el estudiante lee el motivo y sube el correcto.',mk:{r:'ins',act:'Estudiantes',t:'Contrato firmado por revisar',l:['Ana Pérez · contrato.pdf'],b:'Aceptar'}}),
+ P('emp','Califica las planillas',{menu:['Planillas de calificaciones'],plazo:'Notas: 27 al 2',h:['Con el aprendiz contratado se habilita <b>Planillas de calificaciones</b>.','Elige al aprendiz y el mes, marca el nivel de cada criterio, firma y guarda.'],mk:{r:'empCA',act:'Planillas de calificaciones',t:'Planillas de calificaciones',l:['Ana Pérez · Mes 1','Firma: ______'],b:'Guardar el mes'}}),
+ P('est','Revisa tus notas y firma cada mes',{menu:['Mis notas','Control y firma'],h:['<b>Mis notas</b> y <b>Control y firma</b> aparecen cuando la institución acepta tu contrato.','Cada mes firma tu control de cumplimiento.'],mk:{r:'estCA',act:'Control y firma',t:'Control y firma',l:['[ recuadro de firma ]'],b:'Guardar firma del mes'}}),
+ P('ins','Seguimiento y cierre',{menu:['Panel'],h:['Atiende inasistencias, cambios de empresa y actas.','Sube las notas calificadas en <b>Notas por subir al sistema</b>.'],mk:{r:'ins',act:'Panel',t:'Pendientes por proceso',l:['2 · Contrato de aprendizaje']}})
+]};
+
+MODS.conv={nombre:'Contrato de aprendizaje · Convenio',corto:'Convenio',desc:'Variante del contrato de aprendizaje para un grupo de estudiantes que la empresa ya aceptó: sin entrevistas y sin hoja de vida.',resumen:'Convenio y preinscripción → cartas de fechas (un solo PDF) → contrato firmado → formalización → notas mensuales.',plazos:['ca','notas'],actores:['est','ins','emp'],pasos:[
+ P('emp','Regístrate como empresa de convenio',{menu:['Tarjeta Empresa','Registro de empresa · Contrato de aprendizaje'],h:['Registra la empresa y escribe el <b>nombre de tu convenio</b>.','Espera la aprobación de la institución.'],mk:{r:'empCA',act:'Mi ruta',t:'Registro de empresa',l:['Razón social · NIT','Nombre del convenio'],b:'Enviar registro'}}),
+ P('ins','Crea el convenio y preinscribe al grupo',{menu:['Panel','Estudiantes','Convenio'],h:['Crea el convenio: elige la empresa aprobada (las empresas de convenio salen primero), la modalidad, la ciudad y las fechas del grupo.','Pega la lista de documentos de los estudiantes. La plataforma te dice cuáles no se pudieron agregar y por qué.'],ves:'Los estudiantes quedan <b>preinscritos</b>: no necesitan hoja de vida.',mk:{r:'ins',act:'Estudiantes',t:'Convenio · Nuevo',l:['Empresa · Modalidad · Ciudad','Lectiva y productiva'],b:'Crear convenio'}}),
+ P('ins','Revisa las fechas del grupo',{menu:['Convenio','(detalle del convenio)'],h:['Ajusta las fechas del grupo con <b>Guardar fechas</b>. Cada estudiante puede tener sus propias fechas.'],warn:'Sin las cuatro fechas no se puede generar la carta.',mk:{r:'ins',act:'Estudiantes',t:'Fechas del grupo',l:['Lectiva inicio / fin','Productiva inicio / fin'],b:'Guardar fechas'}}),
+ P('ins','Genera y envía las cartas de fechas',{menu:['Convenio','(detalle del convenio)'],h:['Marca a los estudiantes y pulsa <b>📨 Generar y enviar cartas</b>.','La empresa recibe <b>un solo correo con un solo PDF</b> con todas las cartas (no un correo por estudiante).','Deja marcado <b>Dejarlas disponibles en el panel de la empresa</b>.'],ves:'El estado del estudiante pasa a «Carta enviada».',mk:{r:'ins',act:'Estudiantes',t:'Estudiantes (12)',l:['☑ Ana Pérez · Preinscrito','☑ Luis Mora · Preinscrito'],b:'📨 Generar y enviar cartas'}}),
+ P('emp','Recibe las cartas',{menu:['Cartas de convenio'],h:['Revisa tu correo (un solo PDF) o abre <b>Cartas de convenio</b> en tu panel y descarga las cartas de tus estudiantes.'],nota:'La empresa solo ve a los estudiantes y convenios que son suyos.',mk:{r:'empCA',act:'Cartas de convenio',t:'Cartas de fechas de tus estudiantes',l:['Ana Pérez · carta ✔'],b:'⬇ Descargar'}}),
+ P('est','Descarga tu carta de fechas',{menu:['Cartas'],h:['Abre la opción <b>✉ Cartas</b>: ahí aparece tu carta con las fechas de tu etapa lectiva y productiva.','Pulsa <b>⬇ Descargar mi carta (PDF)</b>.'],mk:{r:'estCA',act:'Cartas',t:'Mis cartas',l:['ACME SAS · Convenio','Etapa lectiva · Etapa productiva'],b:'⬇ Descargar mi carta (PDF)'}}),
+ P('est','Firma el contrato y súbelo en PDF',{menu:['Cartas'],plazo:'Contrato: 1 al 10',h:['Firma el contrato con la empresa.','En <b>Cartas</b>, bloque <b>📄 Contrato firmado</b>, pulsa <b>⬆ Subir contrato firmado (PDF)</b> (máximo 3 MB).'],ves:'Queda «en revisión». Si la institución lo devuelve, ves el motivo y lo subes de nuevo.',warn:'Solo se recibe del 1 al 10 de cada mes.',mk:{r:'estCA',act:'Cartas',t:'📄 Contrato firmado',l:['Archivo: contrato.pdf'],b:'⬆ Subir contrato firmado (PDF)'}}),
+ P('ins','Revisa el contrato y formaliza',{menu:['Convenio','(detalle del convenio)'],h:['En la fila de cada estudiante pulsa <b>Ver contrato</b> (o <b>Devolver</b> con motivo).','Marca a los estudiantes con contrato y pulsa <b>✔ Formalizar seleccionados</b>. Si alguno no subió contrato, la plataforma te lo advierte.'],ves:'Al formalizar se habilitan Mis notas y Control y firma.',mk:{r:'ins',act:'Estudiantes',t:'Estudiantes del convenio',l:['Ana Pérez · 📄 Contrato por revisar'],b:'✔ Formalizar seleccionados'}}),
+ P('ins','Envía las planillas',{menu:['Convenio','(detalle del convenio)'],h:['Pulsa <b>📨 Enviar planillas (formalizados)</b>: se envían por correo al estudiante y a la empresa.'],mk:{r:'ins',act:'Estudiantes',t:'Estudiantes formalizados',l:['Ana Pérez · Formalizado ✔'],b:'📨 Enviar planillas'}}),
+ P('emp','Califica cada mes',{menu:['Planillas de calificaciones'],plazo:'Notas: 27 al 2',h:['Elige al aprendiz y el mes, marca el nivel de cada criterio, firma y guarda.'],mk:{r:'empCA',act:'Planillas de calificaciones',t:'Planillas de calificaciones',l:['Ana Pérez · Mes 1'],b:'Guardar el mes'}}),
+ P('est','Revisa tus notas y firma cada mes',{menu:['Mis notas','Control y firma'],h:['Con el contrato formalizado aparecen <b>Mis notas</b> y <b>Control y firma</b>.','Cada mes firma tu control de cumplimiento.'],mk:{r:'estCA',act:'Control y firma',t:'Control y firma',l:['[ recuadro de firma ]'],b:'Guardar firma del mes'}}),
+ P('ins','Seguimiento y cierre',{menu:['Panel'],h:['Atiende inasistencias, cambios de empresa y actas; sube las notas calificadas.'],mk:{r:'ins',act:'Panel',t:'Pendientes por proceso',l:['3 · Convenios']}})
+]};
+
+const ORDEN=['pnr','rap','rlp','ca','conv'];
+const FAQ=[
+ ['No puedo entrar','Revisa mayúsculas y espacios en el usuario y la contraseña. Si sigue, pide que te la restablezcan (estudiantes: la institución; administrador: «¿Olvidaste tu contraseña?»).'],
+ ['Dice «Sesión inválida o vencida»','Cierra sesión y vuelve a entrar. Pasa después de un rato sin usar la plataforma.'],
+ ['No veo los cambios después de una actualización','Pulsa Ctrl + Shift + R (en el celular, cierra y abre el navegador).'],
+ ['No veo Mis notas ni Control y firma','Se habilitan cuando la institución acepta (contrato de aprendizaje) o formaliza (convenio) tu contrato, o cuando tu práctica queda asignada.'],
+ ['No puedo subir un archivo','Debe ser PDF y no superar el peso que indica la pantalla (el contrato firmado: 3 MB).'],
+ ['Dice que el plazo está cerrado','Las fechas son fijas cada mes (ver «Calendario de plazos»). Si te quedó algo pendiente fuera del plazo, comunícate con la institución.'],
+ ['No me llegó el correo','Revisa el spam, confirma que tu correo esté bien escrito y mira el aviso en la campana 🔔: allí siempre queda.'],
+ ['No puedo editar un mes de la planilla','Ese mes está cerrado. Pídele a la institución que lo desbloquee.'],
+ ['¿A quién escribo si algo no se resuelve?','Al chat de la plataforma con el <b>Servicio al estudiante</b> (botón 💬) o a la coordinación de prácticas. Cuenta qué perfil eres, qué pulsaste y qué mensaje salió; una captura ayuda mucho.']
+];
+
+/* ============================== RENDER ============================== */
+const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let cur='pnr', filtro='todos';
+const params=new URLSearchParams(location.search);
+const imprimir=params.get('imprimir')==='1';
+if(params.get('m')&&MODS[params.get('m')]) cur=params.get('m'); else { try{ const h=location.hash.replace('#',''); if(MODS[h]) cur=h; }catch(_){} }
+const guardado=()=>{ try{ return JSON.parse(localStorage.getItem('manualHecho')||'{}'); }catch(_){ return {}; } };
+const guardar=o=>{ try{ localStorage.setItem('manualHecho',JSON.stringify(o)); }catch(_){} };
+
+function mock(m,a){
+  if(!m) return '';
+  const k=m.r==='estCA'?'estCA':m.r==='empCA'?'empCA':m.r;
+  const items=MENU[k]||[];
+  return '<div><div class="mk" aria-hidden="true"><div class="bar"><i></i><i></i><i></i>&nbsp;planillas-practicas.vercel.app</div><div class="bd"><div class="sd"><div class="lg">Campoalto</div>'+
+   items.map(i=>'<span'+(i===m.act?' class="on"':'')+'>'+esc(i)+'</span>').join('')+'</div><div class="ct"><div class="sb">'+esc(m.t)+(m.chip?'<span class="bg" style="float:right">'+esc(m.chip)+'</span>':'')+'</div>'+
+   (m.l||[]).map(x=>'<div class="ln">'+esc(x)+'</div>').join('')+(m.b?'<span class="bt">'+esc(m.b)+'</span>':'')+'</div></div></div><div class="cap">Así se ve (ilustración): lo resaltado es lo que pulsas.</div></div>';
+}
+function render(){
+  const M=MODS[cur];
+  $('#h1').textContent='Manual · '+M.nombre;
+  $('#sub').textContent=M.desc;
+  document.title='Manual · '+M.nombre+' · Planillas Campoalto';
+  $('#modbtns').innerHTML=ORDEN.map(k=>'<button class="mb'+(k===cur?' on':'')+'" role="tab" data-m="'+k+'">'+esc(MODS[k].corto)+'<small>'+esc(MODS[k].nombre)+'</small></button>').join('');
+  $('#filtros').innerHTML='<b>Ver los pasos de:</b><button class="fb'+(filtro==='todos'?' on':'')+'" data-a="todos">Todos</button>'+
+    M.actores.map(a=>'<button class="fb'+(filtro===a?' on':'')+'" data-a="'+a+'" style="'+(filtro===a?'background:'+ACT[a].c:'')+'">'+ACT[a].i+' '+ACT[a].n+'</button>').join('')+
+    '<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><a class="btnp" style="text-decoration:none;display:inline-block" href="manuales/Manual-'+cur.toUpperCase()+'.pdf" download>⬇ Descargar PDF</a><button class="btnp" style="background:var(--teal)" onclick="window.print()">🖨 Imprimir</button></span>';
+  const hecho=guardado()[cur]||[];
+  const cols=M.actores.length;
+  let h='';
+  /* intro */
+  h+='<section class="intro"><h2>Antes de empezar</h2><p class="resumen"><b>Resumen:</b> '+esc(M.resumen)+'</p>'+
+   '<h3 style="margin:14px 0 6px;font-size:16px">¿Cómo ingreso?</h3><table class="t"><thead><tr><th>Si eres…</th><th>Entras por…</th><th>Con…</th></tr></thead><tbody>'+
+   '<tr><td>Estudiante</td><td>Tarjeta <b>Estudiante</b></td><td>Tu número de documento y tu contraseña</td></tr>'+
+   '<tr><td>Empresa (práctica o jefe inmediato)</td><td>Tarjeta <b>Empresa · Jefe inmediato</b></td><td>Correo y contraseña que te envió la institución</td></tr>'+
+   '<tr><td>Empresa de contrato de aprendizaje</td><td>Tarjeta <b>Empresa</b></td><td>Correo y contraseña de tu registro</td></tr>'+
+   '<tr><td>Supervisor</td><td>Tarjeta <b>Supervisor institucional</b></td><td>Correo y contraseña que creó el administrador</td></tr>'+
+   '<tr><td>Administrador, coordinación, asistente o Servicio al estudiante</td><td>Enlace <b>Administrador</b></td><td>Correo y contraseña</td></tr></tbody></table>'+
+   '<h3 style="margin:14px 0 6px;font-size:16px">Calendario de plazos</h3><table class="t"><tbody>'+
+   PLAZOS.map(p=>'<tr class="'+(M.plazos.indexOf(p.k)>=0?'mio':'')+'"><td>'+(M.plazos.indexOf(p.k)>=0?'📌 ':'')+p.t+'</td><td>'+p.d+'</td></tr>').join('')+'</tbody></table>'+
+   '<p class="resumen" style="margin-top:8px">Las filas resaltadas son las que aplican a esta modalidad. Las fechas son fijas cada mes.</p>'+
+   '<h3 style="margin:14px 0 6px;font-size:16px">Avisos y ayuda</h3><p style="margin:0">La <b>campana 🔔</b> (arriba a la derecha) muestra tus avisos y también te llegan por correo. El botón <b>💬</b> abre el chat con el <b>Servicio al estudiante</b>. El menú está a la izquierda (en el celular, arriba).</p></section>';
+  /* carriles */
+  h+='<section class="lanes"><h3>Vista general: quién actúa en cada paso</h3><div class="lane-g" style="--cols:'+cols+'"><div></div>'+
+   M.actores.map(a=>'<div class="h" style="background:'+ACT[a].c+'">'+ACT[a].i+' '+ACT[a].n+'</div>').join('')+
+   M.pasos.map((p,i)=>'<div class="t" data-go="'+i+'"><span class="dot" style="background:'+ACT[p.a].c+'">'+(i+1)+'</span>'+esc(p.t)+'</div>'+
+     M.actores.map(a=>'<div class="c">'+(a===p.a?'<span class="dot" style="background:'+ACT[a].c+'">'+(i+1)+'</span>':'')+'</div>').join('')).join('')+'</div></section>';
+  /* pasos */
+  h+='<section class="sec"><h2>Paso a paso, en orden</h2><p class="resumen noprint">Toca el número de un paso para marcarlo como hecho (se guarda en tu navegador).</p><div class="steps">';
+  M.pasos.forEach((p,i)=>{
+    const A=ACT[p.a], oculto=filtro!=='todos'&&filtro!==p.a;
+    h+='<div class="step'+(hecho.indexOf(i)>=0?' hecho':'')+(oculto?' dim':'')+'" id="s'+i+'" style="--ac:'+A.c+'"><div class="num" style="background:'+A.c+'" data-i="'+i+'" title="Marcar como hecho">'+(i+1)+'</div>'+
+     '<div class="card"><div class="chips"><span class="chip">'+A.i+' '+A.n+'</span>'+(p.plazo?'<span class="chip plz">📅 '+esc(p.plazo)+'</span>':'')+(p.menu?'<span class="chip menu">📍 '+p.menu.map(esc).join(' › ')+'</span>':'')+'</div>'+
+     '<h3>'+esc(p.t)+'</h3><div class="cols"><div>'+(p.h?'<ol>'+p.h.map(x=>'<li>'+x+'</li>').join('')+'</ol>':'')+
+     (p.ves?'<div class="ves"><b>Qué verás</b>'+p.ves+'</div>':'')+(p.sigue?'<div class="sigue"><b>Qué sigue</b>'+p.sigue+'</div>':'')+(p.nota?'<div class="nota"><b>Ten en cuenta</b>'+p.nota+'</div>':'')+(p.warn?'<div class="warn">⚠ '+p.warn+'</div>':'')+'</div>'+mock(p.mk,p.a)+'</div></div></div>';
+  });
+  h+='</div></section>';
+  if(cur==='pnr') h+='<div class="intro"><b>🧭 Supervisor:</b> en prácticas no remuneradas el supervisor no hace visitas; el seguimiento lo hacen la empresa (notas mensuales) y la institución.</div>';
+  h+='<section class="sec"><h2>Preguntas frecuentes</h2>'+FAQ.map(f=>'<details class="fq"><summary>'+esc(f[0])+'</summary><p style="margin:6px 0 2px">'+f[1]+'</p></details>').join('')+'</section>';
+  $('#main').innerHTML=h;
+  if(imprimir) document.querySelectorAll('details').forEach(d=>d.open=true);
+}
+document.addEventListener('click',e=>{
+  const mb=e.target.closest('.mb'); if(mb){ cur=mb.dataset.m; filtro='todos'; history.replaceState(null,'','#'+cur); render(); window.scrollTo(0,0); return; }
+  const fb=e.target.closest('.fb'); if(fb){ filtro=fb.dataset.a; render(); return; }
+  const n=e.target.closest('.num'); if(n){ const i=+n.dataset.i, o=guardado(), l=o[cur]||[], k=l.indexOf(i); if(k>=0) l.splice(k,1); else l.push(i); o[cur]=l; guardar(o); n.closest('.step').classList.toggle('hecho'); return; }
+  const g=e.target.closest('[data-go]'); if(g){ const el=document.getElementById('s'+g.dataset.go); if(el) el.scrollIntoView({block:'start'}); }
+});
+render();
+if(imprimir){ document.querySelector('nav.mods').style.display='none'; }
+</script>
+</body>
+</html>
