@@ -67,7 +67,7 @@ function cpEnganchar(){
     const b = o(n, a, op);
     if(typeof n === 'string' && !CP_LEE.test(n)){
       const t = b.then.bind(b);
-      b.then = function(res, rej){ return t(function(r){ try{ if(r && !r.error) setTimeout(cpRevisar, 900); }catch(_){} return res ? res(r) : r; }, rej); };
+      b.then = function(res, rej){ return t(function(r){ try{ if(r && !r.error) setTimeout(cpRevisar, 350); }catch(_){} return res ? res(r) : r; }, rej); };
     }
     return b;
   };
