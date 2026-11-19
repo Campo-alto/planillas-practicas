@@ -714,3 +714,12 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .rperm-table tr.rperm-area td{min-width:0;}
 .cupos-wrap,.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .students-list td:nth-child(n),.resumen-table td,table.ca-tabla td{overflow-wrap:break-word;}
+
+/* ===== Calendario de plazos (administrador) ===== */
+.plz-tabla{min-width:980px;font-size:14px;}
+.plz-tabla td{vertical-align:middle;padding:10px 12px;}
+.plz-tabla .plz-n{min-width:240px;}
+.plz-tabla select,.plz-tabla input[type=date]{min-width:0;padding:7px 8px;font-size:14px;}
+.plz-tabla td:nth-child(5) select{min-width:190px;}
+.plz-tabla .aud-ref{word-break:normal;overflow-wrap:break-word;}
+.plz-tabla .plz-e .pill{white-space:nowrap;}
