@@ -85,7 +85,7 @@
       const pasos = Array.from(lista.querySelectorAll('.gd-paso')).map(li=>({
         e: li.classList.contains('gd-foco') ? 'foco' : li.classList.contains('gd-hecho') ? 'hecho' : 'otro',
         t: (li.querySelector('.gd-tit') || {}).textContent || '', d: (li.querySelector('.gd-det') || {}).textContent || '',
-        go: li.querySelector('.gd-btn') }));
+        go: li.querySelector('.gd-btn') || (li.dataset.go ? li.dataset.go : null) }));
       const foco = host.querySelector('.gd-next button');
       const fila = (p, ic, urg)=>'<button type="button" class="pm-fila' + ((p.go || (urg && foco)) ? '' : ' nolink') + '" data-k="' + e(p.t) + '"><span class="ic">' + ic + '</span><span class="tx"><b>' + e(p.t) + '</b><small>' + e(p.d) + '</small></span>' + ((p.go || (urg && foco)) ? '<span class="go" aria-hidden="true">›</span>' : '') + '</button>';
       const urg = pasos.filter(p=>p.e === 'foco'), pro = pasos.filter(p=>p.e === 'otro'), ok = pasos.filter(p=>p.e === 'hecho');
@@ -100,7 +100,16 @@
         box.dataset.h = html; box.innerHTML = html;
         box.querySelectorAll('.pm-fila').forEach(b=>{
           const p = pasos.find(x=>x.t === b.dataset.k); if(!p) return;
-          const btn = p.e === 'foco' ? foco : p.go; if(btn) b.onclick = ()=>btn.click();
+          const btn = p.e === 'foco' ? (foco || p.go) : p.go; if(!btn) return;
+          b.onclick = ()=>{
+            try{ if(typeof btn === 'string') (new Function(btn))(); else btn.click(); }catch(err){ console.error(err); }
+            // al abrir un paso, mostrar la sección a la que lleva (si no, la ruta queda a la vista y parece que «no pasó nada»)
+            setTimeout(()=>{ try{
+              const a = secciones(pant).find(x=>x.tab && x.activo);
+              if(a){ sel = a.t; pintar(); }
+              window.scrollTo({ top:0, behavior:'smooth' });
+            }catch(err){ console.error(err); } }, 350);
+          };
         });
       }
     });
