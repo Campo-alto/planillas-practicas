@@ -23,7 +23,12 @@ const INF_T = {
   supervisores: { t: 'Supervisores y visitas', rpc: 'admin_inf_supervisores',
     cols: [['supervisor','Supervisor',22],['correo','Correo',24],['visitas_activas','Activas',8,'n'],['visitas_finalizadas','Finalizadas',9,'n'],['visitas_canceladas','Canceladas',9,'n'],
            ['visitas_total','Total',7,'n'],['estudiantes','Estudiantes',9,'n']],
-    def: ['supervisor','visitas_activas','visitas_finalizadas','visitas_canceladas','visitas_total','estudiantes'], filtros: [], agrupar: [] }
+    def: ['supervisor','visitas_activas','visitas_finalizadas','visitas_canceladas','visitas_total','estudiantes'], filtros: [], agrupar: [] },
+  datos: { t: 'Aceptación de tratamiento de datos (estudiantes y empresas)', rpc: 'admin_inf_datos_personales',
+    cols: [['tipo','Tipo',10],['nombre','Nombre',24],['identificador','Documento / correo',18],['programa','Programa',18],['sede','Sede',8],['modalidad','Modalidad',14],
+           ['estado','Estado',9],['fecha','Fecha y hora de aceptación',16],['fuente','Origen de la aceptación',16]],
+    def: ['tipo','nombre','identificador','programa','estado','fecha','fuente'], fdef: { estado: 'Aceptó' },
+    filtros: ['tipo','estado','programa','sede','modalidad','fuente'], agrupar: ['tipo','estado','programa','sede','modalidad','fuente'] }
 };
 let infTipo = 'estudiantes', infRows = [], infSel = null;
 const infE = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -31,7 +36,7 @@ const infCol = k => INF_T[infTipo].cols.find(c => c[0] === k);
 const infVal = (r, k) => { const v = r[k]; return (v === null || v === undefined || v === '') ? '' : v; };
 const infTxt = (r, k) => { const v = infVal(r, k); return v === '' ? '' : String(v); };
 
-function infNuevoSel(){ return { cols: INF_T[infTipo].def.slice(), f: {}, texto: '', grupo: '', orden: '', dir: 'asc', titulo: INF_T[infTipo].t, nota: '', resumen: true, grafico: true, horizontal: true }; }
+function infNuevoSel(){ return { cols: INF_T[infTipo].def.slice(), f: Object.assign({}, INF_T[infTipo].fdef || {}), texto: '', grupo: '', orden: '', dir: 'asc', titulo: INF_T[infTipo].t, nota: '', resumen: true, grafico: true, horizontal: true }; }
 
 function infPrep(rows){
   if(infTipo !== 'estudiantes') return rows;
@@ -84,6 +89,7 @@ function infKpis(rows){
   if(infTipo === 'empresas') return [['Registros', n], ['Cupos', infSuma(rows, 'cupos_total')], ['Ocupados', infSuma(rows, 'cupos_ocupados')], ['Libres', infSuma(rows, 'cupos_libres')],
     ['Estudiantes activos', infSuma(rows, 'estudiantes_activos')], ['Retirados', infSuma(rows, 'retirados')]];
   if(infTipo === 'cupos'){ const t = infSuma(rows, 'cupos_total'), o = infSuma(rows, 'cupos_ocupados'); return [['Líneas de cupo', n], ['Cupos', t], ['Ocupados', o], ['Libres', infSuma(rows, 'cupos_libres')], ['Ocupación', (t ? Math.round(100 * o / t) : 0) + '%']]; }
+  if(infTipo === 'datos') return [['Registros', n], ['Estudiantes', c(r => r.tipo === 'Estudiante')], ['Empresas', c(r => r.tipo === 'Empresa')], ['Aceptaron', c(r => r.estado === 'Aceptó')], ['Pendientes', c(r => r.estado === 'Pendiente')]];
   return [['Supervisores', n], ['Visitas activas', infSuma(rows, 'visitas_activas')], ['Finalizadas', infSuma(rows, 'visitas_finalizadas')], ['Canceladas', infSuma(rows, 'visitas_canceladas')], ['Estudiantes', infSuma(rows, 'estudiantes')]];
 }
 function infFiltrosTexto(){
