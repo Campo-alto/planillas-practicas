@@ -18,7 +18,7 @@ function gdPintar(pasos, titulo){
     h += '<div class="gd-next"><div class="gd-next-lbl">' + (foco.e === 'espera' ? '⏳ En espera' : '👉 Tu siguiente paso') + '</div><div class="gd-next-tit">' + gdE(foco.t) + '</div><div class="gd-next-det">' + gdE(foco.d || '') + '</div>' +
          (foco.go ? '<button class="primary" type="button" onclick="' + foco.go + '">' + gdE(foco.b || 'Ir a este paso') + '</button>' : '') + '</div>';
   } else h += '<div class="gd-next gd-ok"><div class="gd-next-tit">🎉 ¡Completaste todos los pasos!</div></div>';
-  h += '<ol class="gd-lista">' + ps.map((p, i)=>'<li class="gd-paso gd-' + p.e + (p.foco ? ' gd-foco' : '') + '"><span class="gd-num">' + (p.e === 'hecho' ? '✔' : (i + 1)) + '</span><div class="gd-cuerpo"><div class="gd-tit">' + gdE(p.t) + '</div>' + (p.d ? '<div class="gd-det">' + gdE(p.d) + '</div>' : '') +
+  h += '<ol class="gd-lista">' + ps.map((p, i)=>'<li class="gd-paso gd-' + p.e + (p.foco ? ' gd-foco' : '') + '"' + (p.go ? ' data-go="' + gdE(p.go) + '"' : '') + '><span class="gd-num">' + (p.e === 'hecho' ? '✔' : (i + 1)) + '</span><div class="gd-cuerpo"><div class="gd-tit">' + gdE(p.t) + '</div>' + (p.d ? '<div class="gd-det">' + gdE(p.d) + '</div>' : '') +
         (p.go && !p.foco && p.e !== 'pend' ? '<button class="ghost gd-btn" type="button" onclick="' + p.go + '">' + gdE(p.e === 'hecho' ? 'Ver' : (p.b || 'Abrir')) + '</button>' : '') + '</div></li>').join('') + '</ol>';
   return h;
 }
