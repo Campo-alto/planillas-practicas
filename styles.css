@@ -657,7 +657,7 @@ tr.inhab-row td:last-child,tr.inhab-row td .inhab-btn{opacity:1;}
 .card,.screen{min-width:0;}
 table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.rperm-table,table.aud-tabla{max-width:100%;}
 .cupos-table{min-width:0!important;}
-.cupos-table td,.students-list td,.resumen-table td,table.ca-tabla td,.rperm-table td,.cupos-table th:not(.nowrap),.rperm-table th{overflow-wrap:anywhere;word-break:normal;}
+.cupos-table td,.students-list td,.resumen-table td,table.ca-tabla td,.rperm-table td,.cupos-table th:not(.nowrap),.rperm-table th{overflow-wrap:break-word;word-break:normal;}   /* break-word (no «anywhere»): así Windows/Chrome no aplasta las columnas a una letra */
 .cupos-table td .cp-in,.cupos-table td select,.cupos-table td input{max-width:100%;}
 .cupos-table .cp-prog{min-width:0;}
 @media (max-width:900px){
@@ -706,3 +706,11 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .emp-fila{cursor:pointer;}
 .emp-fila:focus{outline:2px solid var(--deep);outline-offset:-2px;}
 .emp-ver{color:var(--deep);font-weight:700;white-space:nowrap;text-align:right;}
+
+/* ===== Windows/Chrome: las tablas no deben aplastar columnas ===== */
+.rperm-table{min-width:1100px;table-layout:auto;}
+.rperm-table td:first-child,.rperm-table th:first-child{min-width:240px;}
+.rperm-table th.rperm-c,.rperm-table td.rperm-c{min-width:120px;}
+.rperm-table tr.rperm-area td{min-width:0;}
+.cupos-wrap,.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.students-list td:nth-child(n),.resumen-table td,table.ca-tabla td{overflow-wrap:break-word;}
