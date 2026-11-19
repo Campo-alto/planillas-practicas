@@ -723,3 +723,11 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .plz-tabla td:nth-child(5) select{min-width:190px;}
 .plz-tabla .aud-ref{word-break:normal;overflow-wrap:break-word;}
 .plz-tabla .plz-e .pill{white-space:nowrap;}
+
+/* ===== Documentos por programa (lista de chequeo) ===== */
+.dpg-lista,.dpg-progs{display:grid;gap:8px;}
+.dpg-progs{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));max-height:320px;overflow:auto;padding:4px 0;}
+.dpg-it{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;}
+.dpg-it:has(input:checked){border-color:var(--teal,#0E7C86);background:#F1F8F8;}
+.dpg-it input{width:22px;height:22px;margin:1px 0 0;flex:none;cursor:pointer;}
+.dpg-t{font-size:14.5px;line-height:1.35;}
