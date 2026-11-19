@@ -46,6 +46,7 @@
         { icono:'📚', clase:'supervisor', titulo:'Programas', mod:'adm_programas', desc:'Crea y elimina los programas o técnicos laborales de cada área.', abrir:()=>goAdminModule('programas') },
         { icono:'🗂', clase:'supervisor', titulo:'Modalidades', mod:'adm_modalidades', desc:'Agrega o cambia las modalidades y define cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
         { icono:'📑', clase:'supervisor', titulo:'Documentos por modalidad', mod:'adm_modalidades', desc:'Define qué PDF debe subir el estudiante en cada modalidad, si es obligatorio y su peso máximo.', abrir:()=>abrirDocsModalidad() },
+      { icono:'☑️', clase:'supervisor', titulo:'Documentos por programa', mod:'adm_modalidades', desc:'Marca con una lista de chequeo qué documentos debe subir el estudiante según su programa.', abrir:()=>abrirDocsPrograma() },
         { icono:'📊', clase:'empresa', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crea, ordena o modifica los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
       ] },
     { id:'seguridad', icono:'🔐', clase:'administrador', titulo:'Personas y seguridad',
