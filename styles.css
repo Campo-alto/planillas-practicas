@@ -731,3 +731,9 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .dpg-it:has(input:checked){border-color:var(--teal,#0E7C86);background:#F1F8F8;}
 .dpg-it input{width:22px;height:22px;margin:1px 0 0;flex:none;cursor:pointer;}
 .dpg-t{font-size:14.5px;line-height:1.35;}
+
+/* ===== Rol Profesor: resultados de la búsqueda por nombre ===== */
+.prof-res{display:grid;gap:8px;margin-top:4px;}
+.prof-fila{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font:inherit;color:var(--ink);}
+.prof-fila:hover,.prof-fila:focus-visible{border-color:var(--teal);background:#F1F8F8;outline:none;}
+.prof-fila span{font-size:13px;color:var(--muted);}
