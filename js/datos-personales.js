@@ -45,7 +45,7 @@ function dpSalir(){
 async function dpVerificar(){
   try{
     if(typeof state === 'undefined' || !state.token || dpTokenRevisado === state.token) return;
-    const esEst = !!state.documento && state.role !== 'empresa' && state.role !== 'supervisor' && state.role !== 'empresa_ca';
+    const esEst = !!state.documento && state.role !== 'empresa' && state.role !== 'supervisor' && state.role !== 'profesor' && state.role !== 'empresa_ca';
     const esEmp = state.role === 'empresa' || state.role === 'empresa_ca';
     if(!esEst && !esEmp) return;
     dpTokenRevisado = state.token;
