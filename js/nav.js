@@ -8,7 +8,7 @@ function showScreen(id){
   window.scrollTo(0,0);
 }
 function roleLabel(role){
-  return role==='empresa' ? 'Empresa' : role==='estudiante' ? 'Estudiante' : role==='supervisor' ? 'Supervisor' : role==='administrador' ? 'Administrador' : '';
+  return role==='empresa' ? 'Empresa' : role==='estudiante' ? 'Estudiante' : role==='supervisor' ? 'Supervisor' : role==='profesor' ? 'Profesor' : role==='administrador' ? 'Administrador' : '';
 }
 function goHome(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:''}; showScreen('screen-home'); }
 
@@ -116,7 +116,7 @@ function goAdminBack(){
 
 function goRoleLogin(role){
   state.pendingRole = role;
-  document.getElementById('roleLoginTitle').textContent = role==='empresa' ? 'Acceso Empresa' : 'Acceso Supervisor';
+  document.getElementById('roleLoginTitle').textContent = role==='empresa' ? 'Acceso Empresa' : role==='profesor' ? 'Acceso Profesor' : 'Acceso Supervisor';
   document.getElementById('roleLoginHelp').textContent = 'Ingresa el correo y la contraseña que te dio el administrador.';
   document.getElementById('roleEmail').value = '';
   document.getElementById('rolePassword').value = '';
@@ -174,6 +174,7 @@ function goRole(role){
     empresa: ['Buscar practicante', 'Ingresa el documento del estudiante para diligenciar o continuar su planilla mensual.'],
     estudiante: ['Consultar mi planilla', 'Ingresa tu número de documento para ver lo diligenciado y firmar.'],
     supervisor: ['Buscar practicante', 'Ingresa el documento del estudiante para registrar la visita de seguimiento.'],
+    profesor: ['Buscar estudiante', 'Escribe el documento o el nombre del estudiante para calificar los meses que la empresa no calificó.'],
     administrador: ['Buscar o registrar estudiante', 'Ingresa el número de documento. Si no existe, se crea un registro nuevo para que empresa, estudiante y supervisor lo encuentren.']
   };
   document.getElementById('lookupTitle').textContent = titles[role][0];
@@ -208,6 +209,9 @@ async function doLookup(){
       rec = emptyRecord(doc);
       state.isNewRecord = true;
       msg.innerHTML = '<span style="color:var(--teal-dark)">No existe todavía — se creará un registro nuevo para este documento.</span>';
+    } else if(state.role === 'profesor'){
+      msg.innerHTML = '<span style="color:var(--danger)">No se encontró un estudiante con ese documento. Verifica el número o búscalo por su nombre.</span>';
+      return;
     } else if(state.role === 'empresa'){
       msg.innerHTML = '<span style="color:var(--danger)">No se pudo abrir este estudiante: verifica el documento. Solo puedes abrir a los estudiantes que hacen su práctica en tu empresa.</span>';
       return;
@@ -222,7 +226,7 @@ async function doLookup(){
   state.documento = doc;
   state.record = rec;
   state.empMonth = 0; state.estMonth = 0;
-  if(state.role==='empresa') renderEmpresa();
+  if(state.role==='empresa' || state.role==='profesor') renderEmpresa();
   else if(state.role==='estudiante') renderEstudiante();
   else if(state.role==='supervisor') renderSupervisor();
   else if(state.role==='administrador') await renderAdministrador();
