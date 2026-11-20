@@ -58,6 +58,13 @@
         <span class="home-go">Ingresar como supervisor →</span>
         <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('supervisor')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
       </div>
+      <div class="role-card estudiante" role="link" tabindex="0" onclick="try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='profesor.html'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();try{sessionStorage.removeItem('cai_sesion_v1')}catch(e){};location.href='profesor.html'}">
+        <div class="icon">P</div>
+        <h3>Profesor</h3>
+        <p>Ingresa con tu usuario para calificar a los estudiantes cuando la empresa no registra las notas.</p>
+        <span class="home-go">Ingresar como profesor →</span>
+        <button type="button" class="home-info" onclick="event.stopPropagation();homeInfo('profesor')" onkeydown="event.stopPropagation()">ⓘ ¿Cómo ingreso?</button>
+      </div>
     </div>
   </div>
 
@@ -706,6 +713,7 @@
     estudiante:{ico:'A',titulo:'Ingreso del estudiante',href:'estudiante.html',cuerpo:'<ul><li><b>Usuario:</b> tu número de documento.</li><li><b>Contraseña:</b> la que te entregó el administrador. Si es tu primer ingreso, el sistema te pedirá cambiarla.</li><li>¿La olvidaste? Pídele al administrador que te asigne una nueva.</li></ul>'},
     empresa:{ico:'E',titulo:'Ingreso de la empresa',href:'empresa.html',cuerpo:'<ul><li><b>Usuario:</b> el correo registrado por la institución.</li><li><b>Contraseña:</b> la que te entregó la institución.</li><li>Sirve para jefes inmediatos de práctica y empresas de contrato de aprendizaje.</li></ul>'},
     supervisor:{ico:'S',titulo:'Ingreso del supervisor institucional',href:'supervisor.html',cuerpo:'<ul><li><b>Usuario:</b> el correo registrado por la institución.</li><li><b>Contraseña:</b> la que te entregó el administrador.</li></ul>'},
+    profesor:{ico:'P',titulo:'Ingreso del profesor',href:'profesor.html',cuerpo:'<ul><li><b>Usuario:</b> el correo que registró la institución.</li><li><b>Contraseña:</b> la que te entregó el administrador.</li><li>Buscas al estudiante por documento o nombre y calificas los meses que la empresa no calificó.</li></ul>'},
     administrador:{ico:'Ad',titulo:'Ingreso del administrador',href:'administrador.html',cuerpo:'<ul><li><b>Usuario:</b> tu correo de administrador.</li><li><b>Contraseña:</b> la que definiste al crear tu cuenta.</li><li>Desde ahí creas los accesos de empresas y supervisores y gestionas a los estudiantes.</li></ul>'}
   };
   var ultimo = null;
