@@ -206,3 +206,10 @@ body.pm-u .screen.active .card:empty{display:none}
   body.pm-abierto #pmSide .pm-it .pmu-emo{font-size:22px;width:28px;}
   body.pm-abierto #pmSide > .pm-it,body.pm-abierto #pmSide > #plazosBtn{margin:2px 12px;width:auto;}
 }
+
+/* Menú lateral: con zoom o pantalla baja los botones no se encogen ni se montan; el menú se desplaza */
+#pmSide > *{flex-shrink:0;}
+#pmSide .pm-nav{flex:none;}
+#pmSide .pm-it{flex:none;min-height:42px;box-sizing:border-box;}
+#pmSide .pm-fill{flex:1 0 12px;}
+body.pm-side #pmSide{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;}
