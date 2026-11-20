@@ -285,7 +285,7 @@ function render(){
   $('#modbtns').innerHTML=ORDEN.map(k=>'<button class="mb'+(k===cur?' on':'')+'" role="tab" data-m="'+k+'">'+esc(MODS[k].corto)+'<small>'+esc(MODS[k].nombre)+'</small></button>').join('');
   $('#filtros').innerHTML='<b>Ver los pasos de:</b><button class="fb'+(filtro==='todos'?' on':'')+'" data-a="todos">Todos</button>'+
     M.actores.map(a=>'<button class="fb'+(filtro===a?' on':'')+'" data-a="'+a+'" style="'+(filtro===a?'background:'+ACT[a].c:'')+'">'+ACT[a].i+' '+ACT[a].n+'</button>').join('')+
-    '<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><a class="btnp" style="text-decoration:none;display:inline-block" href="manuales/Manual-'+cur.toUpperCase()+'.pdf" download>⬇ Descargar PDF</a><button class="btnp" style="background:var(--teal)" onclick="window.print()">🖨 Imprimir</button></span>';
+    '<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><a class="btnp" style="text-decoration:none;display:inline-block" href="manuales/Manual-'+cur.toUpperCase()+'.pdf" target="_blank" rel="noopener" download>⬇ Descargar PDF</a><button class="btnp" style="background:var(--teal)" onclick="window.print()">🖨 Imprimir</button></span>';
   const hecho=guardado()[cur]||[];
   const cols=M.actores.length;
   let h='';
