@@ -737,3 +737,15 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .prof-fila{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font:inherit;color:var(--ink);}
 .prof-fila:hover,.prof-fila:focus-visible{border-color:var(--teal);background:#F1F8F8;outline:none;}
 .prof-fila span{font-size:13px;color:var(--muted);}
+
+/* ===== En línea ahora (administrador) ===== */
+.el-resumen{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 14px;}
+.el-total{display:flex;align-items:baseline;gap:8px;}.el-total b{font-size:38px;line-height:1;color:var(--deep);}.el-total span{color:var(--muted);font-size:14px;}
+.el-chips{display:flex;flex-wrap:wrap;gap:8px;flex:1;}
+.el-chip{padding:6px 12px;border-radius:999px;background:#F1F1EE;color:#6b6f6c;font-size:13.5px;}.el-chip.on{background:#E3F1F2;color:var(--deep);}
+.el-hoy{font-size:13.5px;color:var(--muted);}
+.el-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2EBF71;box-shadow:0 0 0 3px rgba(46,191,113,.2);}
+.el-tabla{width:100%;border-collapse:collapse;font-size:14.5px;}
+.el-tabla th{text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);white-space:nowrap;}
+.el-tabla td{padding:10px;border-bottom:1px solid #F0EEE8;vertical-align:middle;overflow-wrap:break-word;word-break:normal;}
+.el-tabla tr:last-child td{border-bottom:0;}
