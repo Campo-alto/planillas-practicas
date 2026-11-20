@@ -60,7 +60,7 @@ async function restaurarSesion(rolPagina){
       const rec = await getRecord(s.documento);
       if(!rec) throw new Error('sesion');
       state.documento = s.documento; state.record = rec; state.isNewRecord = false;
-      if(rolPagina==='empresa') renderEmpresa(); else renderSupervisor();
+      if(rolPagina==='empresa' || rolPagina==='profesor') renderEmpresa(); else renderSupervisor();
     } else {
       goRole(rolPagina);          // pantalla de búsqueda de estudiante
     }
