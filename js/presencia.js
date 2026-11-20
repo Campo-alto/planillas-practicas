@@ -67,3 +67,55 @@ function elPintar(){
     '<div class="el-hoy">Hoy han ingresado <b>' + hoyTotal + '</b> personas</div><button class="ghost" onclick="elCargar()">↻ Actualizar</button></div>' +
     (bloques || '<div class="card"><p class="helptext" style="margin:0;">Nadie más está en línea en este momento.</p></div>');
 }
+
+/* ---------- «En línea · N» en el menú lateral del administrador ---------- */
+/* Debajo de su nombre aparece «● En línea · N»: al pulsarlo se ve quién está conectado (con nombre y rol) y un botón para el detalle. */
+(function(){
+  let datos = null, bloqueado = false, pop = null, cargando = false;
+  const ESC = s=>String(s == null ? '' : s).replace(/[&<>"]/g, c=>({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function traer(){
+    if(bloqueado || cargando || document.visibilityState === 'hidden') return;
+    if(typeof sb === 'undefined' || !sb || !document.getElementById('screen-admin-hub') || !document.querySelector('#pmSide .pm-user')) return;
+    cargando = true;
+    try{
+      const s = await sb.auth.getSession(); if(!s.data || !s.data.session) return;
+      const { data, error } = await sb.rpc('admin_en_linea');
+      if(error){ if(/No autorizado|permission denied/i.test(error.message || '')) bloqueado = true; return; }   // solo el Administrador lo ve
+      datos = data; chip(); if(pop) pintarPop();
+    }catch(_){} finally{ cargando = false; }
+  }
+  function total(){ return datos && datos.personas ? datos.personas.length : 0; }
+  function chip(){
+    const ue = document.querySelector('#pmSide .pm-user .pm-ue'); if(!ue || !datos) return;
+    ue.classList.add('el-side'); ue.setAttribute('role', 'button'); ue.setAttribute('tabindex', '0'); ue.setAttribute('title', 'Ver quién está en línea');
+    const html = '<span class="pm-on"></span>En línea · <b>' + total() + '</b> <span class="el-flecha">▾</span>';
+    if(ue.dataset.el !== html){ ue.innerHTML = html; ue.dataset.el = html; }
+    if(!ue.dataset.elBound){ ue.dataset.elBound = '1'; ue.addEventListener('click', e=>{ e.stopPropagation(); alternar(ue); }); ue.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); alternar(ue); } }); }
+  }
+  function alternar(ue){
+    if(pop){ cerrar(); return; }
+    pop = document.createElement('div'); pop.id = 'elPop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Personas en línea');
+    document.body.appendChild(pop);
+    const r = ue.getBoundingClientRect(); pop.style.top = Math.round(r.bottom + 8) + 'px'; pop.style.left = Math.max(8, Math.round(r.left - 6)) + 'px';
+    pintarPop(); traer();
+  }
+  function cerrar(){ if(pop){ pop.remove(); pop = null; } }
+  function pintarPop(){
+    if(!pop) return;
+    const ps = (datos && datos.personas) || [];
+    const GR = [['personal', 'Personal'], ['supervisor', 'Supervisores'], ['profesor', 'Profesores'], ['empresa', 'Empresas'], ['estudiante', 'Estudiantes']];
+    const cuerpo = GR.map(g=>{
+      const l = ps.filter(p=>(p.tipo === 'empresa_ca' ? 'empresa' : p.tipo) === g[0]); if(!l.length) return '';
+      return '<div class="el-g">' + ESC(g[1]) + ' · ' + l.length + '</div>' + l.slice(0, 8).map(p=>'<div class="el-p"><span class="el-dot"></span><span class="el-n">' + ESC(p.nombre || '—') + '</span><small>' + ESC(p.detalle) + '</small></div>').join('') +
+        (l.length > 8 ? '<div class="el-mas">y ' + (l.length - 8) + ' más…</div>' : '');
+    }).join('');
+    pop.innerHTML = '<div class="el-h"><b>' + ps.length + '</b> en línea ahora</div><div class="el-cuerpo">' + (cuerpo || '<div class="el-mas">Nadie más está conectado.</div>') + '</div>' +
+      '<button type="button" class="el-ver">Ver detalle</button>';
+    pop.querySelector('.el-ver').onclick = ()=>{ cerrar(); if(typeof abrirEnLinea === 'function') abrirEnLinea(); };
+  }
+  document.addEventListener('click', e=>{ if(pop && !pop.contains(e.target)) cerrar(); });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape') cerrar(); });
+  setTimeout(traer, 5000);
+  setInterval(traer, 30000);
+  setInterval(chip, 2500);      // si el menú se vuelve a dibujar, se vuelve a poner el contador
+})();
