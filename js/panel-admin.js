@@ -57,7 +57,8 @@
         { icono:'✍️', clase:'administrador', titulo:'Firma de la carta de fechas', mod:'solo_admin', desc:'Cambia el nombre, cargo, teléfono y correo que firman la carta de fechas.', abrir:()=>abrirFirmaCarta() },
         { icono:'📅', clase:'administrador', titulo:'Calendario de plazos', mod:'solo_admin', desc:'Define las fechas de apertura y cierre del registro de documentos, la formalización del contrato y las notas.', abrir:()=>abrirPlazosAdmin() },
         { icono:'🔑', clase:'administrador', titulo:'Roles y permisos', mod:'solo_admin', desc:'Activa o desactiva las funciones que puede usar cada rol.', abrir:()=>abrirPermisos() },
-        { icono:'🛡', clase:'administrador', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Mira quién creó, cambió, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() }
+        { icono:'🛡', clase:'administrador', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Mira quién creó, cambió, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() },
+        { icono:'🟢', clase:'administrador', titulo:'Quién está en línea', mod:'solo_admin', desc:'Mira en tiempo real quién tiene la plataforma abierta: personal, estudiantes, empresas, supervisores y profesores.', abrir:()=>abrirEnLinea() }
       ] },
     { id:'informes', icono:'📈', clase:'administrador', titulo:'Informes y reportes',
       desc:'Cruza la información de estudiantes, empresas, cupos, supervisores, formalización y notas, y preséntala como informe en PDF o Excel.',
