@@ -20,7 +20,7 @@ function renderEmpOverview(){
   const mesesActivos = mesesPorModalidad(rec.modalidad);
   const pills = rec.meses.slice(0, mesesActivos).map((m,i)=>{
     const n = COMPETENCIAS.filter(c=>rec.competencias[c.key][i]!=null).length;
-    const icon = m.bloqueado ? '🔒' : (n===4 ? '✅' : (n>0 ? '◐' : '○'));
+    const icon = m.bloqueado ? '🔒' : (m.notaProfesor ? '🎓' : (n===4 ? '✅' : (n>0 ? '◐' : '○')));
     return `<button type="button" class="month-pill${i===state.empMonth?' active':''}${m.bloqueado?' locked':''}" onclick="empGoToMonth(${i})"><span class="mp-name">${mesLabel(rec,i)}</span><span class="mp-state">${icon} ${n}/4</span></button>`;
   }).join('');
   const i = state.empMonth, m = rec.meses[i];
@@ -72,9 +72,18 @@ function rubSel(key, n){
 function empMonthEditorHtml(i){
   const rec = state.record;
   const m = rec.meses[i];
-  const locked = !!m.bloqueado;
+  /* Rol Profesor: califica SOLO los meses que la empresa no calificó. Un mes calificado por el profesor ya no lo cambia la empresa. */
+  const esProf = state.role === 'profesor', porProf = !!m.notaProfesor;
+  const empCalifico = !porProf && COMPETENCIAS.some(c=>rec.competencias[c.key][i]!=null);
+  const lockedProf = esProf && empCalifico, lockedEmp = !esProf && porProf;
+  const locked = !!m.bloqueado || lockedProf || lockedEmp;
   const dis = locked ? 'disabled' : '';
-  const banner = locked ? (m.congelado
+  const np = porProf ? m.notaProfesor : null;
+  const quien = np ? escapeHtmlFicha((np.nombre || np.email || 'un profesor') + (np.fecha ? ' el ' + np.fecha : '')) : '';
+  const banner = (!m.bloqueado && lockedProf) ? `<div class="note-box" style="margin-bottom:12px;">🔒 La empresa ya calificó este mes. El profesor solo califica los meses que la empresa no calificó, así que aquí solo puedes consultarlo.</div>`
+    : (!m.bloqueado && lockedEmp) ? `<div class="note-box" style="margin-bottom:12px;">🎓 Este mes fue calificado por el profesor ${quien}, porque la empresa no lo calificó. Ya no se puede modificar desde la empresa; si necesitas corregirlo, comunícate con la institución.</div>`
+    : (!m.bloqueado && esProf && porProf) ? `<div class="note-box" style="margin-bottom:12px;">🎓 Este mes lo calificó el profesor ${quien}. Puedes corregirlo mientras el administrador no lo bloquee.</div>`
+    : locked ? (m.congelado
     ? `<div class="note-box" style="margin-bottom:12px;">🔒 Este mes fue calificado por la empresa anterior del estudiante y quedó protegido: no se puede modificar. Solo el administrador puede hacerlo.</div>`
     : `<div class="note-box" style="margin-bottom:12px;">🔒 Este mes ya fue guardado y quedó bloqueado. Si necesitas corregir una nota, pide al administrador que lo desbloquee.</div>`) : '';
 
@@ -98,7 +107,8 @@ function empMonthEditorHtml(i){
       <div class="field"><label>Fecha final</label><input type="date" id="ctl-fin" value="${m.fechaFin||''}" ${dis}></div>
     </div>
     <div class="field"><label>Observaciones de la práctica</label><textarea id="ctl-obs" ${dis}>${m.observaciones||''}</textarea></div>
-    <div class="sig-wrap">
+    ${esProf ? '<p class="helptext">Como profesor no firmas: el estudiante firma su mes y la planilla queda marcada como calificada por el profesor.</p>' : ''}
+    <div class="sig-wrap"${esProf ? ' style="display:none"' : ''}>
       <label>Firma empresa (jefe inmediato)</label>
       <div class="pencil-hint" style="margin-bottom:6px;">${PENCIL_SVG} Dibuja tu firma con el dedo o el mouse, como si usaras un lápiz</div>
       <div class="sig-box"><canvas class="sigpad" id="sig-empresa"></canvas></div>
@@ -121,6 +131,7 @@ function empGoToMonth(i){
 async function saveEmpresaMonth(){
   const rec = state.record; const i = state.empMonth;
   if(rec.meses[i].bloqueado){ toast('Este mes está bloqueado. Pide al administrador que lo desbloquee.', true); return; }
+  if(state.role === 'empresa' && rec.meses[i].notaProfesor){ toast('Este mes lo calificó un profesor y ya no se puede modificar desde la empresa.', true); return; }
   document.querySelectorAll('.empCompSelect').forEach(sel=>{
     const key = sel.getAttribute('data-comp');
     rec.competencias[key][i] = sel.value ? parseInt(sel.value,10) : null;
@@ -129,8 +140,7 @@ async function saveEmpresaMonth(){
   rec.meses[i].fechaInicio = document.getElementById('ctl-inicio').value;
   rec.meses[i].fechaFin = document.getElementById('ctl-fin').value;
   rec.meses[i].observaciones = document.getElementById('ctl-obs').value.trim();
-  const sig = sigDataUrl('sig-empresa');
-  if(sig) rec.meses[i].firmaEmpresa = sig;
+  if(state.role !== 'profesor'){ const sig = sigDataUrl('sig-empresa'); if(sig) rec.meses[i].firmaEmpresa = sig; }
   if(!rec.nombre){ toast('Guarda primero los datos generales del estudiante', true); return; }
   await saveRecord(rec);
   toast(mesLabel(rec,i)+' guardado. El administrador lo bloqueará cuando lo revise.');
@@ -140,7 +150,7 @@ async function saveEmpresaMonth(){
 /* Sitio de prácticas por defecto: la empresa donde el estudiante ya está asignado o contratado */
 const sitioCache = {};
 async function empCargarSitio(){
-  const rec = state.record; if(!rec || !state.token || !sb) return;
+  const rec = state.record; if(!rec || !state.token || !sb || state.role === 'profesor') return;
   const d = rec.documento; if(d in sitioCache) return;
   try{
     const { data, error } = await sb.rpc('sitio_practica', { p_token: state.token, p_documento: d });
