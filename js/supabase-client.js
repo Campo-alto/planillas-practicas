@@ -88,7 +88,7 @@ async function getRecord(doc){
       return data ? rowToRecord(data) : null;
     }
     if(!state.token){ toast('Tu sesión venció. Inicia sesión de nuevo.', true); return null; }
-    const { data, error } = await sb.rpc('get_student', { p_token: state.token, p_documento: doc });
+    const { data, error } = await sb.rpc(state.role === 'profesor' ? 'prof_get_student' : 'get_student', { p_token: state.token, p_documento: doc });
     if(error){ console.error(error); toast(error.message, true); return null; }
     return data ? rowToRecord(data) : null;
   }catch(e){
@@ -119,7 +119,14 @@ async function saveRecord(rec){
     }
     if(!state.token){ toast('Tu sesión venció. Inicia sesión de nuevo.', true); return; }
     // Cada rol solo puede escribir SUS partes (también lo exige la base de datos)
-    if(state.role === 'empresa'){
+    if(state.role === 'profesor'){
+      // El profesor califica un mes (el que tiene abierto) y solo si la empresa no lo calificó; lo exige la base de datos
+      const i = state.empMonth || 0, m = rec.meses[i] || {};
+      const comp = {}; ['ser','desempeno','producto','conocimiento'].forEach(k=>{ comp[k] = (rec.competencias[k] || [])[i] == null ? null : rec.competencias[k][i]; });
+      const { error } = await sb.rpc('prof_guardar_mes', { p_token: state.token, p_documento: rec.documento, p_idx: i, p_comp: comp,
+        p_mes: { sitio: m.sitio || '', fechaInicio: m.fechaInicio || '', fechaFin: m.fechaFin || '', observaciones: m.observaciones || '' } });
+      if(error) throw error;
+    } else if(state.role === 'empresa'){
       await savePart('competencias', rec.competencias, rec.documento);
       await savePart('meses', rec.meses, rec.documento);
     } else if(state.role === 'estudiante'){
