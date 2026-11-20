@@ -138,7 +138,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:30px}
  <p>Para quienes ingresan por el acceso de administración: administrador, coordinadores, asistentes, supervisor general y servicio al estudiante. Explica cada función del panel, para qué sirve y cómo se usa.</p>
 </div></header>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Planillas de prácticas · PPS-GAA-F-006 · Campoalto. Cada persona solo ve las funciones que el administrador le activó en «Roles y permisos».</footer>
+<footer class="wrap">Planillas de prácticas · PPS-GAA-F-006 · Campoalto. Cada persona solo ve las funciones que el administrador le activó en «Roles y permisos». · <a href="flujogramas.html#funciones">Ver los flujogramas</a></footer>
 <script>
 const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MENU=['Panel','Estudiantes','Empresas','Supervisión','Configurar la práctica','Personas y seguridad','Informes','Comunicación','Mensajes'];
@@ -168,6 +168,7 @@ const G=[
 {id:'supervision',ic:'👤',t:'Supervisión',c:'#7A4EAB',d:'Quienes acompañan la práctica y el registro de sus visitas.',f:[
  {t:'Visitas por asignar',ic:'🧭',p:['sup_asignar'],q:'Estudiantes de RAP y RLP aprobados que esperan supervisor.',h:['Asigna cada estudiante a un supervisor (o deja que ellos mismos lo tomen desde su perfil).','Puedes reasignar o liberar.','Desde que hay supervisor, el estudiante queda bloqueado para los demás.'],n:'La base de datos impone el bloqueo, no solo la pantalla.',l:['Ana Pérez · esperando supervisor'],b:'Asignar'},
  {t:'Usuarios de supervisores',ic:'S',p:['sup_usuarios'],q:'Crea y administra los accesos de los supervisores institucionales.',h:['Crea el supervisor con correo, nombre y contraseña (mínimo 8 caracteres).','Para uno ya creado puedes cambiar su correo o inhabilitarlo.'],l:['Supervisores','Correo · Nombre · Estado'],b:'Crear supervisor'},
+ {t:'Usuarios de profesores',ic:'P',p:['sup_usuarios'],q:'Crea los accesos de los profesores que califican a los estudiantes cuando la empresa no registra las notas.',h:['Pulsa <b>Crear profesor</b>: escribe su nombre, correo y una contraseña de mínimo 8 caracteres.','Entrégale al profesor su correo y contraseña: entra por la tarjeta <b>Profesor</b> de la página principal.','El profesor busca al estudiante (por documento o nombre) y califica <b>solo los meses que la empresa no calificó</b>; esos meses quedan marcados con 🎓.'],n:'El profesor nunca puede cambiar una nota puesta por la empresa ni un mes bloqueado, y la empresa ya no puede sobrescribir un mes calificado por un profesor.'},
  {t:'Reporte de visitas',ic:'📋',p:['sup_reporte'],q:'Una fila por visita: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.',h:['Filtra y consulta.','Una visita guardada queda bloqueada; si hay que corregirla, el administrador puede desbloquearla.'],l:['Visita 1 · Ana Pérez · 10/03'],b:'Exportar'},
  {t:'Importar / exportar supervisores',ic:'⇅',p:['sup_importexport'],q:'Crea o actualiza supervisores desde Excel y descarga el listado.',h:['Sube el Excel. Si dejas la contraseña vacía en uno nuevo, se genera una y se descarga un Excel con las credenciales.'],l:['Supervisores'],b:'Importar'}
 ]},
