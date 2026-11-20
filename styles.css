@@ -749,3 +749,18 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 .el-tabla th{text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);white-space:nowrap;}
 .el-tabla td{padding:10px;border-bottom:1px solid #F0EEE8;vertical-align:middle;overflow-wrap:break-word;word-break:normal;}
 .el-tabla tr:last-child td{border-bottom:0;}
+
+/* ===== «En línea · N» del menú lateral (administrador) ===== */
+#pmSide .pm-ue.el-side{cursor:pointer;border-radius:8px;padding:2px 6px;margin-left:-6px;max-width:none;}
+#pmSide .pm-ue.el-side:hover,#pmSide .pm-ue.el-side:focus-visible{background:rgba(255,255,255,.14);outline:none;}
+#pmSide .pm-ue.el-side b{color:#fff;}
+#pmSide .pm-ue .el-flecha{font-size:10px;opacity:.8;}
+#elPop{position:fixed;z-index:2200;width:290px;max-height:70vh;overflow:auto;background:#fff;color:var(--ink,#22282B);border:1px solid #CFDDDF;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.28);padding:12px 14px;}
+#elPop .el-h{font-size:14px;margin-bottom:6px;color:#4a5a5c;}#elPop .el-h b{font-size:24px;color:var(--deep,#0A5A62);margin-right:4px;}
+#elPop .el-g{margin:10px 0 4px;font:700 11.5px/1.2 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#6b7a7c;}
+#elPop .el-p{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px;border-bottom:1px solid #F0EEE8;}
+#elPop .el-n{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#elPop .el-p small{color:#7a8587;font-size:11.5px;white-space:nowrap;}
+#elPop .el-mas{font-size:12.5px;color:#7a8587;padding:4px 0;}
+#elPop .el-ver{margin-top:10px;width:100%;border:1px solid #BFDDE0;background:#E3F1F2;color:var(--deep,#0A5A62);font:700 13.5px system-ui,sans-serif;padding:9px;border-radius:10px;cursor:pointer;}
+#elPop .el-ver:hover{background:#d3e8ea;}
