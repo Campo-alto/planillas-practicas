@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Campoalto · Asignación de prácticas · Empresa</title>
+<title>Campoalto · Asignación de prácticas · Estudiante</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -26,69 +26,82 @@
     <div class="topbar-actions" id="topbarActions"></div>
   </div>
 
-  <!-- EMPRESA / SUPERVISOR LOGIN -->
-  <div class="screen" id="screen-role-login">
-    <h2 id="roleLoginTitle" style="margin:12px 0 4px;"></h2>
-    <p class="helptext" id="roleLoginHelp"></p>
+  <!-- ESTUDIANTE LOGIN -->
+  <div class="screen" id="screen-estudiante-login">
+    <h2 style="margin:12px 0 4px;">Acceso Estudiante</h2>
+    <p class="helptext">Tu usuario es tu número de documento. La contraseña te la entrega el administrador.</p>
     <div class="card" style="max-width:420px;">
       <div class="field-row" style="grid-template-columns:1fr;">
-        <div class="field"><label>Correo</label><input type="email" id="roleEmail" autocomplete="username"></div>
+        <div class="field"><label>Usuario (documento)</label><input type="text" id="estUsuario" inputmode="numeric" autocomplete="username"></div>
         <div class="field"><label>Contraseña</label>
           <div class="pw-wrap">
-            <input type="password" id="rolePassword" autocomplete="current-password">
-            <button type="button" class="pw-toggle" data-target="rolePassword" aria-label="Mostrar contraseña"></button>
+            <input type="password" id="estPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doEstudianteLogin()">
+            <button type="button" class="pw-toggle" data-target="estPassword" aria-label="Mostrar contraseña"></button>
           </div>
         </div>
       </div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="primary" onclick="doEstudianteLogin()">Ingresar</button></div>
+      <div id="estLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
+      <p class="helptext" style="margin-top:12px;">¿Olvidaste tu contraseña? Pídele al administrador que te asigne una nueva.</p>
+    </div>
+  </div>
+
+  <!-- ESTUDIANTE CAMBIO DE CONTRASEÑA -->
+  <div class="screen" id="screen-estudiante-cambio">
+    <h2 style="margin:12px 0 4px;">Cambiar contraseña</h2>
+    <p class="helptext" id="estCambioHelp"></p>
+    <div class="card" style="max-width:420px;">
+      <div class="field-row" style="grid-template-columns:1fr;">
+        <div class="field"><label>Contraseña actual</label>
+          <div class="pw-wrap"><input type="password" id="estPwActual" autocomplete="current-password"><button type="button" class="pw-toggle" data-target="estPwActual" aria-label="Mostrar contraseña"></button></div></div>
+        <div class="field"><label>Contraseña nueva (mín. 8 caracteres)</label>
+          <div class="pw-wrap"><input type="password" id="estPwNueva" autocomplete="new-password"><button type="button" class="pw-toggle" data-target="estPwNueva" aria-label="Mostrar contraseña"></button></div></div>
+        <div class="field"><label>Repite la contraseña nueva</label>
+          <div class="pw-wrap"><input type="password" id="estPwNueva2" autocomplete="new-password"><button type="button" class="pw-toggle" data-target="estPwNueva2" aria-label="Mostrar contraseña"></button></div></div>
+      </div>
       <div class="actions-row" style="justify-content:flex-start;">
-        <button class="primary" onclick="doRoleLogin()">Iniciar sesión</button>
+        <button class="primary" onclick="doEstudianteCambio()">Guardar contraseña</button>
+        <button class="ghost" id="estCambioCancel" onclick="cancelarCambioEstudiante()">Cancelar</button>
       </div>
-      <div id="roleLoginMsg" style="margin-top:12px;font-size:13.5px;"></div>
-      <button class="linkbtn" style="margin-top:10px;padding:0;" onclick="toggleForgotRoleHelp()">¿Olvidaste tu contraseña?</button>
-      <div id="forgotRoleHelp" style="display:none;margin-top:10px;font-size:13px;background:#FBF3E7;border:1px solid #EFD9B5;border-radius:8px;padding:10px 12px;color:#7A5B21;">
-        Este usuario no tiene recuperación automática por correo. Escríbele al Administrador de tu institución con tu correo (<span id="forgotRoleEmailShown">el que usas para entrar</span>) y pídele que te asigne una contraseña nueva desde su panel — puede hacerlo en cualquier momento.
-      </div>
+      <div id="estCambioMsg" style="margin-top:12px;font-size:13.5px;"></div>
     </div>
   </div>
 
-  <!-- LOOKUP -->
-  <div class="screen" id="screen-lookup">
-    <h2 id="lookupTitle" style="margin:12px 0 4px;"></h2>
-    <p class="helptext" id="lookupHelp"></p>
-    <div class="card">
-      <div class="lookup-form">
-        <div class="field">
-          <label>Número de documento del estudiante</label>
-          <input type="text" id="lookupDoc" inputmode="numeric" placeholder="Ej. 1128108664">
-        </div>
-        <button class="primary" onclick="doLookup()">Buscar</button>
-      </div>
-      <div id="lookupMsg" style="margin-top:12px;font-size:13.5px;"></div>
-    </div>
-    <div class="card" id="lookupAdminListCard" style="display:none;">
-      <div class="section-bar deep">Estudiantes registrados</div>
-      <div class="actions-row" style="justify-content:flex-start;margin-bottom:8px;"><button class="ghost" onclick="generarClavesMasivas()">🔑 Generar claves para estudiantes sin acceso (Excel)</button></div>
-      <div id="lookupAdminList"></div>
-    </div>
-  </div>
-
-  <!-- EMPRESA -->
-  <div class="screen" id="screen-empresa">
-
+  <!-- ESTUDIANTE -->
+  <div class="screen" id="screen-estudiante">
     <div class="status-strip">
-      <div class="who">Editando como <b>Empresa / Jefe inmediato</b> · Documento <b id="empDocLabel"></b></div>
-      <div class="actions">
-        <button class="ghost" onclick="switchStudent('empresa')">Cambiar estudiante</button>
-        <button class="danger" onclick="roleLogout()">Cerrar sesión</button>
-      </div>
+      <div class="who">Estudiante · Documento <b id="estDocLabel"></b></div>
+      <div class="actions"><button class="ghost" onclick="goEstudianteCambio(false)">Cambiar contraseña</button><button class="danger" onclick="estudianteLogout()">Cerrar sesión</button></div>
     </div>
 
-    <div class="card" id="empDatosGenerales"></div>
+    <div class="card" id="estDatosGenerales"></div>
 
     <div class="card">
-      <div class="section-bar teal">Planillas mensuales — pon la nota</div>
-      <p class="helptext" style="margin-top:-4px;">Dale clic a un mes para abrirlo, calificar las 4 competencias y diligenciar el sitio de prácticas. Las firmas se recogen cuando el supervisor institucional haga sus visitas.</p>
-      <div id="empOverview"></div>
+      <div class="section-bar deep">Asignación de práctica no remunerada</div>
+      <div id="estAsignacion"></div>
+    </div>
+
+
+    <div class="card">
+      <div class="section-bar teal">Mis notas — competencias transversales</div>
+      <p class="helptext" style="margin-top:-4px;">Estas notas las pone la empresa y no puedes editarlas.</p>
+      <div id="estNotasView"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-bar teal">Mi control de cumplimiento · firma tu mes</div>
+      <p class="helptext" style="margin-top:-4px;">El sitio, las fechas y las observaciones las diligencia la empresa. Tú revisas y firmas cada mes.</p>
+      <div class="tabs" id="estMonthTabs"></div>
+      <div id="estControlView"></div>
+      <div class="sig-wrap">
+        <label>Firma estudiante (control de cumplimiento del mes)</label>
+        <div class="sig-box"><canvas class="sigpad" id="sig-estudiante-mes"></canvas></div>
+        <div class="sig-actions">
+          <span class="sig-status" id="sig-estudiante-mes-status">Sin firmar</span>
+          <button class="ghost" onclick="clearSig('sig-estudiante-mes')">Borrar firma</button>
+        </div>
+      </div>
+      <div class="actions-row"><button class="primary" onclick="saveEstudianteMes()">Guardar firma del mes</button></div>
     </div>
   </div>
 
@@ -107,7 +120,6 @@
 <script src="js/programas.js"></script>
 <script src="js/datos-generales.js"></script>
 <script src="js/empresa.js"></script>
-<script src="js/empresa-inactiva.js"></script>
 <script src="js/estudiante.js"></script>
 <script src="js/supervisor-panel.js"></script>
 <script src="js/administrador.js"></script>
@@ -124,22 +136,26 @@
 <script src="js/carta-assets.js"></script>
 <script src="js/carta.js"></script>
 <script src="js/carta-fechas.js"></script>
+<script src="js/estudiante-carta.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/chat-externo.js"></script>
 <script src="js/sesion.js"></script>
 <script src="js/pie-sesion.js"></script>
 <script src="js/planilla-template.js"></script>
 <script src="js/datos-personales.js"></script>
+<script src="js/solicitud-acceso.js"></script>
+<script src="js/solicitud-practica.js"></script>
 <script src="js/visor-pdf.js"></script>
 <script src="js/asistencia.js"></script>
+<script src="js/cambio-empresa.js"></script>
 <script src="js/actas.js"></script>
 <script src="js/pdf-export.js"></script>
 <script src="js/correos-pregunta.js"></script>
 <script>
   initPwToggles();
-  goHome = function(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:'', token:null}; goRoleLogin('empresa'); };
-  goRoleLogin('empresa');
-  restaurarSesion('empresa');
+  goHome = function(){ state = {role:null, documento:null, record:null, empMonth:0, estMonth:0, pendingRole:null, isNewRecord:false, adminModuleRole:null, currentUserNombre:'', currentUserEmail:'', token:null}; goRole('estudiante'); };
+  goRole('estudiante');
+  restaurarSesion('estudiante');
 </script>
 <script src="js/plazos.js"></script>
 <script src="js/tablas-ajuste.js"></script>
