@@ -30,6 +30,17 @@ function renderEstudiante(){
   setTimeout(()=>initSigPad('sig-estudiante-mes', m.firmaEstudiante), 30);
   organizarPestanasEstudiante();
 }
+/* Quién calificó el mes: la empresa o, si la empresa no lo hizo, un profesor (la nota se ve igual para el estudiante) */
+function estQuienCalifico(i){
+  const rec = state.record, m = (rec.meses || [])[i] || {};
+  const esc = x => (typeof escapeHtmlFicha === 'function' ? escapeHtmlFicha(x) : String(x));
+  const hay = COMPETENCIAS.some(c => rec.competencias[c.key][i] != null);
+  if(m.notaProfesor){
+    const np = m.notaProfesor;
+    return '🎓 Este mes lo calificó el profesor ' + esc(np.nombre || np.email || '') + (np.fecha ? ' el ' + esc(np.fecha) : '') + ', porque la empresa no lo calificó.';
+  }
+  return hay ? '🏢 Este mes lo calificó la empresa.' : '';
+}
 function renderEstNotasView(){
   const rec = state.record;
   const mesesActivos = mesesPorModalidad(rec.modalidad);
@@ -50,7 +61,8 @@ function renderEstNotasView(){
   document.getElementById('estNotasView').innerHTML =
     `<table class="resumen-table"><thead><tr><th>Competencia</th>${heads}</tr></thead><tbody>${rows}</tbody></table>
      <div class="subhead" style="margin-top:18px;">Rúbrica de calificación · ${mesLabel(rec,estNotasMes)}</div>
-     <p class="helptext" style="margin-top:-2px;">Así se evalúa cada criterio. Se resalta el nivel que la empresa te asignó este mes.</p>
+     <p class="helptext" style="margin-top:-2px;">Así se evalúa cada criterio. Se resalta el nivel que te asignaron este mes (la empresa o, si ella no calificó, un profesor).</p>
+     ${estQuienCalifico(estNotasMes) ? '<div class="note-box" style="margin-bottom:10px;">' + estQuienCalifico(estNotasMes) + '</div>' : ''}
      <div class="tabs">${pills}</div>${rubricaLecturaHtml(estNotasMes)}`;
 }
 let estNotasMes = null;
