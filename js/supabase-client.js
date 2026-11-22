@@ -131,7 +131,7 @@ async function saveRecord(rec){
       const i = state.empMonth || 0, m = rec.meses[i] || {};
       const comp = {}; ['ser','desempeno','producto','conocimiento'].forEach(k=>{ comp[k] = (rec.competencias[k] || [])[i] == null ? null : rec.competencias[k][i]; });
       const { error } = await sb.rpc('prof_guardar_mes', { p_token: state.token, p_documento: rec.documento, p_idx: i, p_comp: comp,
-        p_mes: { sitio: m.sitio || '', fechaInicio: m.fechaInicio || '', fechaFin: m.fechaFin || '', observaciones: m.observaciones || '' } });
+        p_mes: { sitio: m.sitio || '', fechaInicio: m.fechaInicio || '', fechaFin: m.fechaFin || '', observaciones: m.observaciones || '', firmaEmpresa: m.firmaEmpresa || '' } });
       if(error) throw error;
     } else if(state.role === 'empresa'){
       await savePart('competencias', rec.competencias, rec.documento);
