@@ -77,7 +77,10 @@ let ntNotas = 0;
 /* ===== Dentro de «Pendientes por proceso»: al pulsar el chip se despliega la lista de estudiantes ===== */
 let gdNotasAbierto = false;
 async function npInline(forzar){
-  const box = document.getElementById('gdPend'); if(!box) return;
+  const box = document.getElementById('gdPend');
+  // Con el panel moderno, la caja «Pendientes por proceso» está oculta (solo alimenta el resumen): la lista se abriría invisible.
+  // En ese caso se abre la pantalla completa de «Notas por subir al sistema».
+  if(!box || document.body.classList.contains('pm-on') || box.offsetParent === null){ if(typeof abrirNotasPorSubir === 'function') abrirNotasPorSubir(); return; }
   let d = document.getElementById('gdNotasInline');
   if(d && !forzar){ d.remove(); gdNotasAbierto = false; return; }       // segundo clic: se cierra
   gdNotasAbierto = true;
