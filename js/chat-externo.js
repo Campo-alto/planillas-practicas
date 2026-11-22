@@ -33,7 +33,7 @@ function cxBoton(){
   cxEstilos();
   let b = document.getElementById('cxBtn');
   if(!cxOk){ if(b) b.remove(); const p = document.getElementById('cxPanel'); if(p){ p.remove(); cxAbierto = false; } return; }
-  if(!b){ b = document.createElement('button'); b.id = 'cxBtn'; b.type = 'button'; b.setAttribute('aria-label', 'Mensajes con la institución'); b.title = 'Mensajes con la institución'; b.onclick = cxAlternar; document.body.appendChild(b); }
+  if(!b){ b = document.createElement('button'); b.id = 'cxBtn'; b.type = 'button'; b.setAttribute('aria-label', 'Chat con Servicio al estudiante'); b.title = 'Chat con Servicio al estudiante'; b.onclick = cxAlternar; document.body.appendChild(b); }
   b.innerHTML = '💬' + (cxN ? '<span class="n">' + (cxN > 99 ? '99+' : cxN) + '</span>' : '');
 }
 async function cxProbar(){
@@ -53,9 +53,9 @@ function cxAlternar(){ if(cxAbierto){ cxCerrar(); } else { cxAbrir(); } }
 function cxCerrar(){ const p = document.getElementById('cxPanel'); if(p) p.remove(); cxAbierto = false; if(cxTimer){ clearInterval(cxTimer); cxTimer = null; } }
 async function cxAbrir(){
   cxCerrar(); cxAbierto = true; cxUlt = 0;
-  const p = document.createElement('div'); p.id = 'cxPanel'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Mensajes con la institución');
-  p.innerHTML = '<div class="cx-cab"><b>💬 Mensajes con la institución</b><button type="button" aria-label="Cerrar" onclick="cxCerrar()">×</button></div>' +
-    '<div class="cx-info">Escribe aquí tus dudas al personal de prácticas. Te responderán dentro de la plataforma.</div><div id="cxAviso"></div>' +
+  const p = document.createElement('div'); p.id = 'cxPanel'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Chat con Servicio al estudiante');
+  p.innerHTML = '<div class="cx-cab"><b>💬 Servicio al estudiante</b><button type="button" aria-label="Cerrar" onclick="cxCerrar()">×</button></div>' +
+    '<div class="cx-info">Escribe aquí todas tus dudas y solicitudes: te atiende el equipo de Servicio al estudiante. Te responde dentro de la plataforma.</div><div id="cxAviso"></div>' +
     '<div id="cxMsgs" aria-live="polite"><div class="v">Cargando…</div></div>' +
     '<div class="cx-comp"><textarea id="cxTxt" maxlength="1500" rows="1" placeholder="Escribe un mensaje…"></textarea><button class="primary" type="button" id="cxEnviarBtn" onclick="cxEnviar()">Enviar</button></div>';
   document.body.appendChild(p);
