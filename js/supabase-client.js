@@ -85,6 +85,13 @@ async function getRecord(doc){
     if(state.role === 'administrador'){
       const { data, error } = await sb.from('students').select('*').eq('documento', doc).maybeSingle();
       if(error){ console.error(error); toast('Error consultando: '+error.message, true); return null; }
+      if(!data){
+        // Sin filas: si la sesión de Supabase venció, la base no da error, solo devuelve vacío. Se avisa con la causa real.
+        try{
+          const { data: ses } = await sb.auth.getSession();
+          if(!ses || !ses.session){ toast('Tu sesión de administrador venció. Cierra sesión e ingresa de nuevo.', true); state.__sinSesion = true; }
+        }catch(_){ /* queda el aviso genérico de quien llamó */ }
+      }
       return data ? rowToRecord(data) : null;
     }
     if(!state.token){ toast('Tu sesión venció. Inicia sesión de nuevo.', true); return null; }
