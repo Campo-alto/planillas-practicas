@@ -40,7 +40,7 @@ async function doEstudianteLogin(){
 async function entrarEstudiante(){
   state.role = 'estudiante';
   const rec = await getRecord(state.documento);
-  if(!rec){ toast('No se encontró tu planilla. Contacta al administrador.', true); estudianteLogout(); return; }
+  if(!rec){ toast('No se encontró tu planilla. Escribe a Servicio al estudiante por el chat de la aplicación.', true); estudianteLogout(); return; }
   state.record = rec; state.estMonth = 0; state.isNewRecord = false;
   renderEstudiante();
 }
