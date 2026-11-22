@@ -57,6 +57,9 @@ function rowToRecord(row){
     meses: row.meses,
     revisionFunciones: row.revision_funciones,
     datosSupervision: row.datos_supervision,
+    practicaFinalizada: row.practica_finalizada === true,
+    practicaFin: row.practica_fin || null,
+    practicaEstadoManual: row.practica_estado_manual || null,
     lastUpdated: row.updated_at
   };
 }
