@@ -11,9 +11,9 @@ function pfBanner(rec, admin){
 function pfBloquear(idPantalla){
   const sc = document.getElementById(idPantalla); if(!sc) return;
   sc.classList.add('pf-bloq');
-  sc.querySelectorAll('input, textarea, select').forEach(el => { if(el.type !== 'hidden') el.disabled = true; });
-  sc.querySelectorAll('button.primary, button.btn-save, [data-pf-guardar]').forEach(b => { b.disabled = true; b.title = 'Práctica finalizada'; });
-  sc.querySelectorAll('canvas').forEach(c => { c.style.pointerEvents = 'none'; c.style.opacity = '.7'; });
+  sc.querySelectorAll('input, textarea, select').forEach(el => { if(el.type !== 'hidden' && !el.closest('.pf-exento')) el.disabled = true; });
+  sc.querySelectorAll('button.primary, button.btn-save, [data-pf-guardar]').forEach(b => { if(b.closest('.pf-exento')) return; b.disabled = true; b.title = 'Práctica finalizada'; });
+  sc.querySelectorAll('canvas').forEach(c => { if(c.closest('.pf-exento')) return; c.style.pointerEvents = 'none'; c.style.opacity = '.7'; });
 }
 function pfAplicar(idPantalla, adminBox){
   const rec = state && state.record; if(!rec || !rec.practicaFinalizada) return;
