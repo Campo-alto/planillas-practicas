@@ -107,9 +107,9 @@ function empMonthEditorHtml(i){
       <div class="field"><label>Fecha final</label><input type="date" id="ctl-fin" value="${m.fechaFin||''}" ${dis}></div>
     </div>
     <div class="field"><label>Observaciones de la práctica</label><textarea id="ctl-obs" ${dis}>${m.observaciones||''}</textarea></div>
-    ${esProf ? '<p class="helptext">Como profesor no firmas: el estudiante firma su mes y la planilla queda marcada como calificada por el profesor.</p>' : ''}
-    <div class="sig-wrap"${esProf ? ' style="display:none"' : ''}>
-      <label>Firma empresa (jefe inmediato)</label>
+    ${esProf ? '<p class="helptext">Como profesor firmas el mes: tu firma queda en la planilla como la firma de la empresa, y el mes queda marcado como calificado por el profesor.</p>' : ''}
+    <div class="sig-wrap">
+      <label>${esProf ? 'Firma del profesor (hace las veces de la empresa)' : 'Firma empresa (jefe inmediato)'}</label>
       <div class="pencil-hint" style="margin-bottom:6px;">${PENCIL_SVG} Dibuja tu firma con el dedo o el mouse, como si usaras un lápiz</div>
       <div class="sig-box"><canvas class="sigpad" id="sig-empresa"></canvas></div>
       <div class="sig-actions">
@@ -140,7 +140,7 @@ async function saveEmpresaMonth(){
   rec.meses[i].fechaInicio = document.getElementById('ctl-inicio').value;
   rec.meses[i].fechaFin = document.getElementById('ctl-fin').value;
   rec.meses[i].observaciones = document.getElementById('ctl-obs').value.trim();
-  if(state.role !== 'profesor'){ const sig = sigDataUrl('sig-empresa'); if(sig) rec.meses[i].firmaEmpresa = sig; }
+  { const sig = sigDataUrl('sig-empresa'); if(sig) rec.meses[i].firmaEmpresa = sig; }
   if(!rec.nombre){ toast('Guarda primero los datos generales del estudiante', true); return; }
   await saveRecord(rec);
   toast(mesLabel(rec,i)+' guardado. El administrador lo bloqueará cuando lo revise.');
