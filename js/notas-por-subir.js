@@ -26,7 +26,10 @@ async function abrirNotasPorSubir(){
 }
 async function npVer(doc){
   try{
-    const rec = await getRecord(doc); if(!rec){ toast('No se encontró la planilla', true); return; }
+    // getRecord decide cómo leer según state.role: se pone «administrador» ANTES de pedir la planilla (si no, usaba la sesión de otro rol y no la hallaba)
+    const rolAntes = state.role; state.role = 'administrador'; state.__sinSesion = false;
+    const rec = await getRecord(doc);
+    if(!rec){ state.role = rolAntes; if(!state.__sinSesion) toast('No se encontró la planilla', true); state.__sinSesion = false; return; }
     state.role = 'administrador'; state.documento = doc; state.record = rec; state.empMonth = 0; state.estMonth = 0;
     await renderAdministrador();
   }catch(e){ toast(e.message, true); }
