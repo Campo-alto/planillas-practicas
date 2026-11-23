@@ -23,15 +23,15 @@
         { icono:'⇅', clase:'administrador', etapa:'Herramientas', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Sube estudiantes desde Excel y descarga listados en Excel o PDF.', abrir:()=>abrirImportExport() }
       ] },
     { id:'empresas', icono:'🏢', clase:'empresa', titulo:'Empresas',
-      desc:'Dónde hacen la práctica: empresas, cupos disponibles y solicitudes de aprendices.',
+      desc:'Dónde hacen la práctica, en orden: primero las empresas y sus cupos, luego los lugares que consiguen los estudiantes, el contrato de aprendizaje y los cambios durante la práctica.',
       funciones:[
-        { icono:'✅', clase:'empresa', titulo:'Empresas por confirmar', mod:'emp_cupos', desc:'Lugares que consiguieron los estudiantes de RLP y RAP: cuando el supervisor los declara aptos, crea el usuario y contraseña de la empresa. También los casos en coordinación.', abrir:()=>abrirEmpresasConfirmar() },
-        { icono:'📋', clase:'empresa', titulo:'Empresas de RLP y RAP', mod:'emp_cupos', desc:'Consulta todas las empresas que consiguieron los estudiantes de RLP y RAP: contacto, estudiante, supervisor y concepto de la visita. Exporta a Excel o PDF.', abrir:()=>abrirEmpresasRlpRap() },
-        { icono:'🔄', clase:'empresa', titulo:'Cambios de empresa', mod:['est_registrados','sup_asignar'], desc:'Solicitudes de los estudiantes para cambiar de empresa (todas las modalidades): opina, aprueba o rechaza.', abrir:()=>abrirCambiosEmpresa() },
-        { icono:'🏢', clase:'empresa', titulo:'Empresas y cupos', mod:'emp_cupos', desc:'Administra los datos de cada empresa, sus cupos por programa y jornada, y su usuario de acceso.', abrir:()=>goAdminModule('empresas') },
-        { icono:'🤝', clase:'empresa', titulo:'Empresas de contrato de aprendizaje', mod:'emp_ca', desc:'Aprueba empresas (plataforma SENA), crea sus accesos y enlázalas con Empresas.', abrir:caTab('emp') },
-        { icono:'📝', clase:'empresa', titulo:'Solicitudes de aprendices', mod:'emp_solicitudes', desc:'Revisa lo que pide cada empresa y apruébalo, ciérralo o elimínalo.', abrir:caTab('ofe') },
-        { icono:'⇅', clase:'administrador', titulo:'Importar / exportar empresas', mod:'emp_importexport', desc:'Carga masiva desde Excel, con cupos y empresas de contrato de aprendizaje.', abrir:()=>abrirImportExport() }
+        { icono:'🏢', clase:'empresa', paso:1, etapa:'Base: empresas y cupos (prácticas no remuneradas)', titulo:'Empresas y cupos', mod:'emp_cupos', desc:'Administra los datos de cada empresa, sus cupos por programa y jornada, y su usuario de acceso.', abrir:()=>goAdminModule('empresas') },
+        { icono:'✅', clase:'empresa', paso:2, etapa:'Lugares que consiguen los estudiantes (RLP y RAP)', titulo:'Empresas por confirmar', mod:'emp_cupos', desc:'Lugares que consiguieron los estudiantes de RLP y RAP: cuando el supervisor los declara aptos, crea el usuario y contraseña de la empresa. También los casos en coordinación.', abrir:()=>abrirEmpresasConfirmar() },
+        { icono:'📋', clase:'empresa', paso:3, etapa:'Lugares que consiguen los estudiantes (RLP y RAP)', titulo:'Empresas de RLP y RAP', mod:'emp_cupos', desc:'Consulta todas las empresas que consiguieron los estudiantes de RLP y RAP: contacto, estudiante, supervisor y concepto de la visita. Exporta a Excel o PDF.', abrir:()=>abrirEmpresasRlpRap() },
+        { icono:'🤝', clase:'empresa', paso:4, etapa:'Contrato de aprendizaje', titulo:'Empresas de contrato de aprendizaje', mod:'emp_ca', desc:'Aprueba empresas (plataforma SENA), crea sus accesos y enlázalas con Empresas.', abrir:caTab('emp') },
+        { icono:'📝', clase:'empresa', paso:5, etapa:'Contrato de aprendizaje', titulo:'Solicitudes de aprendices', mod:'emp_solicitudes', desc:'Revisa lo que pide cada empresa y apruébalo, ciérralo o elimínalo.', abrir:caTab('ofe') },
+        { icono:'🔄', clase:'empresa', paso:6, etapa:'Durante la práctica', titulo:'Cambios de empresa', mod:['est_registrados','sup_asignar'], desc:'Solicitudes de los estudiantes para cambiar de empresa (todas las modalidades): opina, aprueba o rechaza.', abrir:()=>abrirCambiosEmpresa() },
+        { icono:'⇅', clase:'administrador', etapa:'Herramientas', titulo:'Importar / exportar empresas', mod:'emp_importexport', desc:'Carga masiva desde Excel, con cupos y empresas de contrato de aprendizaje.', abrir:()=>abrirImportExport() }
       ] },
     { id:'supervisores', icono:'👤', clase:'supervisor', titulo:'Supervisión',
       desc:'Quienes acompañan la práctica y el registro de sus visitas.',
