@@ -34,32 +34,32 @@
         { icono:'⇅', clase:'administrador', etapa:'Herramientas', titulo:'Importar / exportar empresas', mod:'emp_importexport', desc:'Carga masiva desde Excel, con cupos y empresas de contrato de aprendizaje.', abrir:()=>abrirImportExport() }
       ] },
     { id:'supervisores', icono:'👤', clase:'supervisor', titulo:'Supervisión',
-      desc:'Quienes acompañan la práctica y el registro de sus visitas.',
+      desc:'Quienes acompañan la práctica, en orden: primero las personas, luego las visitas y su reporte.',
       funciones:[
-        { icono:'🧭', clase:'supervisor', paso:1, titulo:'Visitas por asignar', mod:'sup_asignar', desc:'Estudiantes de RAP y RLP aprobados que esperan supervisor. Asigna cada visita; el estudiante queda bloqueado para los demás.', abrir:()=>abrirVisitasAsignar() },
-        { icono:'S', clase:'supervisor', titulo:'Usuarios de supervisores', mod:'sup_usuarios', desc:'Crea y administra los accesos de los supervisores institucionales.', abrir:()=>goAdminModule('supervisor') },
-        { icono:'P', clase:'supervisor', titulo:'Usuarios de profesores', mod:'sup_usuarios', desc:'Crea los accesos de los profesores que califican a los estudiantes cuando la empresa no registra las notas.', abrir:()=>abrirProfesoresAdmin() },
-        { icono:'📋', clase:'empresa', titulo:'Reporte de visitas', mod:'sup_reporte', desc:'Consulta una fila por visita: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.', abrir:()=>goAdminModule('reporte') },
-        { icono:'⇅', clase:'administrador', titulo:'Importar / exportar supervisores', mod:'sup_importexport', desc:'Crea supervisores desde Excel y descarga el listado.', abrir:()=>abrirImportExport() }
+        { icono:'S', clase:'supervisor', paso:1, etapa:'Preparar a quienes acompañan', titulo:'Usuarios de supervisores', mod:'sup_usuarios', desc:'Crea y administra los accesos de los supervisores institucionales.', abrir:()=>goAdminModule('supervisor') },
+        { icono:'P', clase:'supervisor', paso:2, etapa:'Preparar a quienes acompañan', titulo:'Usuarios de profesores', mod:'sup_usuarios', desc:'Crea los accesos de los profesores que califican a los estudiantes cuando la empresa no registra las notas.', abrir:()=>abrirProfesoresAdmin() },
+        { icono:'🧭', clase:'supervisor', paso:3, etapa:'Durante la práctica', titulo:'Visitas por asignar', mod:'sup_asignar', desc:'Estudiantes de RAP y RLP aprobados que esperan supervisor. Asigna cada visita; el estudiante queda bloqueado para los demás.', abrir:()=>abrirVisitasAsignar() },
+        { icono:'📋', clase:'empresa', paso:4, etapa:'Durante la práctica', titulo:'Reporte de visitas', mod:'sup_reporte', desc:'Consulta una fila por visita: supervisor, fecha, estudiante, modalidad, empresa y jefe inmediato.', abrir:()=>goAdminModule('reporte') },
+        { icono:'⇅', clase:'administrador', etapa:'Herramientas', titulo:'Importar / exportar supervisores', mod:'sup_importexport', desc:'Crea supervisores desde Excel y descarga el listado.', abrir:()=>abrirImportExport() }
       ] },
     { id:'practica', icono:'🗂', clase:'supervisor', titulo:'Configurar la práctica',
-      desc:'Lo que define cómo funciona la práctica: programas, modalidades, documentos que se piden y forma de calificar.',
+      desc:'Lo que define cómo funciona la práctica, en orden: qué se ofrece, qué documentos se piden y cómo se califica.',
       funciones:[
-        { icono:'📚', clase:'supervisor', titulo:'Programas', mod:'adm_programas', desc:'Crea y elimina los programas o técnicos laborales de cada área.', abrir:()=>goAdminModule('programas') },
-        { icono:'🗂', clase:'supervisor', titulo:'Modalidades', mod:'adm_modalidades', desc:'Agrega o cambia las modalidades y define cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
-        { icono:'📑', clase:'supervisor', titulo:'Documentos por modalidad', mod:'adm_modalidades', desc:'Define qué PDF debe subir el estudiante en cada modalidad, si es obligatorio y su peso máximo.', abrir:()=>abrirDocsModalidad() },
-      { icono:'☑️', clase:'supervisor', titulo:'Documentos por programa', mod:'adm_modalidades', desc:'Marca con una lista de chequeo qué documentos debe subir el estudiante según su programa.', abrir:()=>abrirDocsPrograma() },
-        { icono:'📊', clase:'empresa', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crea, ordena o modifica los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
+        { icono:'📚', clase:'supervisor', paso:1, etapa:'Qué se ofrece', titulo:'Programas', mod:'adm_programas', desc:'Crea y elimina los programas o técnicos laborales de cada área.', abrir:()=>goAdminModule('programas') },
+        { icono:'🗂', clase:'supervisor', paso:2, etapa:'Qué se ofrece', titulo:'Modalidades', mod:'adm_modalidades', desc:'Agrega o cambia las modalidades y define cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
+        { icono:'📑', clase:'supervisor', paso:3, etapa:'Qué documentos se piden', titulo:'Documentos por modalidad', mod:'adm_modalidades', desc:'Define qué PDF debe subir el estudiante en cada modalidad, si es obligatorio y su peso máximo.', abrir:()=>abrirDocsModalidad() },
+        { icono:'☑️', clase:'supervisor', paso:4, etapa:'Qué documentos se piden', titulo:'Documentos por programa', mod:'adm_modalidades', desc:'Marca con una lista de chequeo qué documentos debe subir el estudiante según su programa.', abrir:()=>abrirDocsPrograma() },
+        { icono:'📊', clase:'empresa', paso:5, etapa:'Cómo se califica', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crea, ordena o modifica los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
       ] },
     { id:'seguridad', icono:'🔐', clase:'administrador', titulo:'Personas y seguridad',
-      desc:'Quién puede entrar, qué puede hacer cada rol y el registro de lo que ocurre en el sistema.',
+      desc:'Quién puede entrar y qué puede hacer cada rol, las fechas y firmas del sistema, y el registro de lo que ocurre.',
       funciones:[
-        { icono:'Ad', clase:'administrador', titulo:'Personal y roles', mod:'solo_admin', desc:'Crea al personal (administradores, coordinadores, asistentes) y asígnale su rol.', abrir:()=>goAdminModule('administradores') },
-        { icono:'✍️', clase:'administrador', titulo:'Firma de la carta de fechas', mod:'solo_admin', desc:'Cambia el nombre, cargo, teléfono y correo que firman la carta de fechas.', abrir:()=>abrirFirmaCarta() },
-        { icono:'📅', clase:'administrador', titulo:'Calendario de plazos', mod:'solo_admin', desc:'Define las fechas de apertura y cierre del registro de documentos, la formalización del contrato y las notas.', abrir:()=>abrirPlazosAdmin() },
-        { icono:'🔑', clase:'administrador', titulo:'Roles y permisos', mod:'solo_admin', desc:'Activa o desactiva las funciones que puede usar cada rol.', abrir:()=>abrirPermisos() },
-        { icono:'🛡', clase:'administrador', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Mira quién creó, cambió, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() },
-        { icono:'🟢', clase:'administrador', titulo:'Quién está en línea', mod:'solo_admin', desc:'Mira en tiempo real quién tiene la plataforma abierta: personal, estudiantes, empresas, supervisores y profesores.', abrir:()=>abrirEnLinea() }
+        { icono:'Ad', clase:'administrador', paso:1, etapa:'Personas y permisos', titulo:'Personal y roles', mod:'solo_admin', desc:'Crea al personal (administradores, coordinadores, asistentes) y asígnale su rol.', abrir:()=>goAdminModule('administradores') },
+        { icono:'🔑', clase:'administrador', paso:2, etapa:'Personas y permisos', titulo:'Roles y permisos', mod:'solo_admin', desc:'Activa o desactiva las funciones que puede usar cada rol.', abrir:()=>abrirPermisos() },
+        { icono:'📅', clase:'administrador', paso:3, etapa:'Fechas y firmas del sistema', titulo:'Calendario de plazos', mod:'solo_admin', desc:'Define las fechas de apertura y cierre del registro de documentos, la formalización del contrato y las notas.', abrir:()=>abrirPlazosAdmin() },
+        { icono:'✍️', clase:'administrador', paso:4, etapa:'Fechas y firmas del sistema', titulo:'Firma de la carta de fechas', mod:'solo_admin', desc:'Cambia el nombre, cargo, teléfono y correo que firman la carta de fechas.', abrir:()=>abrirFirmaCarta() },
+        { icono:'🟢', clase:'administrador', paso:5, etapa:'Vigilancia y control', titulo:'Quién está en línea', mod:'solo_admin', desc:'Mira en tiempo real quién tiene la plataforma abierta: personal, estudiantes, empresas, supervisores y profesores.', abrir:()=>abrirEnLinea() },
+        { icono:'🛡', clase:'administrador', paso:6, etapa:'Vigilancia y control', titulo:'Auditoría del sistema', mod:'solo_admin', desc:'Mira quién creó, cambió, eliminó o ingresó información: fecha, hora, usuario y actividad.', abrir:()=>abrirAuditoria() }
       ] },
     { id:'informes', icono:'📈', clase:'administrador', titulo:'Informes y reportes',
       desc:'Cruza la información de estudiantes, empresas, cupos, supervisores, formalización y notas, y preséntala como informe en PDF o Excel.',
