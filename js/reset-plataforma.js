@@ -39,6 +39,10 @@ function rpAbrir(){
       <div class="section-bar" style="background:var(--danger);margin-top:18px;">3 · Confirmación</div>
       <div class="field" style="max-width:420px"><label>Escribe exactamente: <b>REINICIAR PLATAFORMA</b></label><input id="rpFrase" autocomplete="off" oninput="rpValidar()"></div>
       <label class="lista-chk" style="margin:6px 0 12px"><input type="checkbox" id="rpEntiendo" onchange="rpValidar()"> Entiendo que esta acción no se puede deshacer.</label>
+      <div class="section-bar" style="background:var(--danger);margin-top:18px;">4 · Código de seguridad</div>
+      <p class="helptext">Por seguridad, solo la administradora principal puede reiniciar. Pide un código: llegará a tu correo de acceso (vale 10 minutos y sirve una sola vez).</p>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" id="rpBtnCodigo" onclick="rpPedirCodigo()">✉ Enviar código a mi correo</button><span id="rpCodigoEstado" class="helptext" style="margin:0"></span></div>
+      <div class="field" style="max-width:220px;margin-top:8px;"><label>Código de 6 dígitos</label><input id="rpCodigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code" oninput="this.value=this.value.replace(/\\D/g,'');rpValidar()"></div>
       <div id="rpMsg" style="margin:6px 0;font-size:13.5px;"></div>
       <div class="actions-row"><button class="danger" id="rpBtnReset" onclick="rpEjecutar()" disabled>Reiniciar ahora</button></div>
     </div>`);
@@ -46,8 +50,22 @@ function rpAbrir(){
 }
 function rpAlcance(){ const r = document.querySelector('input[name="rpAlcance"]:checked'); return r ? r.value : 'estudiantes'; }
 function rpValidar(){
-  const ok = rpBackupOk && (document.getElementById('rpFrase').value === 'REINICIAR PLATAFORMA') && document.getElementById('rpEntiendo').checked;
+  const ok = rpBackupOk && (document.getElementById('rpFrase').value === 'REINICIAR PLATAFORMA') && document.getElementById('rpEntiendo').checked && /^\d{6}$/.test(document.getElementById('rpCodigo').value);
   document.getElementById('rpBtnReset').disabled = !ok;
+}
+
+async function rpPedirCodigo(){
+  const btn = document.getElementById('rpBtnCodigo'), est = document.getElementById('rpCodigoEstado');
+  btn.disabled = true; est.textContent = 'Enviando…';
+  try{
+    const { data, error } = await sb.functions.invoke('enviar-correo', { body: { action: 'reset_codigo' } });
+    let msg = null;
+    if(error){ msg = error.message; try{ const j = await error.context.json(); if(j && j.error) msg = j.error; }catch(_){} }
+    else if(data && data.error) msg = data.error;
+    if(msg) throw new Error(msg);
+    est.innerHTML = '✅ Código enviado a <b>' + esc((data && data.correo) || 'tu correo') + '</b>. Revisa tu bandeja (y el spam).';
+  }catch(e){ est.innerHTML = '<span style="color:var(--danger)">' + esc(e.message || e) + '</span>'; }
+  setTimeout(()=>{ btn.disabled = false; }, 30000);   // evita pulsar sin parar
 }
 
 async function rpRespaldar(){
@@ -102,6 +120,9 @@ async function rpEjecutar(){
   const btn = document.getElementById('rpBtnReset'), msg = document.getElementById('rpMsg');
   btn.disabled = true; msg.innerHTML = '<span style="color:var(--muted)">Reiniciando…</span>';
   try{
+    const v = await sb.rpc('admin_reset_verificar', { p_codigo: document.getElementById('rpCodigo').value });
+    if(v.error) throw new Error(v.error.message);
+    if(!v.data || v.data.ok !== true) throw new Error((v.data && v.data.mensaje) || 'Código incorrecto');
     const { data, error } = await sb.rpc('admin_reset_plataforma', { p_frase: document.getElementById('rpFrase').value, p_alcance: alcance });
     if(error) throw new Error(error.message);
     adminStudentsCache = []; if(typeof empresasCache !== 'undefined') empresasCache = [];
