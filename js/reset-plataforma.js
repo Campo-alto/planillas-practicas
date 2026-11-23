@@ -15,6 +15,7 @@ window.rpMostrarTarjeta = async function(){
     c.setAttribute('data-fn', 'Reiniciar plataforma'); c.setAttribute('data-texto', 'reiniciar plataforma borrar datos empezar de cero');
     c.onclick = rpAbrir;
     c.innerHTML = '<span class="fn-ico">⚠</span><span class="fn-txt"><span class="fn-tit">Reiniciar plataforma</span><span class="fn-desc">Uso excepcional: borra los datos para empezar de cero (exige copia de seguridad y confirmación).</span></span><span class="fn-go" aria-hidden="true">›</span>';
+    if(!document.getElementById('rpEtapa')){ const h = document.createElement('div'); h.className = 'fn-etapa'; h.id = 'rpEtapa'; h.textContent = 'Zona de cuidado'; host.appendChild(h); }
     host.appendChild(c);
   }catch(e){ console.warn('reset:', e); }
 };
