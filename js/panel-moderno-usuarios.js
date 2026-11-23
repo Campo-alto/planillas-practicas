@@ -25,7 +25,7 @@
     const logo = document.querySelector('.brand-logo');
     const n = document.createElement('nav'); n.id = 'pmSide'; n.setAttribute('aria-label', 'Secciones');
     n.innerHTML = '<div class="pm-logo">' + (logo ? '<img src="' + e(logo.getAttribute('src')) + '" alt="Campoalto" width="150" height="39">' : '<b>Campoalto</b>') + '</div>' +
-      '<div class="pm-logo-sub">Educación para el Trabajo y el Desarrollo Humano</div>' +
+      '<div class="pm-logo-sub">Formación para el Trabajo y el Desarrollo Humano</div>' +
       '<div class="pm-user"><div class="pm-av" id="pmAv">U</div><div><div class="pm-un" id="pmUn">Usuario</div><div class="pm-ue"><span class="pm-on"></span><span id="pmRol">En línea</span></div></div></div>' +
       '<div class="pm-nav" id="pmNav"></div><div class="pm-fill"></div>' +
       '<button type="button" class="pm-it" onclick="pmuManual()"><span class="pmu-emo">📘</span><span class="t">Manual</span></button><button type="button" class="pm-it" onclick="pmuAyuda()"><span class="pmu-emo">❔</span><span class="t">Ayuda</span></button><div class="pm-pie">Planillas de prácticas · PPS-GAA-F-006</div>';
