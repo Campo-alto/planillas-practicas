@@ -9,17 +9,18 @@
   // Las funciones están agrupadas por lo que la persona quiere HACER y, en Estudiantes, en el orden real del proceso (paso 1, 2, 3…).
   const GRUPOS = [
     { id:'estudiantes', icono:'🎓', clase:'estudiante', titulo:'Estudiantes',
-      desc:'El camino del estudiante, en orden: primero su acceso, luego su solicitud de práctica y después su seguimiento.',
+      desc:'El camino del estudiante, en orden de principio a fin: primero su ingreso y modalidad, luego su seguimiento y, al final, su siguiente práctica.',
       funciones:[
-        { icono:'📨', clase:'estudiante', paso:1, titulo:'Solicitudes de acceso', mod:'est_registrados', desc:'Aprueba quién puede ingresar. Al aprobar, el estudiante recibe su usuario y contraseña por correo.', abrir:()=>abrirSolicitudes() },
-        { icono:'📂', clase:'estudiante', paso:2, titulo:'Solicitudes de práctica', mod:'est_registrados', desc:'Revisa la modalidad, los datos y los documentos en PDF; aprueba, devuelve o rechaza.', abrir:()=>abrirSolicitudesPractica() },
-        { icono:'🩺', clase:'estudiante', titulo:'Inasistencias reportadas', mod:'est_registrados', desc:'Revisa las inasistencias que reportan estudiantes y empresas, con sus incapacidades en PDF; márcalas justificadas o no.', abrir:()=>abrirInasistencias() },
-        { icono:'📝', clase:'estudiante', titulo:'Actas de comité', mod:'est_registrados', desc:'Acta para casos especiales de un estudiante: firman la empresa y todos los participantes; se envía por correo y queda archivada con sus planillas.', abrir:()=>abrirActas() },
-        { icono:'🎓', clase:'estudiante', paso:3, titulo:'Estudiantes registrados', mod:'est_registrados', desc:'Consulta a cada estudiante, su planilla, sus notas y su estado. También puedes crear o inhabilitar.', abrir:()=>goRole('administrador') },
-        { icono:'📤', clase:'estudiante', titulo:'Notas por subir al sistema', mod:'est_registrados', desc:'Estudiantes con meses ya calificados cuya nota todavía no se ha subido al sistema. Márcalas cuando las subas.', abrir:()=>abrirNotasPorSubir() },
-        { icono:'🤝', clase:'empresa', paso:4, titulo:'Contrato de aprendizaje', mod:'est_contrato', desc:'Verifica pagos, declara aptos, sigue los procesos y confirma contrataciones.', abrir:()=>caAbrirAdmin() },
-        { icono:'👥', clase:'empresa', titulo:'Contrato de aprendizaje · Convenio', mod:'est_contrato', desc:'Grupos de estudiantes ya aceptados por una empresa: preinscribe (Excel o manual), envía las cartas de fechas, formaliza y habilita las planillas, que también salen por correo.', abrir:()=>abrirConvenios() },
-        { icono:'⇅', clase:'administrador', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Sube estudiantes desde Excel y descarga listados en Excel o PDF.', abrir:()=>abrirImportExport() }
+        { icono:'📨', clase:'estudiante', paso:1, etapa:'Ingreso y modalidad', titulo:'Solicitudes de acceso', mod:'est_registrados', desc:'Aprueba quién puede ingresar. Al aprobar, el estudiante recibe su usuario y contraseña por correo.', abrir:()=>abrirSolicitudes() },
+        { icono:'📂', clase:'estudiante', paso:2, etapa:'Ingreso y modalidad', titulo:'Solicitudes de práctica', mod:'est_registrados', desc:'Revisa la modalidad, los datos y los documentos en PDF; aprueba, devuelve o rechaza.', abrir:()=>abrirSolicitudesPractica() },
+        { icono:'🤝', clase:'empresa', paso:3, etapa:'Contrato de aprendizaje (solo estudiantes de esa modalidad)', titulo:'Contrato de aprendizaje', mod:'est_contrato', desc:'Verifica pagos, declara aptos, sigue los procesos y confirma contrataciones.', abrir:()=>caAbrirAdmin() },
+        { icono:'👥', clase:'empresa', paso:4, etapa:'Contrato de aprendizaje (solo estudiantes de esa modalidad)', titulo:'Contrato de aprendizaje · Convenio', mod:'est_contrato', desc:'Grupos de estudiantes ya aceptados por una empresa: preinscribe (Excel o manual), envía las cartas de fechas, formaliza y habilita las planillas, que también salen por correo.', abrir:()=>abrirConvenios() },
+        { icono:'🎓', clase:'estudiante', paso:5, etapa:'Seguimiento durante la práctica', titulo:'Estudiantes registrados', mod:'est_registrados', desc:'Consulta a cada estudiante, su planilla, sus notas y su estado. También puedes crear o inhabilitar.', abrir:()=>goRole('administrador') },
+        { icono:'🩺', clase:'estudiante', paso:6, etapa:'Seguimiento durante la práctica', titulo:'Inasistencias reportadas', mod:'est_registrados', desc:'Revisa las inasistencias que reportan estudiantes y empresas, con sus incapacidades en PDF; márcalas justificadas o no.', abrir:()=>abrirInasistencias() },
+        { icono:'📤', clase:'estudiante', paso:7, etapa:'Seguimiento durante la práctica', titulo:'Notas por subir al sistema', mod:'est_registrados', desc:'Estudiantes con meses ya calificados cuya nota todavía no se ha subido al sistema. Márcalas cuando las subas.', abrir:()=>abrirNotasPorSubir() },
+        { icono:'🔁', clase:'estudiante', paso:8, etapa:'Al terminar la práctica y casos especiales', titulo:'Siguientes prácticas', mod:'est_registrados', desc:'Estudiantes cuya práctica terminó y piden la siguiente (p. ej. Enfermería cada 2 meses): revisa solo los documentos que se renuevan y aprueba. Luego el estudiante elige su nuevo sitio.', abrir:()=>abrirRotaciones() },
+        { icono:'📝', clase:'estudiante', paso:9, etapa:'Al terminar la práctica y casos especiales', titulo:'Actas de comité', mod:'est_registrados', desc:'Acta para casos especiales de un estudiante: firman la empresa y todos los participantes; se envía por correo y queda archivada con sus planillas.', abrir:()=>abrirActas() },
+        { icono:'⇅', clase:'administrador', etapa:'Herramientas', titulo:'Importar / exportar estudiantes', mod:'est_importexport', desc:'Sube estudiantes desde Excel y descarga listados en Excel o PDF.', abrir:()=>abrirImportExport() }
       ] },
     { id:'empresas', icono:'🏢', clase:'empresa', titulo:'Empresas',
       desc:'Dónde hacen la práctica: empresas, cupos disponibles y solicitudes de aprendices.',
@@ -105,6 +106,7 @@
   const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   window.pgFiltrar = function(v){
     pgBusca = norm(v).trim();
+    document.querySelectorAll('#grupoGrid .fn-etapa').forEach(h=>{ h.style.display = pgBusca ? 'none' : ''; });
     let total = 0;
     document.querySelectorAll('#grupoGrid .fn-seccion').forEach(sec=>{
       let n = 0;
@@ -132,13 +134,16 @@
     grid.innerHTML = `<div class="fn-buscar"><input type="search" id="fnBuscar" placeholder="🔍  Buscar una función… (ej. correo, documentos, empresa)" autocomplete="off" aria-label="Buscar una función" value="${e(pgBusca)}" oninput="pgFiltrar(this.value)"></div>` +
       visibles.map(({g,fs})=>`<section class="fn-seccion ${g.clase}" id="grupoSec-${g.id}">
         <div class="fn-sec-cab"><span class="fn-sec-ico">${g.icono}</span><div><h3>${g.titulo}</h3><p>${g.desc}</p></div></div>
-        <div class="fn-grid" id="grupoCards-${g.id}">${fs.map(([f,i])=>`<button type="button" class="fn-card ${f.clase}" data-fn="${e(f.titulo)}" data-texto="${e(f.titulo + ' ' + f.desc + ' ' + g.titulo)}" onclick="pgAbrirFuncion('${g.id}',${i})">
+        <div class="fn-grid" id="grupoCards-${g.id}">${fs.map(([f,i],k)=>(f.etapa && (k === 0 || fs[k-1][0].etapa !== f.etapa) ? `<div class="fn-etapa">${f.etapa}</div>` : '') + `<button type="button" class="fn-card ${f.clase}" data-fn="${e(f.titulo)}" data-texto="${e(f.titulo + ' ' + f.desc + ' ' + g.titulo)}" onclick="pgAbrirFuncion('${g.id}',${i})">
             <span class="fn-ico">${f.icono}</span>
             <span class="fn-txt"><span class="fn-tit">${f.paso ? `<span class="fn-paso">Paso ${f.paso}</span>` : ''}${f.titulo}<span class="fn-badge"></span></span><span class="fn-desc">${f.desc}</span></span>
             <span class="fn-go" aria-hidden="true">›</span></button>`).join('')}</div></section>`).join('') +
       '<div class="note-box" id="fnVacio" style="display:none;">Ninguna función coincide con tu búsqueda.</div>';
     if(pgBusca) pgFiltrar(pgBusca);
   }
+  (function(){ const st = document.createElement('style');
+    st.textContent = '.fn-etapa{grid-column:1/-1;margin:10px 2px 0;padding-bottom:4px;font:700 12.5px/1.3 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#4A6468;border-bottom:1px solid rgba(0,0,0,.08);} .fn-etapa:first-child{margin-top:0;}';
+    document.head.appendChild(st); })();
   construirHub();
   // Cada vez que se muestra el panel: se cargan los permisos del rol, se pintan las funciones y se revisa si el servidor permite el reinicio
   const _showScreen = showScreen;
