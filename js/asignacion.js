@@ -446,7 +446,8 @@ async function renderAsignacionEstudiante(){
       el.innerHTML = aviso + '<div class="note-box">🔒 La ubicación en sitios de práctica no está habilitada en este momento.'+fechas+'</div>';
       return;
     }
-    const cab = aviso + `<table class="asig-tabla asig-mini"><tbody><tr><th scope="row">Programa</th><td>${esc(data.programa)}</td><th scope="row">Jornada</th><td>${esc(data.jornada)}</td></tr></tbody></table><p class="helptext" style="margin-top:8px;text-align:justify;">Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>`;
+    const cab = aviso + `<table class="asig-tabla asig-mini"><tbody><tr><th scope="row">Programa</th><td>${esc(data.programa)}</td><th scope="row">Jornada</th><td>${esc(data.jornada)}</td></tr></tbody></table><p class="helptext" style="margin-top:8px;text-align:justify;">Elige con cuidado: una vez tomes un cupo, solo la administración puede cambiarlo (si quieres cambiar de lugar, avísale a la administración).</p>
+      <div class="note-box" role="alert" style="margin-top:10px;border-left:4px solid #d97706;background:#fff7ed;color:#7c2d12;">⚠️ <b>Los cupos son limitados.</b> Si no tomas uno de los cupos disponibles, puede que cuando intentes hacerlo otros estudiantes ya lo hayan tomado. Si eso pasa, te avisaremos aquí (🔔) y por correo.</div>`;
     if(lista.length===0){ el.innerHTML = cab + '<div class="note-box">Por ahora no hay cupos disponibles para tu programa y jornada. Vuelve a revisar más tarde.</div>'; return; }
     const rows = lista.map(c=>`<tr>
       <td><b>${esc(c.empresa)}</b>${c.requisitos?'<details style="margin-top:4px;font-size:12px;"><summary style="cursor:pointer;color:var(--muted);">Ver requisitos</summary>'+esc(c.requisitos)+'</details>':''}</td>
@@ -454,7 +455,7 @@ async function renderAsignacionEstudiante(){
       <td>${esc(c.telefono||'—')}</td>
       <td>${esc(c.dias||'—')}${c.horario?'<br><span style="color:var(--muted);font-size:11.5px;">'+esc(c.horario)+'</span>':''}</td>
       <td style="white-space:pre-wrap;text-align:justify;">${esc(c.funciones||'—')}</td>
-      <td><b style="color:var(--teal-dark);">${c.disponibles}</b> de ${c.total}</td>
+      <td><b style="color:${c.disponibles<=2?'#b45309':'var(--teal-dark)'};">${c.disponibles}</b> de ${c.total}${c.disponibles<=2?'<br><span style="color:#b45309;font-size:11.5px;font-weight:600;">¡Últimos cupos!</span>':''}</td>
       <td><button class="primary" style="padding:6px 12px;font-size:12.5px;" onclick="tomarCupo('${c.id}', this)">Tomar cupo</button></td>
     </tr>`).join('');
     el.innerHTML = cab + `<table class="students-list asig-cupos"><thead><tr><th>Empresa</th><th>Dirección</th><th>Teléfono</th><th>Días y horario</th><th>Funciones a desempeñar</th><th>Cupos disponibles</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -465,6 +466,7 @@ async function tomarCupo(cupoId, btn){
   if(btn) btn.disabled = true;
   const { data, error } = await sb.rpc('tomar_cupo', { p_token: state.token, p_cupo_id: cupoId });
   if(error){ toast(errMsg(error), true); renderAsignacionEstudiante(); return; }
+  if(data && data.tomado){ toast(data.mensaje || 'Ese cupo ya fue tomado por otro estudiante. Elige otro.', true); renderAsignacionEstudiante(); return; }
   toast('Cupo asignado: '+data.empresa);
   renderAsignacionEstudiante();
 }
