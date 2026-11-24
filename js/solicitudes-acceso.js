@@ -47,8 +47,9 @@ async function saConsultar(){
       const aviso = s.estado === 'pendiente' && s.ya_existe ? '<div class="aud-ref" style="color:#8A5A00;">Ya existe en la plataforma' + (s.tiene_acceso ? ' y ya tiene acceso' : '') + (s.correo_actual && s.correo_actual.toLowerCase() !== s.correo.toLowerCase() ? ' · correo registrado: ' + esc(s.correo_actual) : '') + '</div>' : '';
       const est = s.estado === 'aprobada' ? '<span class="cor-est cor-enviado">Aprobada</span>' : s.estado === 'rechazada' ? '<span class="cor-est cor-error">Rechazada</span>' : '<span class="cor-est cor-pendiente">Pendiente</span>';
       const det = [s.sede && 'Sede: ' + s.sede, s.semestre && 'Semestre: ' + s.semestre, s.modalidad && 'Modalidad: ' + s.modalidad, s.periodo && 'Periodo: ' + s.periodo, s.jornada && 'Jornada: ' + s.jornada].filter(Boolean).join(' · ');
+      const ext = (Array.isArray(s.extras) ? s.extras : []).map(x=>esc(x.e) + ': <b>' + esc(x.v) + '</b>').join(' · ');
       return `<tr><td class="aud-nw">${f(s.creado)}</td>
-        <td><b>${esc(s.apellidos + ' ' + s.nombres)}</b><br><span class="aud-ref">Doc. ${esc(s.documento)}</span>${det ? '<div class="aud-ref">' + esc(det) + '</div>' : ''}${aviso}</td>
+        <td><b>${esc(s.apellidos + ' ' + s.nombres)}</b><br><span class="aud-ref">Doc. ${esc(s.documento)}</span>${det ? '<div class="aud-ref">' + esc(det) + '</div>' : ''}${ext ? '<div class="aud-ref" style="color:#0E5C63;">' + ext + '</div>' : ''}${aviso}</td>
         <td>${esc(s.correo)}${s.telefono ? '<br><span class="aud-ref">' + esc(s.telefono) + '</span>' : ''}</td>
         <td>${est}${s.estado !== 'pendiente' ? '<div class="aud-ref">' + esc(s.resuelto_por || '') + ' · ' + f(s.resuelto_en) + (s.motivo ? '<br>Motivo: ' + esc(s.motivo) : '') + '</div>' : ''}</td>
         <td class="aud-nw">${s.estado === 'pendiente' ? `<button class="primary" style="padding:5px 10px;font-size:12px;" onclick="saAprobar(${i},this)">Aprobar</button> <button class="danger" style="padding:5px 10px;font-size:12px;" onclick="saRechazar(${i},this)">Rechazar</button>` : ''}</td></tr>`;
