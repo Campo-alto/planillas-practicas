@@ -122,8 +122,8 @@ async function piFichaPintar(){
   let w = document.getElementById('piFicha');
   if(!Array.isArray(d) || !d.length){ if(w) w.remove(); return; }
   if(!w){ w = document.createElement('div'); w.id = 'piFicha'; box.insertAdjacentElement('beforebegin', w); }
-  w.innerHTML = '<div class="card" style="margin:10px 0;"><b>📝 Datos de la preinscripción</b><div style="margin-top:6px;font-size:13.5px;">' +
-    d.map(x=>'<div><span class="aud-ref">' + piE(x.e) + ':</span> <b>' + piE(x.v) + '</b></div>').join('') + '</div></div>';
+  w.innerHTML = '<div class="card" style="margin:10px 0;"><b>📝 Datos de la preinscripción</b><div class="sa-datos">' +
+    d.map(x=>'<div class="sa-dato"><span>' + piE(x.e) + '</span><b>' + piE(x.v) + '</b></div>').join('') + '</div></div>';
 }
 if(typeof renderAdministrador === 'function'){
   const piO = renderAdministrador;
