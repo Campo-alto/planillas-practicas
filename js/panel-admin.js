@@ -47,9 +47,10 @@
       funciones:[
         { icono:'📚', clase:'supervisor', paso:1, etapa:'Qué se ofrece', titulo:'Programas', mod:'adm_programas', desc:'Crea y elimina los programas o técnicos laborales de cada área.', abrir:()=>goAdminModule('programas') },
         { icono:'🗂', clase:'supervisor', paso:2, etapa:'Qué se ofrece', titulo:'Modalidades', mod:'adm_modalidades', desc:'Agrega o cambia las modalidades y define cuántos meses dura cada una.', abrir:()=>abrirModalidades() },
-        { icono:'📑', clase:'supervisor', paso:3, etapa:'Qué documentos se piden', titulo:'Documentos por modalidad', mod:'adm_modalidades', desc:'Define qué PDF debe subir el estudiante en cada modalidad, si es obligatorio y su peso máximo.', abrir:()=>abrirDocsModalidad() },
-        { icono:'☑️', clase:'supervisor', paso:4, etapa:'Qué documentos se piden', titulo:'Documentos por programa', mod:'adm_modalidades', desc:'Marca con una lista de chequeo qué documentos debe subir el estudiante según su programa.', abrir:()=>abrirDocsPrograma() },
-        { icono:'📊', clase:'empresa', paso:5, etapa:'Cómo se califica', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crea, ordena o modifica los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
+        { icono:'📝', clase:'supervisor', paso:3, etapa:'Qué datos se piden', titulo:'Formulario de preinscripción', mod:'adm_modalidades', desc:'Agrega, cambia, ordena o quita los datos que pide la solicitud de acceso, por ejemplo la fecha de nacimiento.', abrir:()=>abrirPreinscripcion() },
+        { icono:'📑', clase:'supervisor', paso:4, etapa:'Qué documentos se piden', titulo:'Documentos por modalidad', mod:'adm_modalidades', desc:'Define qué PDF debe subir el estudiante en cada modalidad, si es obligatorio y su peso máximo.', abrir:()=>abrirDocsModalidad() },
+        { icono:'☑️', clase:'supervisor', paso:5, etapa:'Qué documentos se piden', titulo:'Documentos por programa', mod:'adm_modalidades', desc:'Marca con una lista de chequeo qué documentos debe subir el estudiante según su programa.', abrir:()=>abrirDocsPrograma() },
+        { icono:'📊', clase:'empresa', paso:6, etapa:'Cómo se califica', titulo:'Rúbrica de calificación', mod:'adm_rubrica', desc:'Crea, ordena o modifica los criterios y niveles con que se califica al estudiante.', abrir:()=>abrirRubricas() }
       ] },
     { id:'seguridad', icono:'🔐', clase:'administrador', titulo:'Personas y seguridad',
       desc:'Quién puede entrar y qué puede hacer cada rol, las fechas y firmas del sistema, y el registro de lo que ocurre.',
