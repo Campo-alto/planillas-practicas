@@ -670,11 +670,24 @@ async function caAdmCrearEmpresa(){
     toast('Empresa guardada'); caAdmPintar(); }catch(e){ caMsg('neMsg', e.message); }
 }
 
+// Funciones de una oferta: lista ordenada con las primeras visibles y el resto plegado
+function caFuncHtml(txt){
+  const t = String(txt || '').trim();
+  if(!t) return '<span class="helptext">Sin funciones</span>';
+  let it = t.split(/\s*[•·▪●◦]\s*|\r?\n+/).map(x=>x.trim()).filter(Boolean);
+  if(it.length < 2) it = t.split(/(?<=[.;])\s+(?=[A-ZÁÉÍÓÚÑ])/).map(x=>x.trim()).filter(Boolean);
+  if(it.length < 2) return '<div class="ca-func-txt">' + esc(t) + '</div>';
+  const N = 3, li = a => a.map(x=>'<li>' + esc(x.replace(/[;.]\s*$/, '')) + '</li>').join('');
+  return '<ul class="ca-func">' + li(it.slice(0, N)) + '</ul>' +
+    (it.length > N ? '<details class="ca-func-mas"><summary>Ver las ' + (it.length - N) + ' restantes</summary><ul class="ca-func">' + li(it.slice(N)) + '</ul></details>' : '') +
+    '<span class="ca-func-n">' + it.length + ' funciones</span>';
+}
+
 function caAdmOfe(){
   const L = caAdmData.ofe; const b = caAdmInfo('caAdmBody');
   if(!L.length){ b.innerHTML = '<p class="helptext">Aún no hay solicitudes de empresas.</p>'; return; }
   b.innerHTML = caExpBar() + `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Cargo / programa</th><th>Funciones</th><th class="cp-c">Cupos</th><th>Estado</th><th>Verificación y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
-    <td class="cp-prog"><b>${esc(x.empresa)}</b><br>${caChip(x.empresa_estado)}</td><td><b>${esc(x.cargo)}</b><br><small>${esc(x.programa)}</small></td><td style="max-width:300px">${esc(x.funciones)}</td><td class="cp-c">${x.cupos}</td><td>${caChip(x.estado)}</td>
+    <td class="cp-prog"><b>${esc(x.empresa)}</b><br>${caChip(x.empresa_estado)}</td><td><b>${esc(x.cargo)}</b><br><small>${esc(x.programa)}</small></td><td class="ca-func-td">${caFuncHtml(x.funciones)}</td><td class="cp-c">${x.cupos}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="of-f-${x.id}" ${x.funciones_ok?'checked':''}> Funciones corresponden al programa</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="of-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
     <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmOfEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmOfEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmOfEstado('${x.id}','cerrada')">Cerrar</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('oferta','${x.id}',false)">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
