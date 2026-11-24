@@ -3,6 +3,7 @@
    la empresa de contrato de aprendizaje y la institución. Requiere notificaciones-ca-etapa34.sql.
    Las notificaciones se leen con la sesión (token) de cada quien: nadie ve las de otro. */
 let ntUltimo = 0, ntLista = [], ntNoLeidas = 0, ntTimer = null;
+let ntSinPermiso = false;
 function ntRol(){
   if(typeof state === 'undefined' || !state) return '';
   if(state.role === 'estudiante' && state.token) return 'est';
@@ -14,9 +15,14 @@ function ntRol(){
 }
 async function ntCargar(avisar){
   const rol = ntRol(); const b = document.getElementById('ntBell');
+  if(ntSinPermiso && rol === 'adm') return;
   if(!rol || typeof sb === 'undefined' || !sb){ if(b) b.style.display = 'none'; return; }
   try{
     const r = rol === 'adm' ? await sb.rpc('admin_notif_mias') : await sb.rpc('notif_mias', { p_token: state.token });
+    if(r.error && (r.error.code === '42501' || /permission denied|permiso denegado/i.test(r.error.message || ''))){
+      // sesión de administración caducada: se deja de consultar hasta que vuelva a iniciar sesión
+      ntSinPermiso = true; if(b) b.style.display = 'none'; return;
+    }
     if(r.error || !r.data) { if(b) b.style.display = 'none'; return; }
     ntLista = r.data.lista || []; ntNoLeidas = r.data.no_leidas || 0;
     const nuevo = ntLista.length ? ntLista[0].id : 0;
@@ -49,7 +55,7 @@ async function ntAbrir(){
 }
 // arranca cuando hay sesión; revisa cada 45 s y después de cada acción
 (function(){
-  const tick = ()=>{ if(ntRol()) ntCargar(true); else { const b = document.getElementById('ntBell'); if(b) b.style.display = 'none'; ntUltimo = 0; } };
+  const tick = ()=>{ if(ntRol()) ntCargar(true); else { const b = document.getElementById('ntBell'); if(b) b.style.display = 'none'; ntUltimo = 0; ntSinPermiso = false; } };
   ntTimer = setInterval(tick, 45000);
   setInterval(()=>{ if(ntRol() && !document.getElementById('ntBell')) ntCargar(false); }, 2000);
   window.addEventListener('focus', tick);
