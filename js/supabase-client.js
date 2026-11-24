@@ -58,6 +58,9 @@ function rowToRecord(row){
     revisionFunciones: row.revision_funciones,
     datosSupervision: row.datos_supervision,
     practicaFinalizada: row.practica_finalizada === true,
+    practicaSuspendida: row.practica_suspendida === true,
+    practicaSuspDesde: row.practica_susp_desde || null,
+    practicaSuspHasta: row.practica_susp_hasta || null,
     practicaFin: row.practica_fin || null,
     practicaEstadoManual: row.practica_estado_manual || null,
     lastUpdated: row.updated_at
