@@ -3,6 +3,13 @@ const pfE = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 function pfFecha(f){ if(!f) return ''; const p = String(f).slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : f; }
 
 function pfBanner(rec, admin){
+  if(rec.practicaSuspendida){
+    const desde = rec.practicaSuspDesde ? ' desde el <b>' + pfE(pfFecha(rec.practicaSuspDesde)) + '</b>' : '';
+    const hasta = rec.practicaSuspHasta ? ' Regreso previsto: <b>' + pfE(pfFecha(rec.practicaSuspHasta)) + '</b>.' : '';
+    return '<div id="pfBanner" style="margin:10px 0;padding:12px 14px;border:1px solid #E3C77E;background:#FFF8EA;border-radius:10px;color:#7A5200;">' +
+      '<b>⏸ Práctica suspendida</b>' + desde + ' — está congelada: por ahora no se pueden cambiar notas, firmas ni datos; todo se puede ver y descargar. La institución la reactiva cuando termine la novedad.' + hasta +
+      (admin ? '' : ' Si tienes dudas, escribe a Servicio al estudiante por el chat de la aplicación.') + '</div>';
+  }
   const fin = rec.practicaFin ? ' Fecha final: <b>' + pfE(pfFecha(rec.practicaFin)) + '</b>.' : '';
   return '<div id="pfBanner" style="margin:10px 0;padding:12px 14px;border:1px solid #D9B3B3;background:#FBEDED;border-radius:10px;color:#7A2E2E;">' +
     '<b>🔒 Práctica finalizada</b> — ya no se pueden cambiar notas, firmas ni datos; todo se puede ver y descargar.' + fin +
@@ -12,7 +19,7 @@ function pfBloquear(idPantalla){
   const sc = document.getElementById(idPantalla); if(!sc) return;
   sc.classList.add('pf-bloq');
   sc.querySelectorAll('input, textarea, select').forEach(el => { if(el.type !== 'hidden' && !el.closest('.pf-exento')) el.disabled = true; });
-  sc.querySelectorAll('button.primary, button.btn-save, [data-pf-guardar]').forEach(b => { if(b.closest('.pf-exento')) return; b.disabled = true; b.title = 'Práctica finalizada'; });
+  sc.querySelectorAll('button.primary, button.btn-save, [data-pf-guardar]').forEach(b => { if(b.closest('.pf-exento')) return; b.disabled = true; b.title = 'Práctica finalizada o suspendida'; });
   sc.querySelectorAll('canvas').forEach(c => { if(c.closest('.pf-exento')) return; c.style.pointerEvents = 'none'; c.style.opacity = '.7'; });
 }
 function pfAplicar(idPantalla, adminBox){
