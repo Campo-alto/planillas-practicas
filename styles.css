@@ -764,3 +764,13 @@ table.cupos-table,table.students-list,table.resumen-table,table.ca-tabla,table.r
 #elPop .el-mas{font-size:12.5px;color:#7a8587;padding:4px 0;}
 #elPop .el-ver{margin-top:10px;width:100%;border:1px solid #BFDDE0;background:#E3F1F2;color:var(--deep,#0A5A62);font:700 13.5px system-ui,sans-serif;padding:9px;border-radius:10px;cursor:pointer;}
 #elPop .el-ver:hover{background:#d3e8ea;}
+
+/* Funciones de las ofertas (contratación): lista ordenada y plegable */
+table.ca-tabla td.ca-func-td{min-width:260px;max-width:380px;vertical-align:top;}
+.ca-func{margin:0;padding-left:18px;font-size:12.5px;line-height:1.45;color:var(--ink,#1F2A28);}
+.ca-func li{margin:0 0 4px;}
+.ca-func-txt{font-size:12.5px;line-height:1.45;}
+.ca-func-mas{margin-top:2px;}
+.ca-func-mas summary{cursor:pointer;color:var(--teal,#0E7C86);font-weight:600;font-size:12px;margin:2px 0 4px -2px;}
+.ca-func-mas[open] summary{margin-bottom:6px;}
+.ca-func-n{display:inline-block;margin-top:4px;font-size:11px;color:#6b7a77;background:#eef3f2;border-radius:10px;padding:1px 8px;}
