@@ -50,7 +50,7 @@ async function vaConsultar(){
       <td><button class="primary" onclick="vaAsignar(${i})">Asignar</button></td></tr>`
     : `<tr>
       <td class="aud-nw">${spaF(f.creado)}${f.cerrada_en ? '<br><span class="aud-ref">Cerrada ' + spaF(f.cerrada_en) + '</span>' : ''}</td>
-      <td><b>${esc(f.nombre || '')}</b><br><span class="aud-ref">Doc. ${esc(f.documento)}</span></td>
+      <td><b>${esc(f.nombre || '')}</b><br><span class="aud-ref">Doc. ${esc(f.documento)}</span><br>${typeof jiContactoHtml === 'function' ? jiContactoHtml(f.jefe) : ''}</td>
       <td>${esc(f.modalidad)}</td><td>${esc(f.sitio || '—')}</td>
       <td><b>${esc(f.supervisor)}</b><br><span class="aud-ref">${esc(f.supervisor_correo)}</span>${f.nota ? '<br><i>' + esc(f.nota) + '</i>' : ''}
         ${vaVista === 'historial' ? '<br>' + (f.estado === 'finalizada' ? '<span class="cor-est cor-enviado">Finalizada</span>' : '<span class="cor-est cor-pendiente">Cancelada</span>') : ''}</td>
