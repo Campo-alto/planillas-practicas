@@ -1,126 +1,115 @@
-/* ============================= SOLICITUDES DE ACCESO (bandeja del encargado) =============================
-   Aquí llegan las solicitudes de los estudiantes. Al APROBAR se crea el estudiante (si no existía), se genera una
-   contraseña temporal y se le envía por correo su usuario y contraseña. Al RECHAZAR se le avisa con el motivo.
-   La contraseña se muestra una sola vez en pantalla y viaja solo en ese correo: nunca se guarda en claro.
-   Requiere solicitudes-acceso-etapa23.sql. Para el correo, correos-etapa21.sql y la función «enviar-correo». */
+/* ============================= SOLICITUD DE ACCESO (lado del estudiante) =============================
+   El estudiante que aún no tiene usuario llena este formulario. La solicitud llega al encargado, y cuando la aprueba
+   el estudiante recibe por correo su usuario y su contraseña. Seguridad: la función de la base de datos valida todo,
+   no revela si un documento ya existe, tiene tope de solicitudes y un campo trampa contra robots. */
+/* El enlace «Solicita tu acceso aquí» se asegura al cargar, al terminar de cargar la página y cada vez que se muestra el ingreso del estudiante */
+function solAsegurarEnlace(){
+  try{
+    const login = document.getElementById('screen-estudiante-login'); if(!login || document.getElementById('solLink')) return;
+    const card = login.querySelector('.card') || login;
+    const p = document.createElement('p'); p.id = 'solLink'; p.className = 'helptext'; p.style.cssText = 'margin-top:12px;';
+    p.innerHTML = '¿Aún no tienes usuario? <a href="#" onclick="solAbrir();return false;"><b>Solicita tu acceso aquí</b></a>.';
+    card.appendChild(p);
+  }catch(_){}
+}
+(function(){
+  solAsegurarEnlace();
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', solAsegurarEnlace);
+  window.addEventListener('load', solAsegurarEnlace);
+  if(typeof showScreen === 'function'){
+    const o = showScreen;
+    showScreen = function(id){ const r = o.apply(this, arguments); if(id === 'screen-estudiante-login') solAsegurarEnlace(); return r; };
+  }
+})();
 
-let saEstado = 'pendiente', saTexto = '', saFilas = [];
-
-function saPantalla(){
-  let el = document.getElementById('screen-admin-solicitudes');
+function solPantalla(){
+  let el = document.getElementById('screen-solicitud-acceso');
   if(!el){
-    const ref = document.getElementById('screen-admin-hub') || document.querySelector('.screen'); if(!ref) return null;
-    el = document.createElement('div'); el.className = 'screen'; el.id = 'screen-admin-solicitudes'; ref.parentNode.appendChild(el);
+    const ref = document.getElementById('screen-estudiante-login'); if(!ref) return null;
+    el = document.createElement('div'); el.className = 'screen'; el.id = 'screen-solicitud-acceso'; ref.parentNode.appendChild(el);
   }
   return el;
 }
-async function abrirSolicitudes(){
-  if(!requireSupabase()) return;
-  const el = saPantalla(); if(!el) return;
-  saEstado = 'pendiente'; saTexto = '';
-  el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
-    <h2 style="margin:12px 0 4px;">Solicitudes de acceso de estudiantes</h2>
-    <p class="helptext" style="text-align:justify;">Los estudiantes piden su usuario desde el ingreso. Al <b>aprobar</b> se crea su acceso y se le envía por correo su usuario y una contraseña temporal (deberá cambiarla al ingresar). Al <b>rechazar</b> se le avisa el motivo.</p>
-    <div class="card">
-      <div class="aud-filtros">
-        <div class="field"><label>Estado</label><select id="saEstado" onchange="saConsultar()"><option value="pendiente">Pendientes</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="">Todas</option></select></div>
-        <div class="field aud-ancho"><label>Buscar (documento, nombre o correo)</label><input type="search" id="saTexto" maxlength="80" onkeydown="if(event.key==='Enter')saConsultar()"></div>
-      </div>
-      <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="saConsultar()">Consultar</button></div>
-      <div id="saResumen" class="lista-cuenta" style="margin-top:10px;"></div>
-      <div id="saTabla"><p style="color:var(--muted)">Cargando…</p></div>
+async function solAbrir(){
+  const el = solPantalla(); if(!el) return;
+  el.innerHTML = `<button class="linkbtn" onclick="showScreen('screen-estudiante-login')">← Volver al ingreso</button>
+    <h2 style="margin:12px 0 4px;">Solicitar mi acceso</h2>
+    <p class="helptext" style="text-align:justify;">Llena tus datos. Tu solicitud llegará a la persona encargada y, cuando la apruebe, recibirás en tu correo tu <b>usuario y tu contraseña</b> para ingresar. Escribe bien tu correo: ahí te llegará la respuesta.</p>
+    <div class="card" id="solCard" style="max-width:720px;">
+      <div class="field-row" id="solCampos"><p class="helptext">Cargando el formulario…</p></div>
+      <div style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden;" aria-hidden="true"><label>No llenar</label><input id="sol-web" tabindex="-1" autocomplete="off"></div>
+      <label style="display:block;margin:10px 0;font-size:13.5px;"><input type="checkbox" id="sol-acepta"> He leído y acepto la <a href="${typeof DP_URL !== 'undefined' ? DP_URL : 'https://campoalto.dataprotected.co'}" target="_blank" rel="noopener noreferrer"><b>política de tratamiento de datos personales</b></a> de Campoalto.</label>
+      <div id="solMsg" style="margin:8px 0;font-size:13.5px;"></div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="primary" id="solEnviar" onclick="solEnviar()">Enviar solicitud</button></div>
     </div>`;
-  showScreen('screen-admin-solicitudes');
-  saConsultar();
-}
-async function saConsultar(){
-  const t = document.getElementById('saTabla'); if(!t) return;
-  saEstado = document.getElementById('saEstado').value; saTexto = document.getElementById('saTexto').value.trim();
-  const { data, error } = await sb.rpc('admin_solicitudes_lista', { p_estado: saEstado || null, p_texto: saTexto || null, p_limite: 200, p_offset: 0 });
-  if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste solicitudes-acceso-etapa23.sql?)</p>'; return; }
-  saFilas = data.filas || []; const r = data.resumen || {};
-  document.getElementById('saResumen').textContent = (r.pendiente||0) + ' pendientes · ' + (r.aprobada||0) + ' aprobadas · ' + (r.rechazada||0) + ' rechazadas' + (data.total > saFilas.length ? ' · mostrando ' + saFilas.length + ' de ' + data.total : '');
-  if(!saFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">No hay solicitudes con estos filtros.</p>'; return; }
-  const f = iso => iso ? new Date(iso).toLocaleString('es-CO', { timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) : '—';
-  t.innerHTML = '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Fecha</th><th>Estudiante</th><th>Correo / teléfono</th><th>Estado</th><th></th></tr></thead><tbody>' +
-    saFilas.map((s,i)=>{
-      const aviso = s.estado === 'pendiente' && s.ya_existe ? '<div class="aud-ref" style="color:#8A5A00;">Ya existe en la plataforma' + (s.tiene_acceso ? ' y ya tiene acceso' : '') + (s.correo_actual && s.correo_actual.toLowerCase() !== s.correo.toLowerCase() ? ' · correo registrado: ' + esc(s.correo_actual) : '') + '</div>' : '';
-      const est = s.estado === 'aprobada' ? '<span class="cor-est cor-enviado">Aprobada</span>' : s.estado === 'rechazada' ? '<span class="cor-est cor-error">Rechazada</span>' : '<span class="cor-est cor-pendiente">Pendiente</span>';
-      const det = [s.sede && 'Sede: ' + s.sede, s.semestre && 'Semestre: ' + s.semestre, s.modalidad && 'Modalidad: ' + s.modalidad, s.periodo && 'Periodo: ' + s.periodo, s.jornada && 'Jornada: ' + s.jornada].filter(Boolean).join(' · ');
-      const ext = (Array.isArray(s.extras) ? s.extras : []).filter(x=>x && String(x.v == null ? '' : x.v).trim() !== '').map(x=>'<div class="sa-dato"><span>' + esc(x.e) + '</span><b>' + esc(x.v) + '</b></div>').join('');
-      return `<tr><td class="aud-nw">${f(s.creado)}</td>
-        <td><b>${esc(s.apellidos + ' ' + s.nombres)}</b><br><span class="aud-ref">Doc. ${esc(s.documento)}</span>${det ? '<div class="aud-ref">' + esc(det) + '</div>' : ''}${ext ? '<div class="sa-datos">' + ext + '</div>' : ''}${aviso}</td>
-        <td>${esc(s.correo)}${s.telefono ? '<br><span class="aud-ref">' + esc(s.telefono) + '</span>' : ''}</td>
-        <td>${est}${s.estado !== 'pendiente' ? '<div class="aud-ref">' + esc(s.resuelto_por || '') + ' · ' + f(s.resuelto_en) + (s.motivo ? '<br>Motivo: ' + esc(s.motivo) : '') + '</div>' : ''}</td>
-        <td class="aud-nw">${s.estado === 'pendiente' ? `<button class="primary" style="padding:5px 10px;font-size:12px;" onclick="saAprobar(${i},this)">Aprobar</button> <button class="danger" style="padding:5px 10px;font-size:12px;" onclick="saRechazar(${i},this)">Rechazar</button>` : ''}</td></tr>`;
-    }).join('') + '</tbody></table></div>';
-}
-function saTextoAprobado(nombre, usuario, clave){
-  return 'Hola ' + nombre + ',\n\nTu solicitud de acceso fue APROBADA. Ya puedes ingresar a la plataforma de Asignación de prácticas del Politécnico Campoalto:\n\n' +
-    'Ingresa en: ' + location.origin + '/\nUsuario: ' + usuario + '\nContraseña temporal: ' + clave +
-    '\n\nAl ingresar por primera vez el sistema te pedirá cambiarla. No compartas esta información.\n\nPolitécnico Campoalto';
-}
-async function saEnviarCorreo(to, asunto, texto){
-  if(typeof correoEnviarItems !== 'function') return 'El envío de correos no está instalado (falta correos.js).';
-  try{ const r = await correoEnviarItems('solicitud', [{ to, asunto, texto }]); return r.errores.length ? r.errores[0].error : null; }
-  catch(e){ return e.message; }
-}
-async function saAprobar(i, btn){
-  const s = saFilas[i]; if(!s) return;
-  if(!confirm('¿Aprobar la solicitud de ' + s.apellidos + ' ' + s.nombres + ' (doc. ' + s.documento + ')?\nSe le enviará su usuario y contraseña a ' + s.correo + '.')) return;
-  btn.disabled = true;
-  let { data, error } = await sb.rpc('admin_solicitud_aprobar', { p_id: s.id, p_confirmar: false });
-  if(!error && data && data.requiere_confirmacion){
-    if(!confirm('ATENCIÓN: ' + data.aviso + '\n\n¿Aprobar de todos modos?')){ btn.disabled = false; return; }
-    ({ data, error } = await sb.rpc('admin_solicitud_aprobar', { p_id: s.id, p_confirmar: true }));
-  }
-  if(error){ btn.disabled = false; toast('No se pudo aprobar: ' + error.message, true); return; }
-  const fallo = await saEnviarCorreo(data.correo, 'Tu acceso a la plataforma de prácticas fue aprobado', saTextoAprobado(data.nombre, data.documento, data.clave));
-  saMostrarResultado(data, fallo);
-  saConsultar();
-}
-function saMostrarResultado(d, fallo){
-  const prev = document.getElementById('corModal'); if(prev) prev.remove();
-  const m = document.createElement('div'); m.id = 'corModal'; m.className = 'cor-modal';
-  m.innerHTML = `<div class="cor-caja" role="dialog" aria-modal="true">
-    <h3 style="margin:0 0 8px;">✅ Solicitud aprobada</h3>
-    <p style="font-size:14px;margin:0 0 8px;">${d.nuevo ? 'Se creó el estudiante y su acceso.' : 'Se activó el acceso del estudiante.'}</p>
-    <div style="background:#EAF6F3;border:1px solid #BFE0D8;border-radius:8px;padding:10px 12px;font-size:14px;">
-      <b>${esc(d.nombre)}</b><br>Usuario: <b>${esc(d.documento)}</b><br>Contraseña temporal: <b style="font-size:16px;letter-spacing:.5px;">${esc(d.clave)}</b></div>
-    <p style="font-size:13.5px;margin:10px 0;">${fallo ? '<span style="color:var(--danger)">⚠ No se pudo enviar el correo (' + esc(fallo) + '). Entrégale estos datos al estudiante por otro medio: no se vuelven a mostrar.</span>' : '✉ Se envió su usuario y contraseña a <b>' + esc(d.correo) + '</b>.'}</p>
-    <div class="actions-row" style="justify-content:flex-end;"><button class="ghost" id="saCopiar">Copiar usuario y contraseña</button><button class="primary" id="saCerrar">Cerrar</button></div></div>`;
-  document.body.appendChild(m);
-  m.querySelector('#saCerrar').onclick = ()=>m.remove();
-  m.querySelector('#saCopiar').onclick = ()=>{ try{ navigator.clipboard.writeText('Usuario: ' + d.documento + '  Contraseña: ' + d.clave); toast('Copiado'); }catch(_){} };
-}
-async function saRechazar(i, btn){
-  const s = saFilas[i]; if(!s) return;
-  const motivo = prompt('Rechazar la solicitud de ' + s.apellidos + ' ' + s.nombres + '.\nEscribe el motivo (se le enviará por correo):', '');
-  if(motivo === null) return;
-  btn.disabled = true;
-  const { data, error } = await sb.rpc('admin_solicitud_rechazar', { p_id: s.id, p_motivo: motivo });
-  if(error){ btn.disabled = false; toast('No se pudo rechazar: ' + error.message, true); return; }
-  const fallo = await saEnviarCorreo(data.correo, 'Respuesta a tu solicitud de acceso', 'Hola ' + data.nombre + ',\n\nTu solicitud de acceso a la plataforma de Asignación de prácticas no pudo ser aprobada.' +
-    (data.motivo ? '\n\nMotivo: ' + data.motivo : '') + '\n\nSi crees que es un error, comunícate con la institución.\n\nPolitécnico Campoalto');
-  toast(fallo ? 'Solicitud rechazada, pero no se pudo enviar el correo: ' + fallo : 'Solicitud rechazada y estudiante notificado', !!fallo);
-  saConsultar();
+  showScreen('screen-solicitud-acceso');
+  solCargarCampos();
 }
 
-/* Marca en el panel cuántas solicitudes hay pendientes */
-(function(){
-  if(typeof showScreen !== 'function') return;
-  const _show = showScreen;
-  showScreen = function(id){
-    _show(id);
-    if(id === 'screen-admin-hub' && typeof sb !== 'undefined' && sb) setTimeout(saMarcarPendientes, 400);
-  };
-})();
-async function saMarcarPendientes(){
+/* ---------- Campos del formulario (los configura la administración: «Formulario de preinscripción») ---------- */
+const SOL_BASE = [
+  { clave:'documento', etiqueta:'Número de documento', tipo:'numero',   obligatorio:true,  ayuda:'', opciones:[], base:true },
+  { clave:'apellidos', etiqueta:'Apellidos',           tipo:'texto',    obligatorio:true,  ayuda:'', opciones:[], base:true },
+  { clave:'nombres',   etiqueta:'Nombres',             tipo:'texto',    obligatorio:true,  ayuda:'', opciones:[], base:true },
+  { clave:'correo',    etiqueta:'Correo electrónico',  tipo:'correo',   obligatorio:true,  ayuda:'', opciones:[], base:true },
+  { clave:'telefono',  etiqueta:'Teléfono',            tipo:'telefono', obligatorio:false, ayuda:'', opciones:[], base:true }
+];
+let solCampos = SOL_BASE.slice(), solUsaExtras = false;
+function solCampoHtml(c){
+  const id = 'sol-' + c.clave, req = c.obligatorio ? ' *' : '';
+  const lab = '<label for="' + id + '">' + esc(c.etiqueta) + req + '</label>';
+  const ay = c.ayuda ? '<small class="helptext" style="display:block;margin-top:3px;">' + esc(c.ayuda) + '</small>' : '';
+  let ctl;
+  if(c.clave === 'documento') ctl = '<input id="' + id + '" inputmode="numeric" maxlength="15" autocomplete="off">';
+  else if(c.clave === 'apellidos') ctl = '<input id="' + id + '" maxlength="80" autocomplete="family-name">';
+  else if(c.clave === 'nombres') ctl = '<input id="' + id + '" maxlength="80" autocomplete="given-name">';
+  else if(c.clave === 'correo') ctl = '<input id="' + id + '" type="email" maxlength="120" autocomplete="email">';
+  else if(c.clave === 'telefono') ctl = '<input id="' + id + '" inputmode="tel" maxlength="20" autocomplete="tel">';
+  else if(c.tipo === 'parrafo') ctl = '<textarea id="' + id + '" maxlength="1000" rows="3"></textarea>';
+  else if(c.tipo === 'numero') ctl = '<input id="' + id + '" inputmode="decimal" maxlength="20">';
+  else if(c.tipo === 'fecha'){ const hoy = new Date().toISOString().slice(0,10); ctl = '<input id="' + id + '" type="date" min="1900-01-01" max="' + hoy + '">'; }
+  else if(c.tipo === 'correo') ctl = '<input id="' + id + '" type="email" maxlength="120">';
+  else if(c.tipo === 'telefono') ctl = '<input id="' + id + '" inputmode="tel" maxlength="20">';
+  else if(c.tipo === 'lista') ctl = '<select id="' + id + '"><option value="">Elige una opción</option>' + (c.opciones || []).map(o=>'<option value="' + esc(o) + '">' + esc(o) + '</option>').join('') + '</select>';
+  else if(c.tipo === 'si_no') ctl = '<select id="' + id + '"><option value="">Elige</option><option value="Sí">Sí</option><option value="No">No</option></select>';
+  else ctl = '<input id="' + id + '" maxlength="200">';
+  return '<div class="field"' + (c.tipo === 'parrafo' ? ' style="grid-column:1/-1;"' : '') + '>' + lab + ctl + ay + '</div>';
+}
+async function solCargarCampos(){
+  const box = document.getElementById('solCampos'); if(!box) return;
+  solCampos = SOL_BASE.slice(); solUsaExtras = false;
   try{
-    const { data, error } = await sb.rpc('admin_solicitudes_pendientes');
-    if(error || !data) return;
-    const b = [...document.querySelectorAll('.fn-card')].find(c=>c.getAttribute('data-fn') === 'Solicitudes de acceso');
-    const sl = b && b.querySelector('.fn-badge');
-    if(sl) sl.innerHTML = '<span class="sa-badge" title="Pendientes por revisar">' + data + '</span>';
+    const { data, error } = await sb.rpc('preinscripcion_campos_publico');
+    if(!error && Array.isArray(data) && data.length){ solCampos = data; solUsaExtras = true; }     // si la etapa 74 no está ejecutada se usa el formulario básico
   }catch(_){}
+  box.innerHTML = solCampos.map(solCampoHtml).join('');
+}
+async function solEnviar(){
+  if(!requireSupabase()) return;
+  const msg = document.getElementById('solMsg'), g = id => (document.getElementById(id) || {}).value || '';
+  const err = t => { msg.innerHTML = '<span style="color:var(--danger)">' + esc(t) + '</span>'; };
+  const doc = g('sol-documento').replace(/[\s.\-]/g, ''), correo = g('sol-correo').trim();
+  if(!/^\d{5,15}$/.test(doc)) return err('El documento debe tener solo números (entre 5 y 15 dígitos).');
+  if(g('sol-apellidos').trim().length < 2 || g('sol-nombres').trim().length < 2) return err('Escribe tus apellidos y tus nombres.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return err('Escribe un correo válido.');
+  const extras = {};
+  for(const c of solCampos){
+    if(c.base) { if(c.clave === 'telefono' && c.obligatorio && g('sol-telefono').replace(/\D/g,'').length < 7) return err('Escribe tu ' + c.etiqueta.toLowerCase() + '.'); continue; }
+    const v = g('sol-' + c.clave).trim();
+    if(c.obligatorio && !v) return err('Completa el campo «' + c.etiqueta + '».');
+    if(v) extras[c.clave] = v;
+  }
+  if(!document.getElementById('sol-acepta').checked) return err('Debes aceptar el tratamiento de datos personales.');
+  const b = document.getElementById('solEnviar'); b.disabled = true; msg.innerHTML = '<span style="color:var(--muted)">Enviando…</span>';
+  const args = {
+    p_documento: doc, p_apellidos: g('sol-apellidos'), p_nombres: g('sol-nombres'), p_correo: correo, p_telefono: g('sol-telefono'),
+    p_programa: '', p_sede: '', p_semestre: '', p_modalidad: '', p_periodo: '', p_jornada: '', p_acepta: true, p_web: g('sol-web') };
+  if(solUsaExtras) args.p_extras = extras;
+  const { error } = await sb.rpc('solicitar_acceso_estudiante', args);
+  if(error){ b.disabled = false; err(/PGRST202|42883|Could not find/i.test(error.message + ' ' + (error.code || '')) ? 'Esta función aún no está disponible. Avisa a la institución.' : error.message); return; }
+  try{ sb.functions.invoke('enviar-correo', { body:{ action:'notificar_solicitud' } }).then(()=>{}, ()=>{}); }catch(_){}   // avisa al encargado al instante
+  document.getElementById('solCard').innerHTML = `<div style="text-align:center;padding:10px 0;">
+    <div style="font-size:42px;">✅</div><h3 style="margin:6px 0;">¡Solicitud enviada!</h3>
+    <p style="font-size:14px;">Cuando la persona encargada la apruebe, recibirás en <b>${esc(correo)}</b> tu usuario y tu contraseña. Revisa también la carpeta de spam.</p>
+    <button class="primary" onclick="showScreen('screen-estudiante-login')">Volver al ingreso</button></div>`;
 }
