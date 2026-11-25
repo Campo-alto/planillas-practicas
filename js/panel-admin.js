@@ -32,6 +32,7 @@
         { icono:'🤝', clase:'empresa', paso:4, etapa:'Contrato de aprendizaje', titulo:'Empresas de contrato de aprendizaje', mod:'emp_ca', desc:'Aprueba empresas (plataforma SENA), crea sus accesos y enlázalas con Empresas.', abrir:caTab('emp') },
         { icono:'📝', clase:'empresa', paso:5, etapa:'Contrato de aprendizaje', titulo:'Solicitudes de aprendices', mod:'emp_solicitudes', desc:'Revisa lo que pide cada empresa y apruébalo, ciérralo o elimínalo.', abrir:caTab('ofe') },
         { icono:'🔄', clase:'empresa', paso:6, etapa:'Durante la práctica', titulo:'Cambios de empresa', mod:['est_registrados','sup_asignar'], desc:'Solicitudes de los estudiantes para cambiar de empresa (todas las modalidades): opina, aprueba o rechaza.', abrir:()=>abrirCambiosEmpresa() },
+        { icono:'👤', clase:'empresa', paso:7, etapa:'Durante la práctica', titulo:'Jefes inmediatos', mod:'est_registrados', desc:'Contacto del jefe inmediato de cada estudiante (nombre, cargo, teléfono y correo) para coordinar las visitas. Lo diligencia el estudiante o la empresa; aquí ves quién falta y envías recordatorios.', abrir:()=>abrirJefes() },
         { icono:'⇅', clase:'administrador', etapa:'Herramientas', titulo:'Importar / exportar empresas', mod:'emp_importexport', desc:'Carga masiva desde Excel, con cupos y empresas de contrato de aprendizaje.', abrir:()=>abrirImportExport() }
       ] },
     { id:'supervisores', icono:'👤', clase:'supervisor', titulo:'Supervisión',
