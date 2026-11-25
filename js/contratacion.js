@@ -684,12 +684,19 @@ function caFuncHtml(txt){
 }
 
 function caAdmOfe(){
+  if(!programasCache){ loadProgramas().then(()=>caAdmOfe()); return; }
   const L = caAdmData.ofe; const b = caAdmInfo('caAdmBody');
+  const PROGS = (programasCache || []).map(p => p.nombre), progOpts = PROGS.map(n => `<option value="${escapeAttr(n)}">${esc(n)}</option>`).join('');
   if(!L.length){ b.innerHTML = '<p class="helptext">Aún no hay solicitudes de empresas.</p>'; return; }
   b.innerHTML = caExpBar() + `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Cargo / programa</th><th>Funciones</th><th class="cp-c">Cupos</th><th>Estado</th><th>Verificación y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
-    <td class="cp-prog"><b>${esc(x.empresa)}</b><br>${caChip(x.empresa_estado)}</td><td><b>${esc(x.cargo)}</b><br><small>${esc(x.programa)}</small></td><td class="ca-func-td">${caFuncHtml(x.funciones)}</td><td class="cp-c">${x.cupos}</td><td>${caChip(x.estado)}</td>
+    <td class="cp-prog"><b>${esc(x.empresa)}</b><br>${caChip(x.empresa_estado)}</td><td><b>${esc(x.cargo)}</b><br><small>${esc(x.programa)}</small>${PROGS.length && !PROGS.includes(x.programa) ? '<br><span class="aud-ref" style="color:#B24A4A;">⚠ No coincide con ningún programa registrado: los estudiantes no verán esta solicitud. Corrígelo aquí.</span>' : ''}<br><select class="cp-in" id="of-p-${x.id}" style="margin-top:4px;max-width:250px" onchange="caAdmOfPrograma('${x.id}')"><option value="">Cambiar programa…</option>${progOpts}</select></td><td class="ca-func-td">${caFuncHtml(x.funciones)}</td><td class="cp-c">${x.cupos}</td><td>${caChip(x.estado)}</td>
     <td><label class="lista-chk"><input type="checkbox" id="of-f-${x.id}" ${x.funciones_ok?'checked':''}> Funciones corresponden al programa</label><input class="cp-in" style="margin-top:6px" placeholder="Observación" id="of-o-${x.id}" maxlength="500" value="${escapeAttr(x.observacion||'')}"></td>
     <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmOfEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmOfEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmOfEstado('${x.id}','cerrada')">Cerrar</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('oferta','${x.id}',false)">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
+}
+async function caAdmOfPrograma(id){
+  const sel = caAdmInfo('of-p-' + id); const prog = sel.value; if(!prog) return;
+  if(!confirm('¿Cambiar el programa de esta solicitud a «' + prog + '»? Los estudiantes de ese programa podrán verla si está aprobada.')){ sel.value = ''; return; }
+  try{ await caRpc('admin_ca_oferta_programa', { p_id: id, p_programa: prog }); toast('Programa actualizado'); caAdmPintar(); }catch(e){ sel.value = ''; toast(e.message, true); }
 }
 async function caAdmOfEstado(id, estado){
   try{ await caRpc('admin_ca_oferta_estado', { p_id: id, p_estado: estado, p_funciones_ok: caAdmInfo('of-f-'+id).checked, p_obs: caAdmInfo('of-o-'+id).value }); toast('Solicitud actualizada'); caAdmPintar(); }catch(e){ toast(e.message, true); }
