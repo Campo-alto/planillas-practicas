@@ -51,13 +51,13 @@ async function ceAbrirFormulario(){
       '<div class="field"><label>Correo</label><input id="ce-correo" type="email" maxlength="120" autocomplete="off"></div>' +
       '<div class="field"><label>Teléfono</label><input id="ce-telefono" inputmode="tel" maxlength="20" autocomplete="off"></div>' +
       renderAreaProgramaSelects(p, '') +
-      '<div class="field"><label>Modalidad</label><select id="ce-modalidad"><option value="">Selecciona una modalidad…</option>' +
+      '<div class="field"><label>Modalidad</label><select id="ce-modalidad" onchange="var c=/contrato.*aprendizaje/i.test(this.value),b=document.getElementById(\'ce-jornada-box\');if(b){b.style.display=c?\'none\':\'\';if(c)document.getElementById(\'ce-jornada\').value=\'\';}"><option value="">Selecciona una modalidad…</option>' +
         MODALIDADES.map(m=>'<option value="'+ceEsc(m.nombre)+'">'+ceEsc(m.nombre)+' ('+(m.meses===1?'1 nota':m.meses+' meses')+')</option>').join('') +
       '</select></div>' +
       '<div class="field"><label>Sede</label><input id="ce-sede" maxlength="80"></div>' +
       '<div class="field"><label>Semestre</label><input id="ce-semestre" maxlength="20"></div>' +
       '<div class="field"><label>Periodo académico</label><input id="ce-periodo" maxlength="30" placeholder="Ej. 2026-2"></div>' +
-      '<div class="field"><label>Jornada en que solicita el cupo</label><select id="ce-jornada"><option value="">Sin definir…</option>' +
+      '<div class="field" id="ce-jornada-box"><label>Jornada en que solicita el cupo</label><select id="ce-jornada"><option value="">Sin definir…</option>' +
         JORNADAS.map(j=>'<option value="'+ceEsc(j)+'">'+ceEsc(j)+'</option>').join('') +
       '</select></div>' +
     '</div>' +
