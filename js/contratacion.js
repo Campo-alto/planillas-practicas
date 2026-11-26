@@ -637,7 +637,7 @@ function caAdmIns(){
     <td class="cp-prog"><b>${esc(x.nombre)}</b><br><small>${esc(x.documento)}</small></td><td>${esc(x.programa||'—')}</td><td class="cp-c">${esc(x.semestre||'—')}</td>
     <td><label class="lista-chk"><input type="checkbox" id="ins-p-${x.documento}" ${x.pagos?'checked':''} ${x.estado==='contratado'?'disabled':''}> Pagos al día</label></td>
     <td>${x.estado==='contratado'?caChip('contratado'):`<select class="cp-in ca-dec" id="ins-e-${x.documento}"><option value="pendiente" ${x.estado==='pendiente'?'selected':''}>Pendiente</option><option value="apto" ${x.estado==='apto'?'selected':''}>Apto</option><option value="no_apto" ${x.estado==='no_apto'?'selected':''}>No apto</option></select>`}</td>
-    <td class="ca-obs-td"><textarea class="cp-in ca-obs" id="ins-o-${x.documento}" rows="3" maxlength="500" placeholder="Escribe aquí la observación…" oninput="caObsAuto(this)" ${x.estado==='contratado'?'disabled':''}>${esc(x.observacion||'')}</textarea></td>
+    <td class="ca-obs-td"><textarea class="cp-in ca-obs" id="ins-o-${x.documento}" rows="3" maxlength="500" placeholder="• Escribe cada punto en una línea (Enter = nueva viñeta)" oninput="caObsAuto(this)" onfocus="caObsFmt(this,true)" onblur="caObsFmt(this,false)" onkeydown="caObsEnter(event,this)" ${x.estado==='contratado'?'disabled':''}>${esc(x.observacion||'')}</textarea></td>
     <td class="cp-c">${x.hv_completa?'<span class="cupo-chip cupo-ok">Completa</span>':'<span class="cupo-chip cupo-low">Pendiente</span>'}</td>
     <td><div class="ca-acc-col"><button class="ghost cp-del" onclick="caAdmVerComoEst('${x.documento}')">👁 Ver como estudiante</button>${x.estado==='contratado'?'':`<button class="primary cp-del" onclick="caAdmVerificar('${x.documento}')">Guardar</button>`}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('inscripcion','${x.documento}',${x.estado==='contratado'})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
@@ -760,7 +760,7 @@ function caAdmOfe(){
   if(!L.length){ b.innerHTML = '<p class="helptext">Aún no hay solicitudes de empresas.</p>'; return; }
   b.innerHTML = caExpBar() + `<div class="cupos-wrap"><table class="cupos-table ca-tabla" style="min-width:700px"><thead><tr><th>Empresa</th><th>Cargo / programa</th><th>Funciones</th><th class="cp-c">Cupos</th><th>Estado</th><th>Verificación y observación</th><th></th></tr></thead><tbody>${L.map(x=>`<tr>
     <td class="cp-prog"><b>${esc(x.empresa)}</b><br>${caChip(x.empresa_estado)}</td><td><b>${esc(x.cargo)}</b><br><small>${esc(x.programa)}</small>${PROGS.length && !PROGS.includes(x.programa) ? '<br><span class="aud-ref" style="color:#B24A4A;">⚠ No coincide con ningún programa registrado: los estudiantes no verán esta solicitud. Corrígelo aquí.</span>' : ''}<br><select class="cp-in" id="of-p-${x.id}" style="margin-top:4px;max-width:250px" onchange="caAdmOfPrograma('${x.id}')"><option value="">Cambiar programa…</option>${progOpts}</select></td><td class="ca-func-td">${caFuncHtml(x.funciones)}</td><td class="cp-c">${x.cupos}</td><td>${caChip(x.estado)}</td>
-    <td><label class="lista-chk"><input type="checkbox" id="of-f-${x.id}" ${x.funciones_ok?'checked':''}> Funciones corresponden al programa</label><textarea class="cp-in ca-obs" style="margin-top:6px" rows="3" placeholder="Escribe aquí la observación…" id="of-o-${x.id}" maxlength="500" oninput="caObsAuto(this)">${esc(x.observacion||'')}</textarea></td>
+    <td><label class="lista-chk"><input type="checkbox" id="of-f-${x.id}" ${x.funciones_ok?'checked':''}> Funciones corresponden al programa</label><textarea class="cp-in ca-obs" style="margin-top:6px" rows="3" placeholder="• Escribe cada punto en una línea (Enter = nueva viñeta)" id="of-o-${x.id}" maxlength="500" oninput="caObsAuto(this)" onfocus="caObsFmt(this,true)" onblur="caObsFmt(this,false)" onkeydown="caObsEnter(event,this)">${esc(x.observacion||'')}</textarea></td>
     <td><div class="ca-acc-col"><button class="primary cp-del" onclick="caAdmOfEstado('${x.id}','aprobada')">Aprobar</button><button class="danger cp-del" onclick="caAdmOfEstado('${x.id}','rechazada')">Rechazar</button><button class="ghost cp-del" onclick="caAdmOfEstado('${x.id}','cerrada')">Cerrar</button><button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('oferta','${x.id}',false)">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function caAdmOfPrograma(id){
@@ -873,3 +873,23 @@ async function caAdmVerComoEst(doc){
 
 // el cuadro de observación crece al escribir para que se alcance a leer todo el texto
 function caObsAuto(el){ el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 260) + 'px'; }
+
+// Observaciones con viñetas: cada línea empieza con «• » y Enter crea la siguiente viñeta
+function caObsFmt(el, enfoque){
+  const L = String(el.value || '').split('\n').map(t=>t.replace(/^\s*[•\-\*]\s*/, '').trimEnd());
+  let v = L.filter(t=>t.trim()).map(t=>'• ' + t).join('\n');
+  if(enfoque){ v = v ? v + '\n• ' : '• '; }
+  if(el.value !== v) el.value = v;
+  caObsAuto(el);
+  if(enfoque){ try{ el.setSelectionRange(el.value.length, el.value.length); }catch(_){} }
+}
+function caObsEnter(ev, el){
+  if(ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) return;
+  ev.preventDefault();
+  const a = el.selectionStart, b = el.selectionEnd, v = el.value;
+  const linea = v.slice(v.lastIndexOf('\n', a - 1) + 1, a);
+  if(/^\s*•\s*$/.test(linea)){ return; }          // línea de viñeta vacía: no crea otra
+  el.value = v.slice(0, a) + '\n• ' + v.slice(b);
+  el.selectionStart = el.selectionEnd = a + 3;
+  caObsAuto(el);
+}
