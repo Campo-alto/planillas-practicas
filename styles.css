@@ -799,3 +799,8 @@ table.ca-tabla td.ca-func-td{min-width:260px;max-width:380px;vertical-align:top;
 .ca-of-top{display:flex;justify-content:space-between;gap:8px;align-items:center;} .ca-of-cargo{font-size:17px;font-weight:700;color:var(--deep);}
 .ca-of-meta{font-size:13px;color:var(--muted);} .ca-of-fun{font-size:13.5px;line-height:1.45;max-height:120px;overflow:auto;}
 .ca-of-btn{margin-top:6px;padding:11px 14px;font-size:15px;}
+
+.ca-filtro{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;}
+.ca-filtro input[type=search]{flex:1 1 280px;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff;}
+.ca-filtro select{flex:0 1 280px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff;max-width:100%;}
+.ca-filtro-n{font-size:13px;color:var(--muted);}
