@@ -119,5 +119,6 @@ async function solEnviar(){
   document.getElementById('solCard').innerHTML = `<div style="text-align:center;padding:10px 0;">
     <div style="font-size:42px;">✅</div><h3 style="margin:6px 0;">¡Solicitud enviada!</h3>
     <p style="font-size:14px;">Cuando la persona encargada la apruebe, recibirás en <b>${esc(correo)}</b> tu usuario y tu contraseña. Revisa también la carpeta de spam.</p>
+    <p style="font-size:13px;color:var(--muted);">Solo se permite <b>una solicitud por documento</b>. Si ya habías enviado una, no se crea otra: espera la respuesta o comunícate con la institución.</p>
     <button class="primary" onclick="showScreen('screen-estudiante-login')">Volver al ingreso</button></div>`;
 }
