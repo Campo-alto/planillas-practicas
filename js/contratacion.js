@@ -199,6 +199,7 @@ async function caGuardarHv(){
   try{ const r = await caRpc('ca_guardar_hv', { p_token: state.token, p_hv: hv });
     toast(r && r.completa ? 'Hoja de vida completa: ya puedes postularte' : 'Guardada, pero falta completar los campos obligatorios (*)', !(r&&r.completa));
     caHvEditando = !(r && r.completa); await caCargarEstudiante();
+    if(r && r.completa && typeof ntCargar === 'function'){ try{ ntCargar(false); }catch(_){} }   // actualiza la campana con el aviso de postulación
   }catch(e){ caMsg('hvMsg', e.message); }
 }
 // el <script> dentro de innerHTML no se ejecuta: pintar tras renderizar
@@ -222,7 +223,8 @@ function caProcesoEstudiante(d){
     return h;
   }
   const of = d.ofertas || [];
-  h += `<div class="subhead" style="margin-top:14px;">Ofertas disponibles para tu programa</div>`;
+  h += `<div class="note-box" style="margin-top:14px;background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">📢 <b>Tu hoja de vida está lista.</b> Ya puedes <b>postularte a las empresas disponibles</b>: elige una oferta de la lista y pulsa «Postularme». Solo puedes tener un proceso activo a la vez.</div>
+    <div class="subhead" style="margin-top:14px;">Ofertas disponibles para tu programa</div>`;
   if(!of.length) return h + '<p class="helptext">Por ahora no hay ofertas aprobadas para tu programa. Las empresas también pueden llamarte a entrevista.</p>';
   h += `<div class="cupos-wrap"><table class="cupos-table" style="min-width:760px"><thead><tr><th>Empresa</th><th>Cargo</th><th>Funciones</th><th>Ciudad</th><th>Jornada</th><th class="cp-c">Cupos</th><th></th></tr></thead><tbody>${of.map(o=>`<tr>
     <td class="cp-prog"><b>${esc(o.empresa)}</b></td><td>${esc(o.cargo)}</td><td style="max-width:320px">${esc(o.funciones)}</td><td>${esc(o.ciudad||'—')}</td><td>${esc(o.jornada||'—')}</td><td class="cp-c">${o.cupos}</td>
