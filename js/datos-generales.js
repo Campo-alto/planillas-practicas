@@ -10,7 +10,7 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
         <div class="field"><label>Sede</label><input id="${formIdPrefix}-sede" value="${escapeAttr(rec.sede)}"></div>
         <div class="field"><label>Semestre</label><input id="${formIdPrefix}-semestre" value="${escapeAttr(rec.semestre)}"></div>
         <div class="field"><label>Modalidad</label>
-          <select id="${formIdPrefix}-modalidad">
+          <select id="${formIdPrefix}-modalidad" onchange="dgJornadaVisible('${formIdPrefix}')">
             <option value="">Selecciona una modalidad…</option>
             ${MODALIDADES.map(m=>`<option value="${escapeAttr(m.nombre)}" ${m.nombre===rec.modalidad?'selected':''}>${m.nombre} (${m.meses===1?'1 nota':m.meses+' meses'})</option>`).join('')}
           </select>
@@ -18,7 +18,7 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
         <div class="field"><label>Periodo académico</label><input id="${formIdPrefix}-periodo" value="${escapeAttr(rec.periodoAcademico)}"></div>
         <div class="field"><label>Funcionario que procesa</label><input id="${formIdPrefix}-funcionario" value="${escapeAttr(rec.funcionario)}"></div>
         ${renderAreaProgramaSelects(formIdPrefix, rec.programa)}
-        <div class="field"><label>Jornada en que solicita el cupo de práctica</label>
+        <div class="field" id="${formIdPrefix}-jornada-box" ${/contrato.*aprendizaje/i.test(rec.modalidad||'') ? 'style="display:none"' : ''}><label>Jornada en que solicita el cupo de práctica</label>
           <select id="${formIdPrefix}-jornada">
             <option value="">Sin definir…</option>
             ${JORNADAS.map(j=>`<option value="${j}" ${j===rec.jornadaSolicitada?'selected':''}>${j}</option>`).join('')}
@@ -37,7 +37,7 @@ function datosGeneralesHtml(rec, editable, formIdPrefix){
         <tr class="ficha-head"><td colspan="4"><span class="ficha-nombre">${v(rec.nombre)}</span><span class="ficha-doc">Documento · ${v(rec.documento)}</span></td></tr>
         <tr><th>Programa</th><td colspan="3">${v(rec.programa)}</td></tr>
         ${row('Modalidad', v(rec.modalidad), 'Semestre', v(rec.semestre))}
-        ${row('Sede', v(rec.sede), 'Jornada solicitada', v(rec.jornadaSolicitada))}
+        ${/contrato.*aprendizaje/i.test(rec.modalidad||'') ? row('Sede', v(rec.sede), 'Horario', 'Lo define la empresa') : row('Sede', v(rec.sede), 'Jornada solicitada', v(rec.jornadaSolicitada))}
         ${row('Periodo académico', v(rec.periodoAcademico), 'Teléfono', v(rec.telefono))}
         <tr><th>Correo</th><td colspan="3">${v(rec.correo)}</td></tr>
       </tbody>
@@ -55,4 +55,13 @@ function updateNombrePreview(formIdPrefix){
   const nombres = val(formIdPrefix+'-nombres');
   const preview = document.getElementById(formIdPrefix+'-nombre-preview');
   if(preview) preview.value = nombreCompletoDesde(apellidos, nombres);
+}
+
+// En contrato de aprendizaje el horario lo define la empresa: no se pide la jornada del cupo
+function dgJornadaVisible(prefix){
+  const m = document.getElementById(prefix + '-modalidad'), box = document.getElementById(prefix + '-jornada-box');
+  if(!m || !box) return;
+  const ca = /contrato.*aprendizaje/i.test(m.value || '');
+  box.style.display = ca ? 'none' : '';
+  if(ca){ const j = document.getElementById(prefix + '-jornada'); if(j) j.value = ''; }
 }
