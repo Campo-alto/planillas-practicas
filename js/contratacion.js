@@ -564,7 +564,7 @@ window.addEventListener('load', async ()=>{
     grid.appendChild(c);
   }
 })();
-let caAdmTab = 'ins', caAdmData = {};
+let caAdmTab = 'ins', caAdmData = {}, caAdmFull = {}, caAdmF = {}, caAdmTimer = null;
 // Cada pestaña pertenece a una función con su permiso (roles-permisos-etapa18.sql)
 const CA_TAB_PERMISO = { ins:'est_contrato', emp:'emp_ca', ofe:'emp_solicitudes', pro:'est_contrato' };
 function caTabPermitida(k){ return typeof puede !== 'function' || puede(CA_TAB_PERMISO[k]); }
@@ -574,14 +574,48 @@ async function caAdmPintar(){
   if(!caTabPermitida(caAdmTab) && tabs.length) caAdmTab = tabs[0][0];
   caScreen('screen-admin-ca', `<button class="linkbtn" onclick="showScreen('screen-admin-hub')">← Volver al panel</button>
     <h2 style="margin:12px 0 4px;">Contrato de aprendizaje</h2><p class="helptext">Tres fases: estudiante → empresa → institución. Aquí validas pagos, empresas (plataforma SENA), funciones del programa y confirmas la contratación.</p>
-    <div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${caAdmTab===k?'active':''}" onclick="caAdmTab='${k}';caAdmPintar()">${t}</button>`).join('')}</div><div class="card" id="caAdmBody"><p class="helptext">Cargando…</p></div>`);
+    <div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${caAdmTab===k?'active':''}" onclick="caAdmTab='${k}';caAdmPintar()">${t}</button>`).join('')}</div><div id="caAdmFiltro"></div><div class="card" id="caAdmBody"><p class="helptext">Cargando…</p></div>`);
   showScreen('screen-admin-ca');
   const fn = { ins:'admin_ca_inscripciones', emp:'admin_ca_empresas', ofe:'admin_ca_ofertas', pro:'admin_ca_postulaciones' }[caAdmTab];
   if(caAdmTab==='pro'){ caCartasAdm = {}; try{ (await caRpc('admin_ca_cartas')).forEach(c=>{ caCartasAdm[c.post] = c; }); }catch(_){} }
   if(caAdmTab==='pro'){ caContratosAdm = {}; try{ (await caRpc('admin_ca_contratos')).forEach(c=>{ caContratosAdm[c.post] = c; }); }catch(_){} }
-  try{ caAdmData[caAdmTab] = await caRpc(fn); }catch(e){ document.getElementById('caAdmBody').innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
-  ({ ins:caAdmIns, emp:caAdmEmp, ofe:caAdmOfe, pro:caAdmPro })[caAdmTab]();
-  if(caAdmTab==='emp') caAdmSinAcceso();
+  try{ caAdmFull[caAdmTab] = await caRpc(fn); }catch(e){ document.getElementById('caAdmBody').innerHTML = `<p style="color:var(--danger)">${esc(e.message)}</p>`; return; }
+  caAdmFiltroPintar();
+  caAdmAplicar();
+}
+
+/* ---- Filtro por nombre, número de documento y programa (se aplica a lo que se ve y a lo que se exporta) ---- */
+const CA_FILTRO_TXT = {
+  ins:{ ph:'Buscar por nombre o número de documento…', campos:x=>[x.nombre, x.documento, x.programa], prog:x=>x.programa },
+  emp:{ ph:'Buscar por razón social, NIT, contacto o correo…', campos:x=>[x.razon_social, x.nit, x.contacto, x.email], prog:null },
+  ofe:{ ph:'Buscar por empresa o cargo…', campos:x=>[x.empresa, x.cargo, x.programa], prog:x=>x.programa },
+  pro:{ ph:'Buscar por nombre, número de documento, empresa o cargo…', campos:x=>[x.nombre, x.documento, x.empresa, x.cargo, x.programa], prog:x=>x.programa } };
+function caNorm(t){ return String(t == null ? '' : t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function caAdmFiltroPintar(){
+  const box = document.getElementById('caAdmFiltro'); if(!box) return;
+  const d = CA_FILTRO_TXT[caAdmTab]; if(!d){ box.innerHTML = ''; return; }
+  const f = caAdmF[caAdmTab] = caAdmF[caAdmTab] || { q:'', p:'' };
+  const progs = d.prog ? [...new Set((caAdmFull[caAdmTab] || []).map(d.prog).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')) : [];
+  box.innerHTML = `<div class="ca-filtro"><input type="search" id="caFq" placeholder="${escapeAttr(d.ph)}" value="${escapeAttr(f.q)}" oninput="caAdmFiltrar()" autocomplete="off">
+    ${progs.length ? `<select id="caFp" onchange="caAdmFiltrar()"><option value="">Todos los programas</option>${progs.map(x=>`<option value="${escapeAttr(x)}" ${x===f.p?'selected':''}>${esc(x)}</option>`).join('')}</select>` : ''}
+    <button class="ghost" type="button" onclick="caAdmLimpiar()">Limpiar</button><span class="ca-filtro-n" id="caFn"></span></div>`;
+}
+function caAdmFiltrar(){
+  const f = caAdmF[caAdmTab] = caAdmF[caAdmTab] || { q:'', p:'' };
+  const q = document.getElementById('caFq'), p = document.getElementById('caFp');
+  f.q = q ? q.value : ''; f.p = p ? p.value : '';
+  clearTimeout(caAdmTimer); caAdmTimer = setTimeout(caAdmAplicar, 200);
+}
+function caAdmLimpiar(){ caAdmF[caAdmTab] = { q:'', p:'' }; caAdmFiltroPintar(); caAdmAplicar(); }
+function caAdmAplicar(){
+  const tab = caAdmTab, full = caAdmFull[tab] || [], d = CA_FILTRO_TXT[tab], f = caAdmF[tab] || { q:'', p:'' };
+  const q = caNorm(f.q).trim();
+  const L = full.filter(x => (!q || caNorm(d.campos(x).join(' ')).includes(q)) && (!f.p || !d.prog || d.prog(x) === f.p));
+  caAdmData[tab] = L;
+  const n = document.getElementById('caFn'); if(n) n.textContent = (q || f.p) ? L.length + ' de ' + full.length : '';
+  if(full.length && !L.length){ const b = caAdmInfo('caAdmBody'); if(b) b.innerHTML = '<p class="helptext">Ningún resultado coincide con el filtro.</p>'; return; }
+  ({ ins:caAdmIns, emp:caAdmEmp, ofe:caAdmOfe, pro:caAdmPro })[tab]();
+  if(tab === 'emp') caAdmSinAcceso();
 }
 function caExpBar(){ return `<div class="lista-acc" style="margin:0 0 8px;justify-content:flex-end"><button class="ghost" onclick="caAdmExportar('xlsx')">⬇ Excel</button><button class="ghost" onclick="caAdmExportar('pdf')">⬇ PDF</button></div>`; }
 function caAdmExportar(f){
