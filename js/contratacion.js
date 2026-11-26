@@ -113,14 +113,45 @@ async function caSubirContrato(inp){
   catch(e){ msg.innerHTML = '<span style="color:var(--danger)">' + esc(e.message) + (/does not exist|Could not find/i.test(e.message) ? ' (¿ejecutaste contrato-firmado-etapa40.sql?)' : '') + '</span>'; inp.value = ''; }
 }
 
+/* ---- Lo que ve el estudiante: pasos, «qué sigue» y línea del proceso (también lo usa la vista previa de la institución) ---- */
+function caPasosHtml(d){
+  const i = d && d.inscripcion;
+  const pasos = ['Inscripción','Verificación de pagos','Hoja de vida','Postulación y entrevistas'];
+  const paso = !i ? 0 : (i.estado==='pendiente' || i.estado==='no_apto') ? 1 : (!i.hv_completa ? 2 : 3);
+  return `<div class="ca-pasos">${pasos.map((p,k)=>`<div class="ca-paso ${k<paso?'hecho':k===paso?'actual':''}"><b>${k+1}</b><span>${p}</span></div>`).join('')}</div>`;
+}
+function caSiguientePaso(d){
+  if(!d || !d.aplica) return null;
+  const i = d.inscripcion, p = d.postulacion, nOf = (d.ofertas || []).length;
+  if(!i) return { t:'accion', ic:'👉', ti:'Tu siguiente paso: inscribirte', tx:'Pulsa el botón «Inscribirme al proceso». Así la institución verifica tus pagos y te declara apto.' };
+  if(i.estado === 'contratado') return { t:'ok', ic:'🎉', ti:'¡Ya estás contratado!', tx:'La institución confirmó tu contrato de aprendizaje. Ya puedes diligenciar tus planillas.' };
+  if(i.estado === 'pendiente') return { t:'espera', ic:'⏳', ti:'Debes esperar', tx:'La institución está verificando tus pagos. No tienes que hacer nada por ahora; cuando te declaren apto podrás hacer tu hoja de vida.' };
+  if(i.estado === 'no_apto') return { t:'alerta', ic:'⚠️', ti:'Debes comunicarte con la institución', tx:'Por ahora no fuiste declarado apto' + (i.observacion ? ' (' + i.observacion + ')' : '') + '. Comunícate con la institución para resolverlo.' };
+  if(!i.hv_completa) return { t:'accion', ic:'👉', ti:'Tu siguiente paso: completar tu hoja de vida', tx:'Llena los campos marcados con * y pulsa «Guardar hoja de vida». Mientras no esté completa, las empresas no te pueden ver y no puedes postularte.' };
+  if(p){
+    if(p.estado === 'seleccionado') return { t:'accion', ic:'👉', ti:'Tu siguiente paso: subir tu contrato firmado', tx:'La empresa te seleccionó. Sube el PDF del contrato firmado por ti y por la empresa (se recibe del 1 al 10 de cada mes). Cuando la institución lo acepte quedarás contratado.' };
+    if(p.estado === 'entrevista') return { t:'espera', ic:'⏳', ti:'Debes esperar: estás en entrevista', tx:'La empresa te llamará o te escribirá. Mantén tu teléfono y correo atentos. No puedes postularte a otra oferta mientras este proceso siga activo.' };
+    return { t:'espera', ic:'⏳', ti:'Debes esperar: ya te postulaste', tx:'La empresa está revisando tu hoja de vida. No tienes que hacer nada más. No puedes postularte a otra oferta mientras este proceso siga activo.' };
+  }
+  if(nOf) return { t:'accion', ic:'👉', ti:'Tu siguiente paso: POSTULARTE a una oferta', tx:'Tu hoja de vida ya está lista, pero todavía NO te has postulado. Elige una de las ofertas de abajo y pulsa el botón «Postularme a esta oferta».' };
+  return { t:'espera', ic:'⏳', ti:'Por ahora no hay ofertas para tu programa', tx:'Tu hoja de vida ya está lista. No tienes que hacer nada: cuando una empresa tenga una oferta abierta para tu programa aparecerá aquí con su botón «Postularme». Vuelve a revisar en unos días; las empresas también pueden llamarte a entrevista.' };
+}
+function caSiguienteHtml(d){
+  const n = caSiguientePaso(d); if(!n) return '';
+  return `<div class="ca-sig ca-sig-${n.t}"><span class="ca-sig-ic">${n.ic}</span><div><b>${esc(n.ti)}</b><p>${esc(n.tx)}</p></div></div>`;
+}
+function caLineaHtml(estado){
+  const E = ['postulado','entrevista','seleccionado','contratado'], T = ['Postulado','Entrevista','Seleccionado','Contratado'];
+  const k = Math.max(0, E.indexOf(estado));
+  return `<div class="ca-linea">${T.map((t,j)=>`<div class="ca-lin ${j<k?'hecho':j===k?'actual':''}"><b>${j<k?'✓':j+1}</b><span>${t}</span></div>`).join('')}</div>`;
+}
+
 function caRenderEstudiante(){
   const el = document.getElementById('estCaCard'); const d = caEst;
   let h = '<div class="section-bar teal">Contrato de aprendizaje</div>';
   if(!d || !d.aplica){ el.innerHTML = h + '<p class="helptext">Esta sección es solo para estudiantes de la modalidad contrato de aprendizaje.</p>'; return; }
   const i = d.inscripcion;
-  const pasos = ['Inscripción','Verificación de pagos','Hoja de vida','Postulación y entrevistas'];
-  const paso = !i ? 0 : (i.estado==='pendiente' || i.estado==='no_apto') ? 1 : (!i.hv_completa ? 2 : 3);
-  h += `<div class="ca-pasos">${pasos.map((p,k)=>`<div class="ca-paso ${k<paso?'hecho':k===paso?'actual':''}"><b>${k+1}</b><span>${p}</span></div>`).join('')}</div>`;
+  h += caPasosHtml(d) + caSiguienteHtml(d);
   if(!i){
     h += `<p class="helptext">Inscríbete para que la institución verifique que tienes al día los pagos de tu semestre de prácticas y confirme si eres apto para iniciar el proceso de contrato de aprendizaje.</p>
           <div class="actions-row"><button class="primary" onclick="caInscribirme()">Inscribirme al proceso</button></div>`;
@@ -210,25 +241,28 @@ function caProcesoEstudiante(d){
   let h = '';
   const p = d.postulacion;
   if(p){
-    h += `<div class="subhead" style="margin-top:14px;">Mi proceso actual</div>
+    h += `<div class="subhead" style="margin-top:14px;">Mi proceso actual</div>${caLineaHtml(p.estado)}
       <div class="ficha-wrap"><table class="ficha-table"><tbody>
         <tr><th>Empresa</th><td>${esc(p.empresa)}</td><th>Cargo</th><td>${esc(p.cargo)}</td></tr>
         <tr><th>Estado</th><td>${caChip(p.estado)}</td><th>Desde</th><td>${caFmt(p.desde)}</td></tr>
         <tr><th>Ciudad / jornada</th><td>${esc(p.ciudad||'—')} · ${esc(p.jornada||'—')}</td><th>Próxima decisión</th><td>${p.estado==='seleccionado'?'—':caFmt(p.proxima_decision)}</td></tr>
         <tr><th>Funciones</th><td colspan="3">${esc(p.funciones)}</td></tr></tbody></table></div>`;
-    if(p.estado==='seleccionado') h += caContratoEstHtml();
+    if(d.__soloVer){ /* vista previa: sin botones */ }
+    else if(p.estado==='seleccionado') h += caContratoEstHtml();
     else if(p.puede_decidir) h += `<div class="note-box">Han pasado ${CA_DIAS_DECISION} días hábiles. Puedes <b>seguir esperando</b> a que la empresa avance, o <b>rechazar</b> esta oferta para postularte a otra (no podrás volver a esta empresa).</div>
       <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="caDecidir('${p.id}','esperar')">⏳ Seguir esperando ${CA_DIAS_DECISION} días hábiles</button><button class="danger" onclick="caDecidir('${p.id}','rechazar')">✖ Rechazar y buscar otra oferta</button></div>`;
     else h += `<p class="helptext">Podrás decidir si sigues esperando o rechazas esta oferta a partir del <b>${caFmt(p.proxima_decision)}</b>. <span style="color:var(--muted)">(Se cuentan ${CA_DIAS_DECISION} días hábiles: de lunes a viernes, sin festivos, porque las empresas no trabajan esos días.)</span></p>`;
     return h;
   }
   const of = d.ofertas || [];
-  h += `<div class="note-box" style="margin-top:14px;background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">📢 <b>Tu hoja de vida está lista.</b> Ya puedes <b>postularte a las empresas disponibles</b>: elige una oferta de la lista y pulsa «Postularme». Solo puedes tener un proceso activo a la vez.</div>
-    <div class="subhead" style="margin-top:14px;">Ofertas disponibles para tu programa</div>`;
-  if(!of.length) return h + '<p class="helptext">Por ahora no hay ofertas aprobadas para tu programa. Las empresas también pueden llamarte a entrevista.</p>';
-  h += `<div class="cupos-wrap"><table class="cupos-table" style="min-width:760px"><thead><tr><th>Empresa</th><th>Cargo</th><th>Funciones</th><th>Ciudad</th><th>Jornada</th><th class="cp-c">Cupos</th><th></th></tr></thead><tbody>${of.map(o=>`<tr>
-    <td class="cp-prog"><b>${esc(o.empresa)}</b></td><td>${esc(o.cargo)}</td><td style="max-width:320px">${esc(o.funciones)}</td><td>${esc(o.ciudad||'—')}</td><td>${esc(o.jornada||'—')}</td><td class="cp-c">${o.cupos}</td>
-    <td><button class="primary" style="padding:6px 12px" onclick="caPostular('${o.id}')">Postularme</button></td></tr>`).join('')}</tbody></table></div>`;
+  h += `<div class="subhead" style="margin-top:14px;">Ofertas disponibles para tu programa</div>`;
+  if(!of.length) return h + '<p class="helptext">Por ahora no hay ofertas abiertas para tu programa. Las empresas también pueden llamarte a entrevista.</p>';
+  h += `<p class="helptext">Elige UNA oferta y pulsa «Postularme». Solo puedes tener un proceso activo a la vez.</p><div class="ca-ofertas">${of.map(o=>`<div class="ca-oferta">
+    <div class="ca-of-top"><b>${esc(o.empresa)}</b><span class="cupo-chip cupo-ok">${o.cupos} ${o.cupos===1?'vacante':'vacantes'}</span></div>
+    <div class="ca-of-cargo">${esc(o.cargo)}</div>
+    <div class="ca-of-meta">📍 ${esc(o.ciudad||'—')} · 🕒 ${esc(o.jornada||'—')}</div>
+    <div class="ca-of-fun">${esc(o.funciones||'')}</div>
+    ${d.__soloVer ? '' : `<button class="primary ca-of-btn" onclick="caPostular('${o.id}')">Postularme a esta oferta</button>`}</div>`).join('')}</div>`;
   return h;
 }
 async function caPostular(id){ if(!confirm('¿Postularte a esta oferta? Solo puedes tener un proceso activo a la vez.')) return;
@@ -571,7 +605,7 @@ function caAdmIns(){
     <td>${x.estado==='contratado'?caChip('contratado'):`<select class="cp-in" id="ins-e-${x.documento}"><option value="pendiente" ${x.estado==='pendiente'?'selected':''}>Pendiente</option><option value="apto" ${x.estado==='apto'?'selected':''}>Apto</option><option value="no_apto" ${x.estado==='no_apto'?'selected':''}>No apto</option></select>`}</td>
     <td><input class="cp-in cp-txt" id="ins-o-${x.documento}" maxlength="500" value="${escapeAttr(x.observacion||'')}" ${x.estado==='contratado'?'disabled':''}></td>
     <td class="cp-c">${x.hv_completa?'<span class="cupo-chip cupo-ok">Completa</span>':'<span class="cupo-chip cupo-low">Pendiente</span>'}</td>
-    <td><div class="ca-acc-col">${x.estado==='contratado'?'':`<button class="primary cp-del" onclick="caAdmVerificar('${x.documento}')">Guardar</button>`}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('inscripcion','${x.documento}',${x.estado==='contratado'})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
+    <td><div class="ca-acc-col"><button class="ghost cp-del" onclick="caAdmVerComoEst('${x.documento}')">👁 Ver como estudiante</button>${x.estado==='contratado'?'':`<button class="primary cp-del" onclick="caAdmVerificar('${x.documento}')">Guardar</button>`}<button class="ghost cp-del" style="color:var(--danger)" onclick="caAdmEliminar('inscripcion','${x.documento}',${x.estado==='contratado'})">🗑 Eliminar</button></div></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function caAdmVerificar(doc){
   try{ await caRpc('admin_ca_verificar', { p_documento: doc, p_estado: caAdmInfo('ins-e-'+doc).value, p_pagos: caAdmInfo('ins-p-'+doc).checked, p_obs: caAdmInfo('ins-o-'+doc).value });
@@ -782,3 +816,23 @@ async function caAdmConfirmar(id){ toast('La contratación se confirma al acepta
     };
   }
 })();
+
+
+/* ---- Institución: ver el proceso tal como lo ve el estudiante (solo lectura) ---- */
+async function caAdmVerComoEst(doc){
+  let d; try{ d = await caRpc('admin_ca_vista_estudiante', { p_documento: doc }); }catch(e){ toast(e.message + (/does not exist|Could not find/i.test(e.message) ? ' (¿ejecutaste ca-vista-estudiante-etapa82.sql?)' : ''), true); return; }
+  if(!d || !d.aplica){ toast('Ese estudiante no está en la modalidad contrato de aprendizaje', true); return; }
+  d.__soloVer = true;
+  const i = d.inscripcion;
+  let h = `<div class="note-box" style="background:#EEF3FB;border-color:#C9D8F0;color:#24478F;">👁 <b>Vista de solo lectura.</b> Así ve el estudiante <b>${esc(d.nombre||doc)}</b> (${esc(doc)}) su proceso. Programa: <b>${esc(d.programa||'—')}</b>. No puedes hacer cambios desde aquí.</div>
+    <div class="section-bar teal" style="margin-top:12px;">Contrato de aprendizaje</div>` + caPasosHtml(d) + caSiguienteHtml(d);
+  if(i && i.estado === 'apto' && i.hv_completa) h += caProcesoEstudiante(d);
+  else if(i && i.estado === 'contratado') h += '';
+  if(d.ocultas && d.ocultas.length){
+    h += `<div class="subhead" style="margin-top:16px;">Solo para la institución: ofertas de su programa que el estudiante NO ve</div>
+      <div class="cupos-wrap"><table class="cupos-table" style="min-width:520px"><thead><tr><th>Empresa</th><th>Cargo</th><th>Por qué no la ve</th></tr></thead><tbody>${d.ocultas.map(o=>`<tr><td>${esc(o.empresa)}</td><td>${esc(o.cargo)}</td><td>${esc(o.motivo)}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  const m = document.createElement('div'); m.className = 'cor-modal'; m.id = 'caVistaModal';
+  m.innerHTML = `<div class="cor-caja" style="max-width:860px;max-height:90vh;overflow:auto;">${h}<div class="actions-row"><button class="primary" onclick="document.getElementById('caVistaModal').remove()">Cerrar vista</button></div></div>`;
+  document.body.appendChild(m);
+}
