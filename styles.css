@@ -780,3 +780,22 @@ table.ca-tabla td.ca-func-td{min-width:260px;max-width:380px;vertical-align:top;
 .sa-dato{background:#F1F7F6;border:1px solid var(--line,#E2E8E6);border-radius:8px;padding:5px 9px;min-width:0;}
 .sa-dato span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#6b7a77;}
 .sa-dato b{display:block;font-size:13px;color:#0E5C63;word-break:break-word;overflow-wrap:anywhere;}
+
+/* ---- Contrato de aprendizaje: «qué sigue», línea del proceso y tarjetas de oferta ---- */
+.ca-sig{display:flex;gap:12px;align-items:flex-start;border-radius:12px;padding:14px 16px;margin:6px 0 14px;border:2px solid var(--line);background:#fff;}
+.ca-sig b{display:block;font-size:16px;margin-bottom:2px;} .ca-sig p{margin:0;font-size:14px;line-height:1.45;}
+.ca-sig-ic{font-size:26px;line-height:1;}
+.ca-sig-accion{background:#FFF4D6;border-color:#E0B84A;color:#5E4200;}
+.ca-sig-espera{background:#EEF3FB;border-color:#C9D8F0;color:#24478F;}
+.ca-sig-ok{background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;}
+.ca-sig-alerta{background:#FBEAE7;border-color:#F0C4BD;color:#8F2A20;}
+.ca-linea{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px;}
+.ca-lin{flex:1 1 110px;display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;color:var(--muted);}
+.ca-lin b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#E8E4D8;color:var(--ink);font-size:12px;}
+.ca-lin.actual{border-color:var(--teal);color:var(--deep);font-weight:700;} .ca-lin.actual b{background:var(--teal);color:#fff;}
+.ca-lin.hecho{color:var(--teal-dark);} .ca-lin.hecho b{background:#DDF1E4;color:#1B6B3A;}
+.ca-ofertas{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:8px;}
+.ca-oferta{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;display:flex;flex-direction:column;gap:6px;}
+.ca-of-top{display:flex;justify-content:space-between;gap:8px;align-items:center;} .ca-of-cargo{font-size:17px;font-weight:700;color:var(--deep);}
+.ca-of-meta{font-size:13px;color:var(--muted);} .ca-of-fun{font-size:13.5px;line-height:1.45;max-height:120px;overflow:auto;}
+.ca-of-btn{margin-top:6px;padding:11px 14px;font-size:15px;}
