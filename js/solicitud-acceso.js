@@ -36,6 +36,9 @@ async function solAbrir(){
     <h2 style="margin:12px 0 4px;">Solicitar mi acceso</h2>
     <p class="helptext" style="text-align:justify;">Llena tus datos. Tu solicitud llegará a la persona encargada y, cuando la apruebe, recibirás en tu correo tu <b>usuario y tu contraseña</b> para ingresar. Escribe bien tu correo: ahí te llegará la respuesta.</p>
     <div class="card" id="solCard" style="max-width:720px;">
+      <div class="sol-alerta" role="alert" style="background:#FFF4D6;border:1px solid #E0B84A;color:#6B4A00;border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13.5px;line-height:1.45;">
+        <b>⚠ Importante:</b> escribe tus <b>APELLIDOS COMPLETOS</b> (primero y segundo apellido) y tus <b>NOMBRES COMPLETOS</b> (primero y segundo nombre), tal como aparecen en tu documento de identidad. Si están incompletos, tu solicitud puede ser rechazada.
+      </div>
       <div class="field-row" id="solCampos"><p class="helptext">Cargando el formulario…</p></div>
       <div style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden;" aria-hidden="true"><label>No llenar</label><input id="sol-web" tabindex="-1" autocomplete="off"></div>
       <label style="display:block;margin:10px 0;font-size:13.5px;"><input type="checkbox" id="sol-acepta"> He leído y acepto la <a href="${typeof DP_URL !== 'undefined' ? DP_URL : 'https://campoalto.dataprotected.co'}" target="_blank" rel="noopener noreferrer"><b>política de tratamiento de datos personales</b></a> de Campoalto.</label>
@@ -58,7 +61,10 @@ let solCampos = SOL_BASE.slice(), solUsaExtras = false;
 function solCampoHtml(c){
   const id = 'sol-' + c.clave, req = c.obligatorio ? ' *' : '';
   const lab = '<label for="' + id + '">' + esc(c.etiqueta) + req + '</label>';
-  const ay = c.ayuda ? '<small class="helptext" style="display:block;margin-top:3px;">' + esc(c.ayuda) + '</small>' : '';
+  let ayT = c.ayuda || '';
+  if(c.clave === 'apellidos') ayT = 'Primero y segundo apellido, completos.' + (ayT ? ' ' + ayT : '');
+  if(c.clave === 'nombres') ayT = 'Primero y segundo nombre, completos.' + (ayT ? ' ' + ayT : '');
+  const ay = ayT ? '<small class="helptext" style="display:block;margin-top:3px;">' + esc(ayT) + '</small>' : '';
   let ctl;
   if(c.clave === 'documento') ctl = '<input id="' + id + '" inputmode="numeric" maxlength="15" autocomplete="off">';
   else if(c.clave === 'apellidos') ctl = '<input id="' + id + '" maxlength="80" autocomplete="family-name">';
@@ -91,6 +97,8 @@ async function solEnviar(){
   const doc = g('sol-documento').replace(/[\s.\-]/g, ''), correo = g('sol-correo').trim();
   if(!/^\d{5,15}$/.test(doc)) return err('El documento debe tener solo números (entre 5 y 15 dígitos).');
   if(g('sol-apellidos').trim().length < 2 || g('sol-nombres').trim().length < 2) return err('Escribe tus apellidos y tus nombres.');
+  { const pa = g('sol-apellidos').trim().split(/\s+/).length, pn = g('sol-nombres').trim().split(/\s+/).length;
+    if((pa < 2 || pn < 2) && !confirm('Escribiste ' + (pa < 2 ? 'un solo apellido' : '') + (pa < 2 && pn < 2 ? ' y ' : '') + (pn < 2 ? 'un solo nombre' : '') + '.\n\nLos apellidos y nombres deben ir COMPLETOS, como aparecen en tu documento.\n\n¿Están completos y quieres enviar la solicitud?')) return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return err('Escribe un correo válido.');
   const extras = {};
   for(const c of solCampos){
