@@ -39,7 +39,7 @@ function spFmtTam(b){ return b >= 1048576 ? (b/1048576).toFixed(1) + ' MB' : Mat
 function spChip(e){
   const m = { ok:['cor-enviado','Aprobado'], rechazado:['cor-error','Devuelto'], pendiente:['cor-pendiente','Por revisar'],
               borrador:['cor-pendiente','Borrador'], enviada:['cor-pendiente','En revisión'], devuelta:['cor-error','Devuelta'],
-              aprobada:['cor-enviado','Aprobada'], rechazada:['cor-error','Rechazada'] }[e] || ['cor-pendiente', e];
+              aprobada:['cor-enviado','Aprobada'], rechazada:['cor-error','Rechazada'], revision_fin:['cor-pendiente','Verificación financiera y académica'] }[e] || ['cor-pendiente', e];
   return `<span class="cor-est ${m[0]}">${m[1]}</span>`;
 }
 function spLabel(k){ return { programa:'Programa', sede:'Sede', semestre:'Semestre', periodo:'Periodo académico', jornada:'Jornada', telefono:'Teléfono',
@@ -64,7 +64,7 @@ function spRender(){
   const el = document.getElementById('estSpCard'); const e = spEst; if(!el || !e) return;
   const sol = e.solicitud;
   let h = '<div class="section-bar teal">Solicitud de práctica</div>';
-  const abierta = sol && ['borrador','enviada','devuelta'].includes(sol.estado);
+  const abierta = sol && ['borrador','enviada','devuelta','revision_fin'].includes(sol.estado);
 
   if(e.modalidad_actual){
     h += `<div class="note-box" style="background:#EAF6F0;border-color:#BFE3D0;color:#1E6B4A;">✅ Tu modalidad de práctica es: <b>${esc(e.modalidad_actual)}</b>.</div>`;
@@ -78,9 +78,10 @@ function spRender(){
     h += `<div class="sp-cab"><div><b>${esc(sol.modalidad)}</b></div>${spChip(sol.estado)}</div>`;
     if(sol.estado === 'devuelta') h += `<div class="note-box" style="background:#FBEAE7;border-color:#F0C4BD;color:#8F2A20;"><b>Tu solicitud fue devuelta.</b> ${sol.observacion ? esc(sol.observacion) : 'Corrige lo indicado y envíala de nuevo.'}</div>`;
     if(sol.estado === 'enviada') h += '<div class="note-box">⏳ Tu solicitud está en revisión. Te avisaremos por correo cuando tenga respuesta; también puedes volver a consultar aquí.</div>';
+    if(sol.estado === 'revision_fin') h += `<div class="note-box" style="background:#FFF4D6;border-color:#E0B84A;color:#5E4200;"><b>✅ Tus documentos fueron aprobados.</b><br>Falta una última revisión: que estés <b>al día en lo financiero (pagos) y en lo académico (notas)</b>. Hasta que termine no podrás asignarte. Te avisaremos por notificación y correo.${sol.observacion ? '<br><br><b>Pendiente por resolver:</b> ' + esc(sol.observacion) : ''}</div>`;
     if(sol.estado === 'borrador') h += '<div class="note-box">Sube cada documento en un PDF separado. Cuando estén todos los obligatorios, envía tu solicitud a revisión.</div>';
     h += '<div class="subhead" style="margin-top:12px;">Tus datos</div>' + spResumenDatos(sol.datos);
-    if(sol.estado !== 'enviada') h += '<div class="actions-row" style="justify-content:flex-start;margin:6px 0 0;"><button class="ghost" onclick="spEditar()">Editar mis datos</button></div>';
+    if(sol.estado !== 'enviada' && sol.estado !== 'revision_fin') h += '<div class="actions-row" style="justify-content:flex-start;margin:6px 0 0;"><button class="ghost" onclick="spEditar()">Editar mis datos</button></div>';
 
     const docs = {}; (e.documentos || []).forEach(d=>{ docs[d.requisito_id] = d; });
     const reqs = mod.requisitos || [];
@@ -101,7 +102,7 @@ function spRender(){
               ${d ? `<button class="ghost" style="padding:5px 10px;font-size:12px;" onclick="spQuitar('${esc(r.id)}')">Quitar</button>` : ''}` : ''}
           </div></div>`;
       }).join('') + '</div>';
-    } else if(sol.estado !== 'enviada'){
+    } else if(sol.estado !== 'enviada' && sol.estado !== 'revision_fin'){
       h += '<p class="helptext">Esta modalidad no tiene documentos configurados.</p>';
     }
     h += '<div id="spMsg" style="margin:10px 0;font-size:13.5px;"></div>';
