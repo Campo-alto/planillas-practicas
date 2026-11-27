@@ -134,7 +134,7 @@ async function spaResolver(accion){
   let obs = '';
   if(accion === 'aprobar'){
     const dosPasos = !/contrato.*aprendizaje/i.test(s.modalidad);
-    if(!confirm(dosPasos ? '¿Aprobar los DOCUMENTOS de ' + nombre + '?\n\nLa solicitud pasará a la verificación financiera y académica. El estudiante NO podrá asignarse hasta que esa segunda revisión confirme que está al día.' : '¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
+    if(!confirm(dosPasos ? '¿Aprobar los DOCUMENTOS de ' + nombre + '?\n\nLa solicitud pasará a la verificación financiera y académica. El estudiante NO podrá asignarse hasta que esa segunda revisión confirme que está al día.\n\nLa segunda revisión se hace en: Panel → Estudiantes → «Verificación financiera y académica». Al aceptar te ofreceré abrirla de una vez.' : '¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
   if(accion === 'devolver'){ obs = prompt('¿Qué debe corregir el estudiante? (se le enviará por correo)', ''); if(obs === null) return; }
   if(accion === 'rechazar'){ obs = prompt('Motivo del rechazo (se le enviará por correo):', ''); if(obs === null) return; if(!obs.trim()){ toast('Escribe el motivo', true); return; } }
   const { data, error } = await sb.rpc('admin_sol_pr_resolver', { p_id: s.id, p_accion: accion, p_obs: obs });
@@ -167,6 +167,13 @@ async function spaResolver(accion){
   }
   if(falloSG) { abrirSolicitudesPractica(); return; }
   toast(fallo ? 'Listo, pero no se pudo enviar el correo al estudiante: ' + fallo : (accion === 'aprobar' ? (data.siguiente === 'verificacion' ? 'Documentos aprobados: pasa a la verificación financiera y académica' : 'Solicitud aprobada y estudiante notificado') : accion === 'devolver' ? 'Solicitud devuelta y estudiante notificado' : 'Solicitud rechazada y estudiante notificado'), !!fallo);
+  if(accion === 'aprobar' && data.siguiente === 'verificacion'){
+    if(typeof puede === 'function' && puede('est_verif_fin')){
+      if(confirm('Documentos aprobados.\n\n¿Quieres hacer AHORA la segunda revisión (financiera y académica) de ' + nombre + '?\n\nAceptar = abrirla ahora.\nCancelar = queda en «Verificación financiera y académica» para después (Panel → Estudiantes).')){ spaDetalle(s.id); return; }
+    } else {
+      alert('Documentos aprobados.\n\nLa solicitud de ' + nombre + ' quedó en «Verificación financiera y académica». Esa segunda revisión la hace la persona con ese permiso (Panel → Estudiantes → Verificación financiera y académica).');
+    }
+  }
   abrirSolicitudesPractica();
 }
 
