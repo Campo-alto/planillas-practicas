@@ -11,9 +11,10 @@ const ROL_NOMBRES = {
   coord_gestion: 'Coordinador de gestión empresarial',
   asistente: 'Asistente',
   sup_general: 'Supervisor general',
-  servicio_estudiante: 'Servicio al estudiante'
+  servicio_estudiante: 'Servicio al estudiante',
+  consulta: 'Solo consulta (ve, no modifica)'
 };
-const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente', 'sup_general', 'servicio_estudiante'];
+const ROLES_CONFIGURABLES = ['coord_practicas', 'coord_gestion', 'asistente', 'sup_general', 'servicio_estudiante', 'consulta'];
 // En la matriz también va el «Supervisor (visitas)»: el que entra por la pantalla de supervisor (no es del personal del panel)
 const ROL_SUP = 'supervisor', AREA_SUP = 'Supervisor (visitas)';
 const ROL_NOMBRES_MATRIZ = Object.assign({}, ROL_NOMBRES, { supervisor: 'Supervisor (visitas)' });
@@ -37,6 +38,7 @@ async function cargarPermisos(forzar){
     const { data, error } = await sb.rpc('mis_permisos');
     if(error) throw error;
     permAdmin = { listo:true, rol:data.rol, total:!!data.total, modulos:data.modulos || [], uid };
+    if(data.rol === 'consulta') modoSoloConsulta();
   }catch(e){
     const m = String((e && e.message) || '') + ' ' + String((e && e.code) || '');
     if(/PGRST202|42883|Could not find the function|does not exist/i.test(m)){
@@ -180,4 +182,26 @@ function rpermVistaSup(refrescar, e){
     (off.length ? '<p style="margin:0 0 6px;font-size:14px;"><b>No ve (' + off.length + '):</b></p><ul style="font-size:13.5px;margin:0 0 10px 18px;">' + off.map(c=>'<li>✖ ' + e(c.titulo) + '</li>').join('') + '</ul>' : '') +
     '<p class="helptext">La base de datos además rechaza cualquier función sin permiso, aunque alguien la llame a mano. Se necesita haber ejecutado rol-supervisor-etapa54.sql.</p>' +
     '<div class="home-modal-acc"><button class="primary" type="button" onclick="rpermVistaCerrar()">Cerrar vista previa</button></div></div>';
+}
+
+
+/* ---- Rol «Solo consulta»: ve la información pero no modifica nada. La BASE DE DATOS lo impone (rol-consulta-etapa84.sql);
+        aquí solo se avisa con claridad y se traduce el mensaje cuando intenta guardar algo. ---- */
+function modoSoloConsulta(){
+  if(window.__soloConsulta) return; window.__soloConsulta = true;
+  const MSG = 'Tu rol es de solo consulta: puedes ver la información, pero no modificarla.';
+  try{
+    const rpc0 = sb.rpc.bind(sb);
+    sb.rpc = function(){ return Promise.resolve(rpc0.apply(null, arguments)).then(r=>{
+      if(r && r.error && /read-only transaction|solo lectura/i.test(String(r.error.message || ''))) r.error = Object.assign({}, r.error, { message: MSG });
+      return r; }); };
+  }catch(_){}
+  const barra = () => {
+    if(document.getElementById('consultaBanner')) return;
+    const b = document.createElement('div'); b.id = 'consultaBanner';
+    b.style.cssText = 'position:sticky;top:0;z-index:60;background:#EEF3FB;border-bottom:2px solid #C9D8F0;color:#24478F;padding:8px 14px;font-size:13.5px;text-align:center;';
+    b.innerHTML = '👁 <b>Modo solo consulta.</b> Puedes ver la información, pero no guardar, aprobar, crear, editar ni eliminar nada.';
+    document.body.insertBefore(b, document.body.firstChild);
+  };
+  if(document.body) barra(); else document.addEventListener('DOMContentLoaded', barra);
 }
