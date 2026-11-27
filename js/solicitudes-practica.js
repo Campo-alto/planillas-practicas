@@ -106,6 +106,7 @@ function spaPintarDetalle(){
         <button class="ghost" onclick="spaVerificar('pendiente')">⏸ Dejar pendiente</button>
         <button class="danger" onclick="spaVerificar('rechazar')">✖ No está al día: rechazar</button></div>`
       : '<p class="helptext"><b>Tu rol no tiene habilitada la verificación financiera y académica.</b> Esta solicitud la confirma otra persona.</p>'}</div>` : ''}
+    ${rev && s.modalidad && !/contrato.*aprendizaje/i.test(s.modalidad) ? spaPanelParalelo(s) : ''}
     ${rev ? `<div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">
       <button class="primary" onclick="spaResolver('aprobar')">Aprobar solicitud</button>
       <button class="ghost" onclick="spaResolver('devolver')">Devolver para corregir</button>
@@ -129,16 +130,67 @@ async function spaEnviarCorreo(to, asunto, texto){
   try{ const r = await correoEnviarItems('solicitud', [{ to, asunto, texto }]); return r.errores.length ? r.errores[0].error : null; }
   catch(e){ return e.message; }
 }
+/* Verificación financiera/académica en paralelo (mientras se revisan los documentos) */
+function spaOpcVer(v, sel){ return '<option value=""' + (sel === null || sel === undefined ? ' selected' : '') + '>Sin revisar</option><option value="si"' + (sel === true ? ' selected' : '') + '>✔ Al día</option><option value="no"' + (sel === false ? ' selected' : '') + '>✖ NO está al día</option>'; }
+function spaPanelParalelo(s){
+  const ok = typeof puede === 'function' && puede('est_verif_fin');
+  const nota = s.verif_en ? `<div class="note-box"><b>Ya registrado${s.verif_por ? ' por ' + esc(s.verif_por) : ''} el ${spaF(s.verif_en)}.</b>${s.verif_obs ? ' ' + esc(s.verif_obs) : ''}</div>` : '';
+  return `<div class="card" style="border:2px solid #E0B84A;"><div class="section-bar deep">Verificación financiera y académica (puedes hacerla ahora)</div>
+    <p class="helptext" style="text-align:justify;">Puedes dejar registrado <b>desde ya</b> si el estudiante está al día en pagos y notas, sin esperar a aprobar los documentos. Si devuelves la solicitud para corregir, el estudiante recibe <b>todo lo pendiente en un solo mensaje</b>. Si queda «al día» en ambos, al aprobar los documentos la solicitud se aprueba completa.</p>
+    ${nota}
+    ${ok ? `<div class="field"><label>Financiero (pagos)</label><select id="spaPFin" class="cp-in">${spaOpcVer('', s.verif_financiera)}</select></div>
+      <div class="field"><label>Académico (notas / procesos)</label><select id="spaPAca" class="cp-in">${spaOpcVer('', s.verif_academica)}</select></div>
+      <div class="field"><label>Observación (obligatoria si no está al día)</label><textarea id="spaPObs" class="ca-obs" rows="3" maxlength="300" placeholder="Ej.: debe ponerse al día con la cuota de octubre">${esc(s.verif_obs || '')}</textarea></div>
+      <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="spaPreverGuardar()">💾 Guardar verificación</button></div>`
+    : '<p class="helptext"><b>Tu rol no tiene habilitada la verificación financiera y académica.</b> Pídele al administrador que active el permiso «Verificación financiera y académica» en Roles y permisos.</p>'}</div>`;
+}
+/* Lee el panel. Devuelve null si no hay nada que guardar, false si falló, o {fin,aca,obs} si se guardó */
+async function spaPrever(){
+  const f = document.getElementById('spaPFin'), a = document.getElementById('spaPAca'), o = document.getElementById('spaPObs');
+  if(!f || !a || !o) return null;
+  const cv = v => v === 'si' ? true : v === 'no' ? false : null;
+  const fin = cv(f.value), aca = cv(a.value), obs = (o.value || '').trim();
+  if(fin === null && aca === null && !obs) return null;
+  const { error } = await sb.rpc('admin_sol_pr_prever', { p_id: spaDet.solicitud.id, p_fin: fin, p_aca: aca, p_obs: obs });
+  if(error){ toast(error.message, true); return false; }
+  return { fin, aca, obs };
+}
+async function spaPreverGuardar(){
+  const r = await spaPrever();
+  if(r === false) return;
+  if(r === null){ toast('Elige al menos una opción (al día / no está al día) o escribe una observación', true); return; }
+  toast('Verificación guardada. Ahora puedes aprobar o devolver los documentos.');
+  await spaDetalle(spaDet.solicitud.id);
+}
 async function spaResolver(accion){
   const s = spaDet.solicitud, nombre = spaDet.estudiante.nombre || s.documento;
   let obs = '';
+  const dosPasos = !/contrato.*aprendizaje/i.test(s.modalidad);
+  const _f = document.getElementById('spaPFin'), _a = document.getElementById('spaPAca');
+  const _cv = v => v === 'si' ? true : v === 'no' ? false : null;
+  const fin0 = _f ? _cv(_f.value) : s.verif_financiera, aca0 = _a ? _cv(_a.value) : s.verif_academica;
+  const puedeVer = typeof puede === 'function' && puede('est_verif_fin');
+  const auto = accion === 'aprobar' && dosPasos && puedeVer && fin0 === true && aca0 === true;
   if(accion === 'aprobar'){
-    const dosPasos = !/contrato.*aprendizaje/i.test(s.modalidad);
-    if(!confirm(dosPasos ? '¿Aprobar los DOCUMENTOS de ' + nombre + '?\n\nLa solicitud pasará a la verificación financiera y académica. El estudiante NO podrá asignarse hasta que esa segunda revisión confirme que está al día.\n\nLa segunda revisión se hace en: Panel → Estudiantes → «Verificación financiera y académica». Al aceptar te ofreceré abrirla de una vez.' : '¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
+    const mal = (fin0 === false || aca0 === false) ? '\n\n⚠ OJO: registraste que NO está al día. Si apruebas los documentos pasará a la segunda revisión, donde podrás rechazarla.' : '';
+    if(auto){ if(!confirm('¿Aprobar la solicitud COMPLETA de ' + nombre + '?\n\nLos documentos se aprueban y, como ya registraste que está AL DÍA en lo financiero y académico, la solicitud queda aprobada de una vez (modalidad «' + s.modalidad + '») y se le avisa por correo.')) return; }
+    else if(!confirm(dosPasos ? '¿Aprobar los DOCUMENTOS de ' + nombre + '?\n\nLa solicitud pasará a la verificación financiera y académica. El estudiante NO podrá asignarse hasta que esa segunda revisión confirme que está al día.\n\nLa segunda revisión se hace en: Panel → Estudiantes → «Verificación financiera y académica». Al aceptar te ofreceré abrirla de una vez.' + mal : '¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
   if(accion === 'devolver'){ obs = prompt('¿Qué debe corregir el estudiante? (se le enviará por correo)', ''); if(obs === null) return; }
   if(accion === 'rechazar'){ obs = prompt('Motivo del rechazo (se le enviará por correo):', ''); if(obs === null) return; if(!obs.trim()){ toast('Escribe el motivo', true); return; } }
+  // Guarda la verificación financiera/académica que esté en pantalla
+  let pv = null;
+  if(accion !== 'rechazar'){ pv = await spaPrever(); if(pv === false) return; }
+  if(accion === 'devolver' && pv && (pv.fin === false || pv.aca === false)){
+    const p = [pv.fin === false ? 'financiero' : '', pv.aca === false ? 'académico' : ''].filter(Boolean).join(' y ');
+    obs = (obs.trim() ? obs.trim() + '\n' : '') + 'Además, NO estás al día en lo ' + p + ': ' + pv.obs;
+  }
   const { data, error } = await sb.rpc('admin_sol_pr_resolver', { p_id: s.id, p_accion: accion, p_obs: obs });
   if(error){ toast(error.message, true); return; }
+  if(auto && data.siguiente === 'verificacion'){
+    const r2 = await sb.rpc('admin_sol_pr_verificar', { p_id: s.id, p_accion: 'aprobar', p_fin: true, p_aca: true, p_obs: 'Verificado junto con la revisión de documentos' });
+    if(!r2.error){ await spaPostVerificar('aprobar', r2.data); return; }
+    toast('Documentos aprobados, pero no se pudo cerrar la verificación: ' + r2.error.message + '. Quedó en «Verificación financiera y académica».', true);
+  }
   let asunto, texto;
   const firma = '\n\nPolitécnico Campoalto';
   if(accion === 'aprobar' && data.siguiente === 'verificacion'){
@@ -190,6 +242,9 @@ async function spaVerificar(accion){
   else if(accion === 'rechazar' && !confirm('¿Rechazar la solicitud de ' + nombre + ' por no estar al día?')) return;
   const { data, error } = await sb.rpc('admin_sol_pr_verificar', { p_id: s.id, p_accion: accion, p_fin: fin, p_aca: aca, p_obs: obs });
   if(error){ toast(error.message, true); return; }
+  await spaPostVerificar(accion, data);
+}
+async function spaPostVerificar(accion, data){
   const firma = '\n\nPolitécnico Campoalto';
   let asunto, texto;
   if(accion === 'aprobar'){
