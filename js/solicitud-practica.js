@@ -135,7 +135,7 @@ function spRender(){
       <div class="field"><label>Sede *</label><input id="sp-sede" maxlength="80" value="${escapeAttr(dato.sede || '')}"></div>
       <div class="field"><label>Semestre *</label><input id="sp-semestre" maxlength="20" value="${escapeAttr(dato.semestre || '')}"></div>
       <div class="field"><label>Periodo académico *</label><input id="sp-periodo" maxlength="30" placeholder="Ej. 2026-2" value="${escapeAttr(dato.periodo || '')}"></div>
-      <div class="field"><label>Jornada en que solicitas el cupo *</label><select id="sp-jornada"><option value="">Selecciona…</option>${SP_JORNADAS.map(j=>`<option value="${esc(j)}" ${dato.jornada === j ? 'selected' : ''}>${esc(j)}</option>`).join('')}</select></div>
+      ${m.tipo === 'contrato' ? '' : `<div class="field"><label>Jornada en que solicitas el cupo *</label><select id="sp-jornada"><option value="">Selecciona…</option>${SP_JORNADAS.map(j=>`<option value="${esc(j)}" ${dato.jornada === j ? 'selected' : ''}>${esc(j)}</option>`).join('')}</select></div>`}
       <div class="field"><label>Teléfono</label><input id="sp-telefono" inputmode="tel" maxlength="20" value="${escapeAttr(dato.telefono || '')}"></div>
     </div>`;
     if(m.tipo === 'rlp') h += `<div class="subhead" style="margin-top:10px;">Lugar donde harás la práctica (el que tú conseguiste)</div><div class="field-row">
@@ -173,7 +173,7 @@ async function spGuardar(){
   const d = spLeerDatos();
   if(!d.programa) return spMsg('Elige tu programa.');
   if(!d.sede || !d.semestre || !d.periodo) return spMsg('Completa sede, semestre y periodo académico.');
-  if(!d.jornada) return spMsg('Elige la jornada en que solicitas el cupo.');
+  if(m.tipo !== 'contrato' && !d.jornada) return spMsg('Elige la jornada en que solicitas el cupo.');
   if(m.tipo === 'contrato' && !confirm('¿Elegir «' + m.nombre + '»? Después de elegirla solo la institución puede cambiarla.')) return;
   const b = document.getElementById('spGuardar'); b.disabled = true; spMsg('Guardando…', true);
   const { data, error } = await sb.rpc('est_pr_guardar', { p_token: state.token, p_modalidad_id: m.id, p_datos: d });
