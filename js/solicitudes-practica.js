@@ -6,7 +6,7 @@
       y el peso máximo de cada PDF.
    Requiere solicitud-practica-etapa24.sql. Para los correos: correos-etapa21.sql y la función «enviar-correo». */
 
-let spaEstado = 'enviada', spaFilas = [], spaDet = null;
+let spaEstado = 'enviada', spaFilas = [], spaDet = null, spaPref = null;
 
 function spaPantalla(id){
   let el = document.getElementById(id);
@@ -21,7 +21,7 @@ const spaTam = b => b >= 1048576 ? (b/1048576).toFixed(1) + ' MB' : Math.max(1, 
 function spaChip(e){
   const m = { ok:['cor-enviado','Aprobado'], rechazado:['cor-error','Devuelto'], pendiente:['cor-pendiente','Por revisar'],
               borrador:['cor-pendiente','Borrador'], enviada:['cor-pendiente','En revisión'], devuelta:['cor-error','Devuelta'],
-              aprobada:['cor-enviado','Aprobada'], rechazada:['cor-error','Rechazada'] }[e] || ['cor-pendiente', e];
+              aprobada:['cor-enviado','Aprobada'], rechazada:['cor-error','Rechazada'], revision_fin:['cor-pendiente','Verificación financiera y académica'] }[e] || ['cor-pendiente', e];
   return `<span class="cor-est ${m[0]}">${m[1]}</span>`;
 }
 const SPA_ETQ = { programa:'Programa', sede:'Sede', semestre:'Semestre', periodo:'Periodo', jornada:'Jornada', telefono:'Teléfono',
@@ -37,7 +37,7 @@ async function abrirSolicitudesPractica(){
     <p class="helptext" style="text-align:justify;">Aquí llegan las solicitudes de los estudiantes con su modalidad, sus datos y sus documentos en PDF. Revisa cada documento y luego <b>aprueba</b> (el estudiante queda con su modalidad y sigue con su planilla), <b>devuelve</b> para que corrija o <b>rechaza</b>.</p>
     <div class="card">
       <div class="aud-filtros">
-        <div class="field"><label>Estado</label><select id="spaEstado" onchange="spaConsultar()"><option value="enviada">En revisión</option><option value="devuelta">Devueltas</option><option value="borrador">En borrador</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="">Todas</option></select></div>
+        <div class="field"><label>Estado</label><select id="spaEstado" onchange="spaConsultar()"><option value="enviada">En revisión</option><option value="devuelta">Devueltas</option><option value="revision_fin">Verificación financiera y académica</option><option value="borrador">En borrador</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="">Todas</option></select></div>
         <div class="field aud-ancho"><label>Buscar (documento, nombre o modalidad)</label><input type="search" id="spaTexto" maxlength="80" onkeydown="if(event.key==='Enter')spaConsultar()"></div>
       </div>
       <div class="actions-row" style="justify-content:flex-start;"><button class="ghost" onclick="spaConsultar()">Consultar</button></div>
@@ -45,6 +45,8 @@ async function abrirSolicitudesPractica(){
       <div id="spaTabla"><p style="color:var(--muted)">Cargando…</p></div>
     </div>`;
   showScreen('screen-admin-solprac');
+  const _pref = spaPref || ((typeof puede === 'function' && !puede('est_registrados') && puede('est_verif_fin')) ? 'revision_fin' : null); spaPref = null;
+  if(_pref){ const q = document.getElementById('spaEstado'); if(q) q.value = _pref; }
   spaConsultar();
 }
 async function spaConsultar(){
@@ -53,7 +55,7 @@ async function spaConsultar(){
   const { data, error } = await sb.rpc('admin_sol_pr_lista', { p_estado: spaEstado || null, p_texto: q || null, p_limite: 200, p_offset: 0 });
   if(error){ t.innerHTML = '<p style="color:var(--danger)">' + esc(error.message) + ' (¿ejecutaste solicitud-practica-etapa24.sql?)</p>'; return; }
   spaFilas = data.filas || []; const r = data.resumen || {};
-  document.getElementById('spaResumen').textContent = (r.enviada||0) + ' en revisión · ' + (r.devuelta||0) + ' devueltas · ' + (r.aprobada||0) + ' aprobadas · ' + (r.rechazada||0) + ' rechazadas · ' + (r.borrador||0) + ' en borrador';
+  document.getElementById('spaResumen').textContent = (r.enviada||0) + ' en revisión · ' + (r.revision_fin||0) + ' en verificación financiera/académica · ' + (r.devuelta||0) + ' devueltas · ' + (r.aprobada||0) + ' aprobadas · ' + (r.rechazada||0) + ' rechazadas · ' + (r.borrador||0) + ' en borrador';
   if(!spaFilas.length){ t.innerHTML = '<p style="color:var(--muted);font-size:13.5px;">No hay solicitudes con estos filtros.</p>'; return; }
   t.innerHTML = '<div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Enviada</th><th>Estudiante</th><th>Modalidad</th><th>Documentos</th><th>Estado</th><th></th></tr></thead><tbody>' +
     spaFilas.map(s=>`<tr><td class="aud-nw">${spaF(s.enviada_en || s.creado)}</td>
@@ -61,7 +63,7 @@ async function spaConsultar(){
       <td>${esc(s.modalidad)}</td>
       <td class="aud-nw">${s.subidos} subidos · ${s.requeridos} obligatorios</td>
       <td>${spaChip(s.estado)}${s.resuelta_por ? '<div class="aud-ref">' + esc(s.resuelta_por) + ' · ' + spaF(s.resuelta_en) + '</div>' : ''}</td>
-      <td class="aud-nw"><button class="primary" style="padding:5px 10px;font-size:12px;" onclick="spaDetalle('${esc(s.id)}')">${s.estado === 'enviada' ? 'Revisar' : 'Ver'}</button></td></tr>`).join('') + '</tbody></table></div>';
+      <td class="aud-nw"><button class="primary" style="padding:5px 10px;font-size:12px;" onclick="spaDetalle('${esc(s.id)}')">${s.estado === 'enviada' || s.estado === 'revision_fin' ? 'Revisar' : 'Ver'}</button></td></tr>`).join('') + '</tbody></table></div>';
 }
 
 /* ---------------------------------------------------------------- DETALLE / REVISIÓN */
@@ -74,7 +76,7 @@ async function spaDetalle(id){
 }
 function spaPintarDetalle(){
   const el = document.getElementById('screen-admin-solprac-det'), d = spaDet; if(!el || !d) return;
-  const s = d.solicitud, e = d.estudiante, rev = s.estado === 'enviada';
+  const s = d.solicitud, e = d.estudiante, rev = s.estado === 'enviada', ver = s.estado === 'revision_fin' && typeof puede === 'function' && puede('est_verif_fin');
   const datos = Object.keys(s.datos || {}).map(k=>`<tr><td><b>${esc(SPA_ETQ[k] || k)}</b></td><td>${esc(s.datos[k])}</td></tr>`).join('');
   const docs = d.requisitos.map(r=>{
     const x = r.doc;
@@ -93,6 +95,17 @@ function spaPintarDetalle(){
     <div class="card"><div class="section-bar deep">Documentos</div>
       <div class="cupos-wrap"><table class="cupos-table aud-tabla"><thead><tr><th>Documento</th><th>Archivo</th><th>Revisión</th><th></th></tr></thead><tbody>${docs || '<tr><td colspan="4">Esta modalidad no tiene documentos.</td></tr>'}</tbody></table></div>
       ${rev ? '<p class="helptext" style="margin-top:8px;">Marca ✔ (aprobado) o ✖ (devuelto, con motivo) en cada documento. Luego resuelve la solicitud.</p>' : ''}</div>
+    ${s.estado === 'revision_fin' ? `<div class="card" style="border:2px solid #E0B84A;"><div class="section-bar deep">Segunda revisión · Verificación financiera y académica</div>
+      <p class="helptext" style="text-align:justify;">Los documentos ya fueron aprobados${s.docs_por ? ' por <b>' + esc(s.docs_por) + '</b>' : ''}${s.docs_en ? ' el ' + spaF(s.docs_en) : ''}. Antes de que el estudiante pueda asignarse, confirma que está <b>al día en lo financiero (pagos) y en lo académico (notas)</b>.</p>
+      ${s.verif_obs ? `<div class="note-box"><b>Última nota:</b> ${esc(s.verif_obs)}${s.verif_por ? ' · ' + esc(s.verif_por) : ''}</div>` : ''}
+      ${ver ? `<label class="lista-chk"><input type="checkbox" id="spaVFin" ${s.verif_financiera ? 'checked' : ''}> <b>Financiero:</b> el estudiante está al día en sus pagos</label>
+      <label class="lista-chk"><input type="checkbox" id="spaVAca" ${s.verif_academica ? 'checked' : ''}> <b>Académico:</b> el estudiante está al día en sus notas / procesos académicos</label>
+      <div class="field" style="margin-top:8px;"><label>Observación (obligatoria si lo dejas pendiente o lo rechazas)</label><textarea id="spaVObs" class="ca-obs" rows="3" maxlength="300" placeholder="Ej.: debe ponerse al día con la cuota de octubre"></textarea></div>
+      <div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">
+        <button class="primary" onclick="spaVerificar('aprobar')">✔ Está al día: aprobar</button>
+        <button class="ghost" onclick="spaVerificar('pendiente')">⏸ Dejar pendiente</button>
+        <button class="danger" onclick="spaVerificar('rechazar')">✖ No está al día: rechazar</button></div>`
+      : '<p class="helptext"><b>Tu rol no tiene habilitada la verificación financiera y académica.</b> Esta solicitud la confirma otra persona.</p>'}</div>` : ''}
     ${rev ? `<div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">
       <button class="primary" onclick="spaResolver('aprobar')">Aprobar solicitud</button>
       <button class="ghost" onclick="spaResolver('devolver')">Devolver para corregir</button>
@@ -119,14 +132,19 @@ async function spaEnviarCorreo(to, asunto, texto){
 async function spaResolver(accion){
   const s = spaDet.solicitud, nombre = spaDet.estudiante.nombre || s.documento;
   let obs = '';
-  if(accion === 'aprobar'){ if(!confirm('¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
+  if(accion === 'aprobar'){
+    const dosPasos = !/contrato.*aprendizaje/i.test(s.modalidad);
+    if(!confirm(dosPasos ? '¿Aprobar los DOCUMENTOS de ' + nombre + '?\n\nLa solicitud pasará a la verificación financiera y académica. El estudiante NO podrá asignarse hasta que esa segunda revisión confirme que está al día.' : '¿Aprobar la solicitud de ' + nombre + '?\nEl estudiante quedará con la modalidad «' + s.modalidad + '» y se le avisará por correo.')) return; }
   if(accion === 'devolver'){ obs = prompt('¿Qué debe corregir el estudiante? (se le enviará por correo)', ''); if(obs === null) return; }
   if(accion === 'rechazar'){ obs = prompt('Motivo del rechazo (se le enviará por correo):', ''); if(obs === null) return; if(!obs.trim()){ toast('Escribe el motivo', true); return; } }
   const { data, error } = await sb.rpc('admin_sol_pr_resolver', { p_id: s.id, p_accion: accion, p_obs: obs });
   if(error){ toast(error.message, true); return; }
   let asunto, texto;
   const firma = '\n\nPolitécnico Campoalto';
-  if(accion === 'aprobar'){
+  if(accion === 'aprobar' && data.siguiente === 'verificacion'){
+    asunto = 'Tus documentos fueron aprobados';
+    texto = 'Hola ' + data.nombre + ',\n\nTus documentos de la solicitud de práctica (' + data.modalidad + ') fueron aprobados.\n\nFalta una última revisión: verificar que estés al día en lo financiero (pagos) y en lo académico (notas). Cuando termine te avisaremos; hasta entonces aún no puedes asignarte.' + firma;
+  } else if(accion === 'aprobar'){
     asunto = 'Tu solicitud de práctica fue aprobada';
     texto = 'Hola ' + data.nombre + ',\n\nTu solicitud de práctica fue APROBADA. Modalidad: ' + data.modalidad + '.\n\n' +
       (/rap|aprendizajes previos|homologaci/i.test(data.modalidad) ? 'Se te enviará tu planilla y se coordinará la reunión con el supervisor y la empresa para calificar tu experiencia.' :
@@ -143,12 +161,49 @@ async function spaResolver(accion){
   const fallo = await spaEnviarCorreo(data.correo, asunto, texto);
   // RAP y RLP: además se avisa al supervisor general para que asigne la visita
   let falloSG = null;
-  if(accion === 'aprobar' && /rap|aprendizajes previos|homologaci|rlp|lugar de pr|validaci/i.test(data.modalidad) && typeof vaAvisarSupervisorGeneral === 'function'){
+  if(accion === 'aprobar' && data.siguiente !== 'verificacion' && /rap|aprendizajes previos|homologaci|rlp|lugar de pr|validaci/i.test(data.modalidad) && typeof vaAvisarSupervisorGeneral === 'function'){
     falloSG = await vaAvisarSupervisorGeneral({ nombre: data.nombre, documento: data.documento, modalidad: data.modalidad });
     if(falloSG) toast('Aprobada, pero no se avisó al supervisor general: ' + falloSG, true);
   }
   if(falloSG) { abrirSolicitudesPractica(); return; }
-  toast(fallo ? 'Listo, pero no se pudo enviar el correo al estudiante: ' + fallo : (accion === 'aprobar' ? 'Solicitud aprobada y estudiante notificado' : accion === 'devolver' ? 'Solicitud devuelta y estudiante notificado' : 'Solicitud rechazada y estudiante notificado'), !!fallo);
+  toast(fallo ? 'Listo, pero no se pudo enviar el correo al estudiante: ' + fallo : (accion === 'aprobar' ? (data.siguiente === 'verificacion' ? 'Documentos aprobados: pasa a la verificación financiera y académica' : 'Solicitud aprobada y estudiante notificado') : accion === 'devolver' ? 'Solicitud devuelta y estudiante notificado' : 'Solicitud rechazada y estudiante notificado'), !!fallo);
+  abrirSolicitudesPractica();
+}
+
+/* Segunda revisión: ¿está al día en lo financiero y académico? */
+function abrirVerifFin(){ spaPref = 'revision_fin'; abrirSolicitudesPractica(); }
+async function spaVerificar(accion){
+  const s = spaDet.solicitud, nombre = spaDet.estudiante.nombre || s.documento;
+  const fin = !!(document.getElementById('spaVFin') || {}).checked, aca = !!(document.getElementById('spaVAca') || {}).checked;
+  const obs = ((document.getElementById('spaVObs') || {}).value || '').trim();
+  if(accion === 'aprobar'){
+    if(!fin || !aca){ toast('Para aprobar marca las dos casillas: financiero y académico', true); return; }
+    if(!confirm('¿Confirmas que ' + nombre + ' está AL DÍA en lo financiero y en lo académico?\nQuedará con la modalidad «' + s.modalidad + '» y podrá continuar con su asignación.')) return;
+  } else if(!obs){ toast('Escribe la observación: qué debe resolver el estudiante', true); return; }
+  else if(accion === 'rechazar' && !confirm('¿Rechazar la solicitud de ' + nombre + ' por no estar al día?')) return;
+  const { data, error } = await sb.rpc('admin_sol_pr_verificar', { p_id: s.id, p_accion: accion, p_fin: fin, p_aca: aca, p_obs: obs });
+  if(error){ toast(error.message, true); return; }
+  const firma = '\n\nPolitécnico Campoalto';
+  let asunto, texto;
+  if(accion === 'aprobar'){
+    asunto = 'Tu solicitud de práctica fue aprobada';
+    texto = 'Hola ' + data.nombre + ',\n\nVerificamos que estás al día en lo financiero y en lo académico. Tu solicitud de práctica (' + data.modalidad + ') fue APROBADA.\n\n' +
+      (/rap|aprendizajes previos|homologaci/i.test(data.modalidad) ? 'Se te enviará tu planilla y se coordinará la reunión con el supervisor y la empresa para calificar tu experiencia.' :
+       /rlp|lugar de pr|validaci/i.test(data.modalidad) ? 'Tu planilla quedó asociada al lugar de prácticas que indicaste; continúa con ella en la plataforma.' : 'Ingresa a la plataforma para continuar con tu asignación.') + firma;
+  } else if(accion === 'pendiente'){
+    asunto = 'Tu solicitud de práctica sigue en verificación';
+    texto = 'Hola ' + data.nombre + ',\n\nTus documentos están aprobados, pero tu solicitud (' + data.modalidad + ') sigue en espera.\n\nPendiente por resolver: ' + data.observacion + '\n\nCuando lo resuelvas, comunícate con la institución.' + firma;
+  } else {
+    asunto = 'Tu solicitud de práctica no pudo continuar';
+    texto = 'Hola ' + data.nombre + ',\n\nTu solicitud de práctica (' + data.modalidad + ') no pudo continuar porque no estás al día.\n\nMotivo: ' + data.observacion + '\n\nCuando lo resuelvas, entra a la plataforma, corrige tu solicitud y envíala de nuevo.' + firma;
+  }
+  const fallo = await spaEnviarCorreo(data.correo, asunto, texto);
+  let falloSG = null;
+  if(accion === 'aprobar' && /rap|aprendizajes previos|homologaci|rlp|lugar de pr|validaci/i.test(data.modalidad) && typeof vaAvisarSupervisorGeneral === 'function'){
+    falloSG = await vaAvisarSupervisorGeneral({ nombre: data.nombre, documento: data.documento, modalidad: data.modalidad });
+    if(falloSG) toast('Aprobada, pero no se avisó al supervisor general: ' + falloSG, true);
+  }
+  if(!falloSG) toast(fallo ? 'Listo, pero no se pudo enviar el correo al estudiante: ' + fallo : (accion === 'aprobar' ? 'Verificado: el estudiante quedó aprobado y fue notificado' : accion === 'pendiente' ? 'Quedó pendiente y el estudiante fue notificado' : 'Rechazada y estudiante notificado'), !!fallo);
   abrirSolicitudesPractica();
 }
 
@@ -168,6 +223,12 @@ async function spaMarcarPendientes(){
     const b = [...document.querySelectorAll('.fn-card')].find(c=>c.getAttribute('data-fn') === 'Solicitudes de práctica');
     const sl = b && b.querySelector('.fn-badge');
     if(sl) sl.innerHTML = '<span class="sa-badge" title="Pendientes por revisar">' + data + '</span>';
+  }catch(_){}
+  try{
+    const { data } = await sb.rpc('admin_sol_pr_verif_pendientes');
+    const b2 = [...document.querySelectorAll('.fn-card')].find(c=>c.getAttribute('data-fn') === 'Verificación financiera y académica');
+    const s2 = b2 && b2.querySelector('.fn-badge');
+    if(s2 && data) s2.innerHTML = '<span class="sa-badge" title="Esperan la verificación">' + data + '</span>';
   }catch(_){}
 }
 
