@@ -109,8 +109,7 @@ function spaPintarDetalle(){
     ${rev && s.modalidad && !/contrato.*aprendizaje/i.test(s.modalidad) ? spaPanelParalelo(s) : ''}
     ${rev ? `<div class="actions-row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">
       <button class="primary" onclick="spaResolver('aprobar')">Aprobar solicitud</button>
-      <button class="ghost" onclick="spaResolver('devolver')">Devolver para corregir</button>
-      <button class="danger" onclick="spaResolver('rechazar')">Rechazar</button></div>` : ''}`;
+      <button class="ghost" onclick="spaResolver('devolver')">Devolver para corregir</button></div>` : ''}`;
 }
 /* Vista previa dentro de la plataforma (se dibuja en pantalla; sin botón de descargar ni imprimir) */
 async function spaVerDoc(id, req){
